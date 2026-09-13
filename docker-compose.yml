@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: maternidad_db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpassword
+      POSTGRES_DB: maternidad_db
