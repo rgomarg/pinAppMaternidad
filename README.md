@@ -51,6 +51,13 @@ Abrid una nueva pestaña en la terminal (manteniendo el backend disponible), ent
 
 Cada vez que os sentéis a programar, debéis levantar el entorno de desarrollo abriendo dos terminales independientes.
 
+
+**Lanzar los contenedores de Docker:**
+Importante tener abierto docker desktop primero. Con esto lanzamos la BD y los contenedores de docker
+
+    docker compose up -d
+
+
 **Terminal 1 (Backend):**
 
     cd backend
@@ -62,6 +69,11 @@ Cada vez que os sentéis a programar, debéis levantar el entorno de desarrollo 
     npx expo start --tunnel
 
 *(Nota para usuarios de Windows: Utilizamos la bandera `--tunnel` para evitar que el Firewall de Windows bloquee la conexión con el teléfono móvil).* Escanead el código QR generado en esta terminal con la app **Expo Go** de vuestro móvil.
+
+**Cerrar contenedores y terminales:**
+Cerrar los terminales con **Ctrl + C** y en uno hacer:
+
+    docker compose down
 
 ## 5. Gestión de Base de Datos (Prisma)
 
