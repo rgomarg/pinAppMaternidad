@@ -7,8 +7,223 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Usuario {
-  id     Int     @id @default(autoincrement())
-  email  String  @unique
-  nombre String?
+
+// ------------------------------------------------------
+// ENUMS (Tipos predefinidos)
+// ------------------------------------------------------
+enum Role {
+  USER
+  PRO
+  ADMIN
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+enum EntityType {
+  USER
+  THREAD
+  MESSAGE
+}
+
+
+// ------------------------------------------------------
+// GESTIÓN DE USUARIOS Y AUTENTICACIÓN
+// ------------------------------------------------------
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  password      String?   //si se crea cuenta con google, no se necesitará contraseña. Por eso password es opcional
+  googleId      String?   @unique 
+  name          String
+  avatarUrl     String?   // URL de Cloudinary/AWS S3
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+
+  // Relaciones
+  children      Child[]
+  threads       Thread[]  // Relación con el foro (Owner)
+  messages      Message[]
+  reportsMade   Report[]  @relation("ReporterUser")
+  //falta un enlace con notification? Pa poder notificar al user?
+}
+
+// ------------------------------------------------------
+// LIBRO DE FAMILIA Y SALUD DIGITAL
+// ------------------------------------------------------
+model Child {
+  id            Int       @id @default(autoincrement())
+  name          String
+  birthDate     DateTime
+  bloodGroup    String?
+  allergies     String?
+  
+  // Relación con el padre/madre (User)
+  parentId      Int
+  parent        User      @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  // Relaciones de salud e hitos
+  measurements  Measurement[]
+  vaccines      Vaccine[]
+  events        Event[]
+  conditions    Condition[]
+  checklists    ChecklistItem[]
+  medicine      Medicine[]
+  //falta el calendar?? --> Eso será algo q se vea directamente. En la ruta calendar/:childID se hará una llamada para cargar los datos de ese childId, + sus eventos
+  
+}
+
+model Measurement { 
+  id            Int       @id @default(autoincrement())
+  date          DateTime
+  weight        Float     // En kg
+  height        Float     // En cm
+
+  childId       Int
+  child         Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+model Vaccine { 
+  id            Int       @id @default(autoincrement())
+  name          String
+  scheduledFor  DateTime?  // Fecha calculada por el sistema o manual tb se puede cambiar
+  appliedAt     DateTime? //null para saber si NO se ha puesto
+  
+  childId       Int
+  child         Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+model Disease {
+  id            Int       @id @default(autoincrement())
+  name          String
+  description   String?
+  diagnosticatedAge     DateTime?  //En que año te lo diagnosticaron
+
+  medicine      Medicine[]
+
+}
+
+model ChecklistItem { // Checklist inicial de hitos
+  id            Int       @id @default(autoincrement())
+  title         String
+  description   String?
+  isCompleted   Boolean   @default(false)
+  completedAt   DateTime?
+
+  childId       Int
+  child         Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+model Medicine {
+  id               Int       @id @default(autoincrement())
+  name             String    // Nombre comercial (ej. "Apiretal")
+  dosage           String    // Cantidad exacta (ej. "2.5 ml", "1 supositorio")
+  intervalHours    Int?      // Frecuencia en horas (ej. 8 para "cada 8 horas")
+  startDate        DateTime  @default(now()) // Inicio del tratamiento
+  endDate          DateTime? // Fin del tratamiento (nulo si es crónico o "a demanda")
+  instructions     String?   @db.Text // Instrucciones extra (ej. "Junto con comida")
+
+  // Relación obligatoria: Quién toma la medicación
+  childId          Int
+  child            Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  // Relación opcional: Qué condition (síntomas) motivó la toma. Puedes no registrar una condition, pero si llevar un registro de que se ha tomado
+  conditionId      Int?
+  condition        Condition? @relation(fields: [conditionId], references: [id])
+
+  // Relación opcional: Qué enfermedad diagnosticada motivó la toma. PUeedes no registrar Disease pero si que te has tomado algo.
+  diseaseId        Int?
+  disease          Disease?   @relation(fields: [diseaseId], references: [id])
+}
+
+// ------------------------------------------------------
+// CALENDARIO Y SEGUIMIENTO DIARIO
+// ------------------------------------------------------
+model Event { 
+  id            Int       @id @default(autoincrement())
+  title         String
+  description   String?
+  date          DateTime
+  hasReminder   Boolean   @default(false)
+  
+  childId       Int
+  child         Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+model Condition { 
+  id            Int       @id @default(autoincrement())
+  tag           String    // Ej: "Fiebre", "Vómitos" 
+  timestamp     DateTime  @default(now())
+  notes         String?
+  
+  childId       Int
+  child         Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  medicine      Medicine[]
+}
+
+
+
+// ------------------------------------------------------
+// COMUNIDAD Y FORO (Con sistema de reportes)
+// ------------------------------------------------------
+model Thread { 
+  id            Int       @id @default(autoincrement())
+  title         String
+  content       String    @db.Text
+  createdAt     DateTime  @default(now())
+  isHidden      Boolean   @default(false) // Pa moderación 
+
+  ownerId       Int
+  owner         User      @relation(fields: [ownerId], references: [id])
+
+  messages      Message[]
+  tags          Tag[]     
+}
+
+model Message { 
+  id            Int       @id @default(autoincrement())
+  content       String    @db.Text
+  likesCount    Int       @default(0) // UT-21: Sistema de votos MVP
+  createdAt     DateTime  @default(now())
+  isHidden      Boolean   @default(false) // Para moderación
+
+  authorId      Int
+  author        User      @relation(fields: [authorId], references: [id])
+
+  threadId      Int       //Columna física guardada en la BD
+  thread        Thread    @relation(fields: [threadId], references: [id], onDelete: Cascade) //Esto no se guarda en la BD, 
+                              //solamente es para que el prisma busque el Int de authorId en la tabla User para relacionarlo.
+
+  // Respuestas anidadas
+  parentId      Int?
+  parent        Message?  @relation("MessageReplies", fields: [parentId], references: [id]) //Pa mostrar por front: contestando a... Mirar arriba de un hilo type shit
+  replies       Message[] @relation("MessageReplies") //Buscar aquellos mensajes cuyo parentId sea este mensaje. Mirar abajo en un hilo type shit
+}
+
+model Tag { 
+  id            Int       @id @default(autoincrement())
+  name          String    @unique
+  
+  threads       Thread[]
+}
+
+// ------------------------------------------------------
+// ADMINISTRACIÓN Y MODERACIÓN
+// ------------------------------------------------------
+model Report { // Soporta las 3 nuevas UTs de Moderación
+  id            Int       @id @default(autoincrement())
+  reason        String
+  status        ReportStatus @default(PENDING)
+  createdAt     DateTime  @default(now())
+  
+  // Polimorfismo básico para saber qué se está reportando y no crear 3 tblas diferentes
+  targetType    EntityType
+  targetId      Int       // Guarda el ID del User, Thread o Message reportado
+  
+  reporterId    Int
+  reporter      User      @relation("ReporterUser", fields: [reporterId], references: [id])
 }
