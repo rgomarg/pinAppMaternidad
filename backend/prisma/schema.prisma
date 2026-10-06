@@ -29,6 +29,40 @@ enum EntityType {
   MESSAGE
 }
 
+enum TagCondition {
+  HEADACHE
+  FEVER
+  COUGH
+  SORE_THROAT
+  RUNNY_NOSE
+  NASAL_CONGESTION
+  SNEEZING
+  STOMACHACHE
+  CRAMPS
+  NAUSEA
+  VOMITING
+  DIARRHEA
+  CONSTIPATION
+  DIZZINESS
+  FATIGUE
+  EARACHE
+  TOOTHACHE
+  RASH
+  ITCHING
+  WATERY_EYES
+  RED_EYES
+  LOSS_OF_APPETITE
+  MUSCLE_PAIN
+  JOINT_PAIN
+  CHILLS
+  SHORTNESS_OF_BREATH
+  WHEEZING
+  SWOLLEN_GLANDS
+  TROUBLE_SLEEPING
+  IRRITABILITY
+
+}
+
 
 // ------------------------------------------------------
 // GESTIÓN DE USUARIOS Y AUTENTICACIÓN
@@ -81,6 +115,7 @@ model Measurement {
   date          DateTime
   weight        Float     // En kg
   height        Float     // En cm
+  
 
   childId       Int
   child         Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
@@ -101,6 +136,7 @@ model Disease {
   name          String
   description   String?
   diagnosticatedAge     DateTime?  //En que año te lo diagnosticaron
+  endDate       DateTime?
 
   medicine      Medicine[]
 
@@ -155,7 +191,8 @@ model Event {
 
 model Condition { 
   id            Int       @id @default(autoincrement())
-  tag           String    // Ej: "Fiebre", "Vómitos" 
+  tag           TagCondition[]    // Ej: "Fiebre", "Vómitos" 
+  desciption    String?
   timestamp     DateTime  @default(now())
   notes         String?
   
@@ -203,6 +240,8 @@ model Message {
   parent        Message?  @relation("MessageReplies", fields: [parentId], references: [id]) //Pa mostrar por front: contestando a... Mirar arriba de un hilo type shit
   replies       Message[] @relation("MessageReplies") //Buscar aquellos mensajes cuyo parentId sea este mensaje. Mirar abajo en un hilo type shit
 }
+
+
 
 model Tag { 
   id            Int       @id @default(autoincrement())
