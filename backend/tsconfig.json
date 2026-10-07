@@ -12,8 +12,7 @@
     "allowSyntheticDefaultImports": true,
     "target": "ES2023",
     "sourceMap": true,
-    "outDir": "./dist",
-    "ignoreDeprecations": "6.0", //para que baseURL no de problemas
+    "outDir": "./dist",    
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
