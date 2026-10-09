@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { API_URL } from '../api/config';
 
 //Configuración del calendario en español
 const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -39,7 +40,7 @@ export default function CalendarioScreen() {
   const [eventsForDate, setEvents] = useState([]);
 
   useEffect(() => {
-      fetch('${API_BASE_URL}/date/${selectedDate}')
+      fetch(`${API_URL}/guardian/${guardianId}?date=${selectedDate}`)
         .then(response => response.json())
         .then(data => {
           // 3. Cuando la API responde, guardamos los eventos en el estado
@@ -48,8 +49,56 @@ export default function CalendarioScreen() {
         .catch(error => {
           console.error("Error obteniendo los eventos:", error);
         });
-    }, [selectedDate]); 
+    }, [guardianId, selectedDate]); 
     
+    // Sustituye este valor por el ID del guardián seleccionado o autenticado.
+const guardianId = /* ID del guardián */
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadEvents = async () => {
+      setLoadingEvents(true);
+      setEventsError(null);
+
+      try {
+        const response = await fetch(
+          `${API_URL}/event/guardian/${guardianId}?date=${selectedDate}`,
+        );
+
+        if (!response.ok) {
+          throw new Error(`Error al cargar los eventos (${response.status})`);
+        }
+
+        const data: CalendarEvent[] = await response.json();
+
+        if (!cancelled) {
+          setEvents(data);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setEvents([]);
+          setEventsError(
+            error instanceof Error ? error.message : 'No se pudieron cargar los eventos',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingEvents(false);
+        }
+      }
+    };
+
+    if (guardianId) {
+      void loadEvents();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [guardianId, selectedDate]);
+
+
   return (
     <SafeAreaView className="flex-1 bg-nanny-bg justify-center">
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 140 }}>

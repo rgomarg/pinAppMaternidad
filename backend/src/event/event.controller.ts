@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { EventService } from './event.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -32,8 +32,11 @@ export class EventController {
     return this.eventService.remove(+id);
   }
 
-  @Get('date/:date')
-  findEventsByDate(@Param('date') date: string) {
-    return this.eventService.findEventsByDate(new Date(date));
+  @Get('guardian/:guardianId')
+  findEventsForGuardianOnDate(
+    @Param('guardianId') guardianId: number,
+    @Query('date') date: string,
+  ) {
+    return this.eventService.findEventsForGuardianOnDate(guardianId, date);
   }
 }
