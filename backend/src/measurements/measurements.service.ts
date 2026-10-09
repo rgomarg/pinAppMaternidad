@@ -1,15 +1,36 @@
 import { Injectable } from '@nestjs/common';
 import { CreateMeasurementDto } from './dto/create-measurement.dto';
 import { UpdateMeasurementDto } from './dto/update-measurement.dto';
+import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class MeasurementsService {
-  create(createMeasurementDto: CreateMeasurementDto) {
-    return 'This action adds a new measurement';
+  constructor(private readonly prisma: PrismaService) {}
+
+
+  async create(createMeasurementDto: CreateMeasurementDto) {
+
+    return this.prisma.measurement.create({
+      data: {
+        childId: createMeasurementDto.childId,
+        date: new Date(createMeasurementDto.date),
+        weight: createMeasurementDto.weight,
+        height: createMeasurementDto.height,
+
+      },
+    });
   }
 
-  findAll() {
-    return `This action returns all measurements`;
+
+  async findAll(childId:number) {
+    return this.prisma.measurement.findMany({
+      where: {
+        childId:childId,
+      },
+      orderBy:{
+        date: 'desc'
+      }
+    });
   }
 
   findOne(id: number) {
@@ -24,5 +45,6 @@ export class MeasurementsService {
     return `This action removes a #${id} measurement`;
   }
 
+  
   
 }

@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { CreateChildDto } from './dto/create-child.dto';
 import { UpdateChildDto } from './dto/update-child.dto';
+import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class ChildService {
+  constructor (private readonly prisma: PrismaService){}
+
   create(createChildDto: CreateChildDto) {
     return 'This action adds a new child';
   }
@@ -13,7 +16,12 @@ export class ChildService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} child`;
+    return this.prisma.child.findUnique({
+      where: {id:id},
+      include:{
+        measurements:true,
+      }
+    })
   }
 
   update(id: number, updateChildDto: UpdateChildDto) {

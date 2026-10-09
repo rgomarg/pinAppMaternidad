@@ -1,4 +1,4 @@
-import { PrismaClient, Role, EntityType, ReportStatus } from '@prisma/client';
+import { PrismaClient, Role, EntityType, ReportStatus, TagCondition } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -115,8 +115,8 @@ async function main() {
           allergies: 'Penicilina, Polen',
           conditions: {
             create: [
-              { tag: 'Fiebre', timestamp: new Date('2026-01-05T20:00:00Z'), notes: '39ºC repentinos' },
-              { tag: 'Tos seca', timestamp: new Date('2026-01-06T09:00:00Z'), notes: 'Empeora al tumbarse' }
+              { tag: [TagCondition.FEVER], timestamp: new Date('2026-01-05T20:00:00Z'), notes: '39ºC repentinos' },
+              { tag: [TagCondition.COUGH], timestamp: new Date('2026-01-06T09:00:00Z'), notes: 'Empeora al tumbarse' }
             ]
           }
         }]
