@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer/types/decorators/type.decorator';
 import { IsNotEmpty, IsString, IsOptional, IsDate } from 'class-validator';
 
 
@@ -6,6 +7,7 @@ export class CreateChildDto {
     @IsNotEmpty()
     name!: string;
 
+    @Type(() => Date)
     @IsDate()
     birthDate!: Date;
 
