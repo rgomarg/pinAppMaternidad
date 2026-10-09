@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  --color-nanny-bg: #f7f3ec;
+  --color-nanny-card: #ece6d9;
+  --color-nanny-text: #3a3a3a;
+  --color-nanny-muted: #808080;
+  --color-nanny-blue: #6d83a1;
+  --color-nanny-green: #65a882;
+  --color-nanny-red: #cc7a66;
+  --color-nanny-chart-blue: #708cb4;
+  --color-nanny-chart-brown: #a86b5c;
+  --color-nanny-border: #e0d9c9;
+}
+
+body {
+  background-color: var(--color-nanny-bg);
+  color: var(--color-nanny-text);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
