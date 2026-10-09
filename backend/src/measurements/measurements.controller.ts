@@ -13,8 +13,8 @@ export class MeasurementsController {
   }
 
   @Get()
-  findAll() {
-    return this.measurementsService.findAll();
+  findAll(childId:number) {
+    return this.measurementsService.findAll(childId);
   }
 
   @Get(':id')
