@@ -1,14 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
 import { API_URL } from '../api/config';
+import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
+import ActualizarPesoModal from '../components/MeasuramentWeightForm';
+
 
 export default function HomeScreen() {
   const [activeChildId, setActiveChildId] = useState<number | null>(null);
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
   
   const [isUserModalVisible, setIsUserModalVisible] = useState(false);
+  const [modalAlturaVisible, setModalAlturaVisible] = useState(false);
+  const [modalPesoVisible, setModalPesoVisible] = useState(false);
+
   const [users, setUsers] = useState<any[]>([]);
   const [children, setChildren] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,6 +58,15 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const activeChild = children.find(c => c.id === activeChildId);
 
+  const pesoActual = activeChild?.measurements?.[0]?.weight;
+  const pesoAnterior = activeChild?.measurements?.[1]?.weight;
+  
+  const difPeso = (pesoActual && pesoAnterior) ? (pesoActual - pesoAnterior).toFixed(1) : null;
+
+  const alturaActual = activeChild?.measurements?.[0]?.height;
+  const alturaAnterior = activeChild?.measurements?.[1]?.height;
+  const difAltura = (alturaActual && alturaAnterior) ? (alturaActual - alturaAnterior).toFixed(1) : null;
+
   return (
     <View style={{ flex: 1, backgroundColor: '#f7f3ec', paddingTop: insets.top }}>
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }} style={{ flex: 1 }}>
@@ -81,7 +96,7 @@ export default function HomeScreen() {
             </View>
           </TouchableOpacity>
         </View>
-
+        
         {loading ? (
           <ActivityIndicator size="large" color="#6d83a1" />
         ) : (
@@ -115,32 +130,50 @@ export default function HomeScreen() {
               <View className="flex-row gap-4 mb-6">
                 {/* Peso */}
                 <View className="flex-1 bg-nanny-card p-4 rounded-2xl relative">
-                  <TouchableOpacity className="absolute top-4 right-4 w-6 h-6 bg-blue-100 rounded-full items-center justify-center">
+                  <TouchableOpacity 
+                    onPress={() => setModalPesoVisible(true)}
+                    className="absolute top-4 right-4 w-10 h-10 bg-blue-100 rounded-full items-center justify-center">                    
                     <Ionicons name="add" size={16} color="#6d83a1" />
                   </TouchableOpacity>
                   <Text className="text-nanny-muted text-sm font-medium mb-2">Peso actual</Text>
                   <View className="flex-row items-baseline gap-1 mb-1">
                     <Text className="text-3xl font-bold text-nanny-text">
-                      {activeChild.measurements?.[0]?.weight ?? '--'}
+                      {pesoActual ?? '--'}
                     </Text>
                     <Text className="text-nanny-text font-medium text-base">kg</Text>
                   </View>
-                  <Text className="text-nanny-green text-xs font-medium mb-1">+0.5 kg ult. 3m</Text>
+                  <Text className="text-nanny-green text-xs font-medium mb-1">
+                    {difPeso ?? 'No hay registros anteriores'}
+                  </Text>
+
+                  {/* Meter aquí las predicciones. MARTIN */}
+                  <Text className="text-nanny-red text-xs font-medium mb-1">
+                    Predicciones Martin añadelo
+                  </Text>
                 </View>
 
                 {/* Altura */}
                 <View className="flex-1 bg-nanny-card p-4 rounded-2xl relative">
-                  <TouchableOpacity className="absolute top-4 right-4 w-6 h-6 bg-blue-100 rounded-full items-center justify-center">
+                  <TouchableOpacity 
+                    onPress={() => setModalAlturaVisible(true)}
+                    className="absolute top-4 right-4 w-10 h-10 bg-blue-100 rounded-full items-center justify-center">
                     <Ionicons name="add" size={16} color="#6d83a1" />
                   </TouchableOpacity>
                   <Text className="text-nanny-muted text-sm font-medium mb-2">Altura actual</Text>
                   <View className="flex-row items-baseline gap-1 mb-1">
                     <Text className="text-3xl font-bold text-nanny-text">
-                      {activeChild.measurements?.[0]?.height ?? '--'}
+                      {alturaActual ?? '--'}
                     </Text>
                     <Text className="text-nanny-text font-medium text-base">cm</Text>
                   </View>
-                  <Text className="text-nanny-green text-xs font-medium mb-1">+2 cm ult. 3m</Text>
+                  <Text className="text-nanny-green text-xs font-medium mb-1">
+                    {difAltura ?? 'No hay registro anterior'}
+                  </Text>
+
+                  {/* Meter aquí las predicciones. MARTIN */}
+                  <Text className="text-nanny-red text-font-com text-xs font-medium mb-1">
+                    Predicciones Martin añadelo
+                  </Text>
                 </View>
               </View>
             )}
@@ -201,7 +234,19 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+      <ActualizarAlturaModal 
+        visible={modalAlturaVisible}
+        onClose={() => setModalAlturaVisible(false)} 
+      />
 
+      <ActualizarPesoModal 
+        visible={modalPesoVisible}
+        onClose={() => setModalPesoVisible(false)} 
+      />
+      
+     
     </View>
+
+    
   );
 }
