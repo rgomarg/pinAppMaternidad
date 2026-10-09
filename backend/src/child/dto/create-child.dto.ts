@@ -1,5 +1,6 @@
-import { Type } from 'class-transformer/types/decorators/type.decorator';
-import { IsNotEmpty, IsString, IsOptional, IsDate } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsNotEmpty, IsString, IsOptional, IsDate, IsNumber } from 'class-validator';
+
 
 
 export class CreateChildDto {
@@ -17,5 +18,24 @@ export class CreateChildDto {
 
     @IsOptional()
     @IsString()
-    allergies?: string;
+    allergies?: string; // no deberia se un array de strings?
+
+    @IsNotEmpty()
+    @IsNumber()
+    parentId!: number;
+
+    @IsOptional()
+    @IsNumber()
+    weight?: number;
+
+    @IsOptional()
+    @IsNumber()
+    height?: number;
+
+    @IsOptional()
+    @IsString({ each: true })
+    diseases?: string[];
+
+
+
 }

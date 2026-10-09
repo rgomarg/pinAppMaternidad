@@ -103,8 +103,8 @@ model Child {
   measurements  Measurement[]
   vaccines      Vaccine[]
   events        Event[]
-  conditions    Condition[]
-  checklists    ChecklistItem[]
+  conditions    Condition[] // se refiere a las enfermedades o a los sintomas que nosotros llamamos conditions? --> Se refiere a los sintomas que nosotros llamamos conditions. Las enfermedades diagnosticadas se guardan en la tabla Disease
+  checklists    ChecklistItem[]// deberia haber una relacion directa con disease????
   medicine      Medicine[]
   //falta el calendar?? --> Eso será algo q se vea directamente. En la ruta calendar/:childID se hará una llamada para cargar los datos de ese childId, + sus eventos
   

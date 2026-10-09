@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
 import { API_URL } from '../api/config';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+
 
 export default function HomeScreen() {
   const [activeChildId, setActiveChildId] = useState<number | null>(null);
@@ -43,14 +45,33 @@ export default function HomeScreen() {
     }
   };
 
+  
+
   const handleSelectUser = (userId: number) => {
     setActiveUserId(userId);
     setIsUserModalVisible(false);
     fetchChildren(userId);
+
+    // Le pasamos el userId a la pestaña Familia sin cambiar de pestaña
+    const familiaKey = navigation.getState().routes.find((r: any) => r.name === 'Familia')?.key;
+    if (familiaKey) {
+      navigation.dispatch({ ...CommonActions.setParams({ userId }), source: familiaKey });
+    }
   };
 
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
   const activeChild = children.find(c => c.id === activeChildId);
+
+  const goToChildRegistration = () => {
+    if (!activeUserId) {
+      alert("Primero debes seleccionar un usuario arriba a la derecha.");
+      return;
+    }
+      // si ya lo ha elegido, se le pasa la informacion
+
+      navigation.navigate('RegistroHijo', { userId: activeUserId });
+    }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f7f3ec', paddingTop: insets.top }}>
