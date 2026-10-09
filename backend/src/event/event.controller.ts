@@ -31,4 +31,9 @@ export class EventController {
   remove(@Param('id') id: string) {
     return this.eventService.remove(+id);
   }
+
+  @Get('date/:date')
+  findEventsByDate(@Param('date') date: string) {
+    return this.eventService.findEventsByDate(new Date(date));
+  }
 }
