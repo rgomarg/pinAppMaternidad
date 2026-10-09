@@ -9,7 +9,7 @@ export class ChildController {
 
   @Post()
   create(@Body() createChildDto: CreateChildDto) {
-    return this.childService.create(createChildDto);
+    return this.childService.create(createChildDto, 1); // le pongo 1 como userId de prueba, luego se reemplazará con el id del usuario logueado
   }
 
   @Get()

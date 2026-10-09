@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { CreateChildDto } from './dto/create-child.dto';
 import { UpdateChildDto } from './dto/update-child.dto';
 import { PrismaService } from 'prisma/prisma.service';
-import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class ChildService {
