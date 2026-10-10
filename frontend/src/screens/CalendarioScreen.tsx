@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL } from '../api/config';
@@ -57,8 +57,11 @@ const formatLongDate = (iso: string): string => {
 export default function CalendarioScreen() {
   // Obtener el userId de los parámetros de la ruta
   const route = useRoute<RouteProp<RootTabParamList, 'Calendario'>>();
-  const userId = route.params?.userId;
+  //Para probar un usuario cambia su Id y si se pasa entre navegacion quitar comentarios
+  const userId = 1//route.params?.userId; 
 
+  const [isUserModalVisible, setIsUserModalVisible] = useState(false);
+  const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
   const [selectedDate, setSelectedDate] = useState(getToday);
   const [children, setChildren] = useState<Child[]>([]);
   const [guardianName, setGuardianName] = useState('');
@@ -83,6 +86,16 @@ export default function CalendarioScreen() {
       setLoadingEvents(false);
       return;
     }
+
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(`${API_URL}/user`);
+        const data = await response.json();
+        setUsers(data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
 
     const loadGuardian = async () => {
       setLoadingChildren(true);
@@ -158,42 +171,63 @@ export default function CalendarioScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-nanny-bg">
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 32 }}>
-        <View className="flex-row items-start justify-between px-6 pt-8">
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f7f3ec'}}>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }} style={{ flex: 1 }}>
+
+        <View className="flex-row justify-between items-start mb-6">
           <View>
-            <Text className="text-base text-[#8A7F75]">Calendario de salud</Text>
-            <Text className="mt-1 text-3xl text-[#2B2B2B]">
+            <Text className="text-sm font-medium text-nanny-muted mb-1">Calendario de salud</Text>
+            <Text className="text-xl font-semibold text-nanny-text italic">
               {guardianName || (userId ? 'Tu calendario' : 'Selecciona un usuario')}
             </Text>
-          </View>
-          <View className="h-12 w-12 items-center justify-center rounded-full bg-[#7385A3]">
-            <Ionicons name="person" size={20} color="white" />
-          </View>
-        </View>
+            {/* Lista de hijos */}
 
-        <View className="px-6 mt-6">
-          
-          {loadingChildren ? (
-            <ActivityIndicator className="mt-4 self-start" color="#7385A3" />
+            {loadingChildren ? (
+            <ActivityIndicator
+              className="mt-7 self-start"
+              color="#7385A3"
+            />
           ) : childrenError ? (
-            <Text className="mt-3 text-sm text-red-700">{childrenError}</Text>
+            <Text className="mt-5 text-sm text-[#C0705A]">
+              {childrenError}
+            </Text>
           ) : children.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-7">
+
               <View className="flex-row">
                 {[{ id: null, name: 'Todos' }, ...children].map((child) => {
                   const active = selectedChildId === child.id;
+
                   return (
                     <Pressable
                       key={child.id ?? 'all'}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
                       onPress={() => setSelectedChildId(child.id)}
-                      className={`mr-2 rounded-full border px-5 py-2 ${
-                        active ? 'border-[#7385A3] bg-[#7385A3]' : 'border-[#DDD5C6] bg-[#EFEAE0]'
+                      className={`mr-2 flex-row items-center rounded-full border px-3 py-1 ${
+                        active
+                          ? 'border-[#7385A3] bg-[#7385A3]'
+                          : 'border-[#DDD5C6] bg-[#EFEAE0]'
                       }`}
                     >
-                      <Text className={`font-semibold ${active ? 'text-white' : 'text-[#2B2B2B]'}`}>
+                      <View
+                        className={`mr-1.5 h-7 w-7 items-center justify-center overflow-hidden rounded-full ${
+                          active ? 'bg-white/20' : 'bg-[#D8CDBD]'
+                        }`}
+                      >
+                        <Text
+                          className={`text-sm font-semibold ${
+                            active ? 'text-white' : 'text-[#5B5149]'
+                          }`}
+                        >
+                          {child.name.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <Text
+                        className={`text-sm font-semibold ${
+                          active ? 'text-white' : 'text-[#2B2B2B]'
+                        }`}
+                      >
                         {child.name}
                       </Text>
                     </Pressable>
@@ -201,18 +235,44 @@ export default function CalendarioScreen() {
                 })}
               </View>
             </ScrollView>
-          ) : userId ? (
-            <Text className="mt-3 text-sm text-[#8A7F75]">Este usuario no tiene hijos registrados.</Text>
-          ) : (
-            <Text className="mt-3 text-sm text-[#8A7F75]">Elige un usuario para cargar sus hijos y eventos.</Text>
-          )}
+              ) : userId ? (
+                <Text className="mt-3 text-sm text-[#8A7F75]">Este usuario no tiene hijos registrados.</Text>
+              ) : (
+                <Text className="mt-3 text-sm text-[#8A7F75]">Elige un usuario para cargar sus hijos y eventos.</Text>
+              )}
+          </View>
+          {/* Botón para abrir el modal de selección de usuario*/}
+          <TouchableOpacity 
+            onPress={() => { fetchUsers(); setIsUserModalVisible(true); }}
+            className="w-12 h-12 bg-nanny-blue rounded-full items-center justify-center relative"
+          >
+            <Text className="text-white font-semibold text-lg">
+              {userId ? userId.toString() : "?"}
+            </Text>
+            <View className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
+              <View className="bg-nanny-blue rounded-full w-4 h-4 items-center justify-center">
+                <Ionicons name="person" size={10} color="white" />
+              </View>
+            </View>
+          </TouchableOpacity>
+          
         </View>
 
         <Calendar
           firstDay={1}
           onDayPress={(day) => setSelectedDate(day.dateString)}
           current={selectedDate}
-          style={{ backgroundColor: 'transparent', paddingHorizontal: 16, marginTop: 8 }}
+          style={{ backgroundColor: 'transparent'}}
+          theme={{ 
+            calendarBackground: 'transparent', 
+            textMonthFontSize: 18, 
+            textDayFontSize: 18,
+            textDayHeaderFontSize: 15 }}
+          renderHeader={(date) => (
+            <Text className="text-2xl font-semibold text-[#2B2B2B]">
+              {MONTHS[date.getMonth()]} {date.getFullYear()}
+            </Text>
+          )}
           renderArrow={(direction: 'left' | 'right') => (
             <Ionicons name={direction === 'left' ? 'chevron-back' : 'chevron-forward'} size={22} color="#7385A3" />
           )}
