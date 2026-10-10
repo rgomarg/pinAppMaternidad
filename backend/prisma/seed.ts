@@ -125,6 +125,78 @@ async function main() {
     include: { children: { include: { conditions: true } } }
   });
 
+    // Segundo hijo de Laura para probar el filtro por hijo en el calendario
+  const ines = await prisma.child.create({
+    data: {
+      name: 'Inés',
+      birthDate: new Date('2023-04-12T08:00:00.000Z'),
+      bloodGroup: 'A+',
+      parentId: laura.id,
+    },
+  });
+
+  // Eventos de prueba para octubre y noviembre de 2026
+  await prisma.event.createMany({
+    data: [
+      {
+        childId: laura.children[0].id, // Leo
+        title: 'Revisión pediátrica',
+        description: 'Revisión general y control de crecimiento.',
+        date: new Date('2026-10-12T09:30:00.000Z'),
+        hasReminder: true,
+      },
+      {
+        childId: ines.id, // Inés
+        title: 'Vacunación',
+        description: 'Cita para revisar el calendario de vacunas.',
+        date: new Date('2026-10-24T10:00:00.000Z'),
+        hasReminder: true,
+      },
+      {
+        childId: carlos.children[0].id, // Sofía
+        title: 'Consulta de seguimiento',
+        description: 'Seguimiento de la última consulta.',
+        date: new Date('2026-10-18T11:00:00.000Z'),
+        hasReminder: false,
+      },
+      {
+        childId: elena.children[0].id, // Mateo
+        title: 'Revisión dental',
+        description: 'Primera revisión dental.',
+        date: new Date('2026-10-30T09:00:00.000Z'),
+        hasReminder: true,
+      },
+      {
+        childId: laura.children[0].id, // Leo
+        title: 'Control de crecimiento',
+        description: 'Medición de peso y altura.',
+        date: new Date('2026-11-04T10:30:00.000Z'),
+        hasReminder: true,
+      },
+      {
+        childId: ines.id, // Inés
+        title: 'Revisión pediátrica',
+        description: 'Consulta de seguimiento.',
+        date: new Date('2026-11-13T09:30:00.000Z'),
+        hasReminder: false,
+      },
+      {
+        childId: carlos.children[0].id, // Sofía
+        title: 'Cita con pediatría',
+        description: 'Revisión de rutina.',
+        date: new Date('2026-11-09T12:00:00.000Z'),
+        hasReminder: true,
+      },
+      {
+        childId: elena.children[0].id, // Mateo
+        title: 'Seguimiento de salud',
+        description: 'Consulta de seguimiento.',
+        date: new Date('2026-11-22T10:00:00.000Z'),
+        hasReminder: false,
+      },
+    ],
+  });
+
   // ------------------------------------------------------
   // 3. REGISTROS MÉDICOS Y MEDICACIÓN CRUZADA
   // ------------------------------------------------------

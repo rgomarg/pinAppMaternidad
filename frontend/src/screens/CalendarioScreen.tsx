@@ -1,13 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL } from '../api/config';
 
 //Configuración del calendario en español
 const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio','Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const MONTHS = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
 LocaleConfig.locales['es'] = {
   monthNames: MONTHS,
   monthNamesShort: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
@@ -17,45 +23,104 @@ LocaleConfig.locales['es'] = {
 };
 LocaleConfig.defaultLocale = 'es';
 
-const formatLongDate = (iso: string): string => {
-  const [y, m, d] = iso.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  return `${DAYS[date.getDay()]}, ${d} de ${MONTHS[m - 1].toLowerCase()}`;
+type RootTabParamList = {
+  Calendario: { userId?: number | null } | undefined;
 };
 
-type EventType = 'enfermedad' | 'medicamento' | 'cita' | 'otro';
-const EVENT_STYLES: Record<
-  EventType,
-  { label: string; emoji: string; color: string; text: string; card: string; border: string }
-> = {
-  enfermedad: { label: 'Enfermedad', emoji: '🤒', color: '#C0705A', text: 'text-[#C0705A]', card: 'bg-[#F8ECE8]', border: 'border-[#E8CFC7]' },
-  medicamento: { label: 'Medicamento', emoji: '💊', color: '#5B6E96', text: 'text-[#5B6E96]', card: 'bg-[#E8EDF6]', border: 'border-[#CBD5E8]' },
-  cita: { label: 'Cita médica', emoji: '🩺', color: '#5E8F6A', text: 'text-[#5E8F6A]', card: 'bg-[#E9F2EA]', border: 'border-[#C9DDCC]' },
-  otro: { label: 'Otro', emoji: '📋', color: '#8E6FBF', text: 'text-[#7C5BB0]', card: 'bg-[#F0ECF8]', border: 'border-[#D9D0EC]' },
+type Child = {
+  id: number;
+  name: string;
+};
+
+type CalendarEvent = {
+  id: number;
+  title: string;
+  description?: string | null;
+  date: string;
+  child: Child;
+};
+
+const getToday = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const formatLongDate = (iso: string): string => {
+  const [year, month, day] = iso.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return `${DAYS[date.getDay()]}, ${day} de ${MONTHS[month - 1].toLowerCase()} de ${year}`;
 };
 
 export default function CalendarioScreen() {
-  const today = new Date().toISOString().split('T')[0];
-  const [selectedDate, setSelectedDate] = useState(today);
-  const [eventsForDate, setEvents] = useState([]);
+  // Obtener el userId de los parámetros de la ruta
+  const route = useRoute<RouteProp<RootTabParamList, 'Calendario'>>();
+  const userId = route.params?.userId;
 
-  useEffect(() => {
-      fetch(`${API_URL}/guardian/${guardianId}?date=${selectedDate}`)
-        .then(response => response.json())
-        .then(data => {
-          // 3. Cuando la API responde, guardamos los eventos en el estado
-          setEvents(data);
-        })
-        .catch(error => {
-          console.error("Error obteniendo los eventos:", error);
-        });
-    }, [guardianId, selectedDate]); 
-    
-    // Sustituye este valor por el ID del guardián seleccionado o autenticado.
-const guardianId = /* ID del guardián */
+  const [selectedDate, setSelectedDate] = useState(getToday);
+  const [children, setChildren] = useState<Child[]>([]);
+  const [guardianName, setGuardianName] = useState('');
+  const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loadingChildren, setLoadingChildren] = useState(false);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+  const [childrenError, setChildrenError] = useState<string | null>(null);
+  const [eventsError, setEventsError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+  
+    if (!userId) {
+      setChildren([]);
+      setGuardianName('');
+      setSelectedChildId(null);
+      setChildrenError(null);
+      setEvents([]);
+      setEventsError(null);
+      setLoadingChildren(false);
+      setLoadingEvents(false);
+      return;
+    }
+
+    const loadGuardian = async () => {
+      setLoadingChildren(true);
+      setChildrenError(null);
+      setChildren([]);
+      setGuardianName('');
+      setSelectedChildId(null);
+
+      try {
+        const response = await fetch(`${API_URL}/user/${userId}`);
+        if (!response.ok) {
+          throw new Error(`Error al cargar los hijos (${response.status})`);
+        }
+
+        const data: { name?: string; children?: Child[] } = await response.json();
+        if (!cancelled) {
+          setGuardianName(data.name ?? '');
+          setChildren(Array.isArray(data.children) ? data.children : []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setChildrenError(error instanceof Error ? error.message : 'No se pudieron cargar los hijos');
+        }
+      } finally {
+        if (!cancelled) setLoadingChildren(false);
+      }
+    };
+
+    void loadGuardian();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!userId) return;
 
     const loadEvents = async () => {
       setLoadingEvents(true);
@@ -63,176 +128,125 @@ const guardianId = /* ID del guardián */
 
       try {
         const response = await fetch(
-          `${API_URL}/event/guardian/${guardianId}?date=${selectedDate}`,
+          `${API_URL}/event/guardian/${userId}?date=${encodeURIComponent(selectedDate)}`,
         );
-
         if (!response.ok) {
           throw new Error(`Error al cargar los eventos (${response.status})`);
         }
 
         const data: CalendarEvent[] = await response.json();
-
-        if (!cancelled) {
-          setEvents(data);
-        }
+        if (!cancelled) setEvents(Array.isArray(data) ? data : []);
       } catch (error) {
         if (!cancelled) {
           setEvents([]);
-          setEventsError(
-            error instanceof Error ? error.message : 'No se pudieron cargar los eventos',
-          );
+          setEventsError(error instanceof Error ? error.message : 'No se pudieron cargar los eventos');
         }
       } finally {
-        if (!cancelled) {
-          setLoadingEvents(false);
-        }
+        if (!cancelled) setLoadingEvents(false);
       }
     };
 
-    if (guardianId) {
-      void loadEvents();
-    }
-
+    void loadEvents();
     return () => {
       cancelled = true;
     };
-  }, [guardianId, selectedDate]);
+  }, [userId, selectedDate]);
 
+  const eventsForSelectedChild = useMemo(
+    () => selectedChildId === null ? events : events.filter(event => event.child?.id === selectedChildId),
+    [events, selectedChildId],
+  );
 
   return (
-    <SafeAreaView className="flex-1 bg-nanny-bg justify-center">
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 140 }}>
-        {/* Cabecera*/}
-        <View className="flex-row items-start justify-between px-6 pt-14">
+    <SafeAreaView className="flex-1 bg-nanny-bg">
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 32 }}>
+        <View className="flex-row items-start justify-between px-6 pt-8">
           <View>
             <Text className="text-base text-[#8A7F75]">Calendario de salud</Text>
-            <Text className="text-3xl text-[#2B2B2B] mt-1">
-              --Nombre del guardian--
+            <Text className="mt-1 text-3xl text-[#2B2B2B]">
+              {guardianName || (userId ? 'Tu calendario' : 'Selecciona un usuario')}
             </Text>
           </View>
-          //Icono de perfil del guardian
-          <View>
-            <View className="absolute -right-1 -bottom-1 w-10 h-10 rounded-full bg-[#7385A3] items-center justify-center border-2 border-[#FDFAF5]">
-              <Ionicons name="person" size={12} color="white" />
-            </View>
+          <View className="h-12 w-12 items-center justify-center rounded-full bg-[#7385A3]">
+            <Ionicons name="person" size={20} color="white" />
           </View>
         </View>
-        
-        {/* Selector de perfiles */}
-        <View className="flex-row px-6 mt-5">
-          <Text className="text-3xl text-[#2B2B2B] mt-1">
-              --Perfiles de los hijos--
-          </Text>
-          {/* {PROFILES.map((p) => {
-            const active = p.id === activeProfile;
-            return (
-              <Pressable
-                key={p.id}
-                onPress={() => setActiveProfile(p.id)}
-                className={`flex-row items-center rounded-full pr-5 pl-1 py-1 mr-3 border ${
-                  active ? 'bg-[#7385A3] border-[#7385A3]' : 'bg-[#EFEAE0] border-[#DDD5C6]'
-                }`}
-              >
-                <Image source={{ uri: p.avatar }} className="w-10 h-10 rounded-full" />
-                <Text className={`ml-3 text-lg font-semibold ${active ? 'text-white' : 'text-[#2B2B2B]'}`}>
-                  {p.name}
-                </Text>
-              </Pressable>
-            );
-          })}*/}
+
+        <View className="px-6 mt-6">
+          
+          {loadingChildren ? (
+            <ActivityIndicator className="mt-4 self-start" color="#7385A3" />
+          ) : childrenError ? (
+            <Text className="mt-3 text-sm text-red-700">{childrenError}</Text>
+          ) : children.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3">
+              <View className="flex-row">
+                {[{ id: null, name: 'Todos' }, ...children].map((child) => {
+                  const active = selectedChildId === child.id;
+                  return (
+                    <Pressable
+                      key={child.id ?? 'all'}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      onPress={() => setSelectedChildId(child.id)}
+                      className={`mr-2 rounded-full border px-5 py-2 ${
+                        active ? 'border-[#7385A3] bg-[#7385A3]' : 'border-[#DDD5C6] bg-[#EFEAE0]'
+                      }`}
+                    >
+                      <Text className={`font-semibold ${active ? 'text-white' : 'text-[#2B2B2B]'}`}>
+                        {child.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          ) : userId ? (
+            <Text className="mt-3 text-sm text-[#8A7F75]">Este usuario no tiene hijos registrados.</Text>
+          ) : (
+            <Text className="mt-3 text-sm text-[#8A7F75]">Elige un usuario para cargar sus hijos y eventos.</Text>
+          )}
         </View>
-        
-        {/* Leyenda */}
-        <View className="flex-row flex-wrap px-6 mt-5">
-          {(Object.keys(EVENT_STYLES) as EventType[]).map((type) => {
-            const s = EVENT_STYLES[type];
-            return (
-              <Text key={type} className={`text-base mr-4 ${s.text}`}>
-                {s.emoji} {s.label}
-              </Text>
-            );
-          })}
-        </View>
-        
-        {/* Calendario */}
+
         <Calendar
           firstDay={1}
-          onDayPress={(day) => { setSelectedDate(day.dateString);}}
+          onDayPress={(day) => setSelectedDate(day.dateString)}
           current={selectedDate}
-          style={{ 
-            backgroundColor: 'transparent', 
-            paddingHorizontal: 16, 
-            marginTop: 8
-          }}
+          style={{ backgroundColor: 'transparent', paddingHorizontal: 16, marginTop: 8 }}
           renderArrow={(direction: 'left' | 'right') => (
-            <Ionicons
-              name={direction === 'left' ? 'chevron-back' : 'chevron-forward'}
-              size={22}
-              color="#7385A3"
-            />
+            <Ionicons name={direction === 'left' ? 'chevron-back' : 'chevron-forward'} size={22} color="#7385A3" />
           )}
-          markedDates={{
-              [selectedDate]: { selected: true, selectedColor: '#77a2ff' }}}
-          
+          markedDates={{ [selectedDate]: { selected: true, selectedColor: '#77a2ff' } }}
         />
-        {/* Separador */}
+
         <View className="h-px bg-[#E6E0D8] mt-2" />
 
-        {/* Eventos del día */}
         <View className="px-6 mt-6">
           <Text className="text-base text-[#8A7F75]">{formatLongDate(selectedDate)}</Text>
-
-          {eventsForDate.length === 0 ? (
-            <Text className="text-[#8A7F75] italic text-center mt-6">No hay eventos para este día.</Text>
-          ) : (
-            <Text>
-
+          {loadingEvents ? (
+            <ActivityIndicator className="mt-6" color="#7385A3" />
+          ) : eventsError ? (
+            <Text className="mt-5 text-center text-[#8A7F75]">{eventsError}</Text>
+          ) : eventsForSelectedChild.length === 0 ? (
+            <Text className="mt-6 text-center italic text-[#8A7F75]">
+              {userId ? 'No hay eventos para este día.' : 'Selecciona un usuario para consultar sus eventos.'}
             </Text>
-            /*eventsForDate.map((event) => {
-              const s = EVENT_STYLES[event.type];
-              return (
-                <View
-                  key={event.id}
-                  className={`mt-4 rounded-2xl border px-7 py-5 ${s.card} ${s.border}`}
-                >
-                  <Text className={`text-base ${s.text}`}>
-                    {s.emoji} {s.label}
+          ) : (
+            eventsForSelectedChild.map((event) => (
+              <View key={event.id} className="mt-4 rounded-2xl border border-[#D9D0EC] bg-[#F0ECF8] px-5 py-4">
+                <View className="flex-row items-center">
+                  <Ionicons name="calendar-outline" size={18} color="#7C5BB0" />
+                  <Text className="ml-2 text-sm font-semibold text-[#7C5BB0]">
+                    {event.child?.name ?? 'Hijo'}
                   </Text>
-                  <Text className="text-xl text-[#2B2B2B] mt-3">{event.title}</Text>
-                  {!!event.description && (
-                    <Text className="text-base text-[#7A726A] mt-2">{event.description}</Text>
-                  )}
                 </View>
-              );
-            })*/
-          )}
-
-          {/* Recordatorios */}
-          {/*remindersForDate.length > 0 && (
-            <>
-              <View className="flex-row items-center mt-6">
-                <Ionicons name="notifications-outline" size={20} color="#7385A3" />
-                <Text className="ml-3 text-base font-semibold text-[#7385A3]">
-                  Recordatorios · {remindersForDate.length} toma{remindersForDate.length > 1 ? 's' : ''}
-                </Text>
+                <Text className="mt-3 text-lg font-semibold text-[#2B2B2B]">{event.title}</Text>
+                {!!event.description && (
+                  <Text className="mt-2 text-base text-[#7A726A]">{event.description}</Text>
+                )}
               </View>
-
-              {remindersForDate.map((r) => (
-                <View
-                  key={r.id}
-                  className="flex-row items-center mt-3 rounded-2xl border border-[#CBD5E8] bg-[#E8EDF6] p-3"
-                >
-                  <View className="bg-[#7385A3] rounded-xl w-[88px] h-[76px] items-center justify-center">
-                    <Text className="text-white text-xl font-semibold">{r.time}</Text>
-                  </View>
-                  <View className="ml-5">
-                    <Text className="text-xl text-[#2B2B2B]">{r.name}</Text>
-                    <Text className="text-base text-[#7385A3] mt-1">{r.dose}</Text>
-                  </View>
-                </View>
-              ))}
-            </>
-          )*/}
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
