@@ -242,7 +242,7 @@ export default function CalendarioScreen() {
               )}
           </View>
           {/* Botón para abrir el modal de selección de usuario*/}
-          <TouchableOpacity 
+          {/*<TouchableOpacity 
             onPress={() => { fetchUsers(); setIsUserModalVisible(true); }}
             className="w-12 h-12 bg-nanny-blue rounded-full items-center justify-center relative"
           >
@@ -254,7 +254,7 @@ export default function CalendarioScreen() {
                 <Ionicons name="person" size={10} color="white" />
               </View>
             </View>
-          </TouchableOpacity>
+          </TouchableOpacity>*/}
           
         </View>
 
