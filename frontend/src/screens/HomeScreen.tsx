@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
 import { API_URL } from '../api/config';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
 
 
 export default function HomeScreen() {
@@ -45,7 +45,12 @@ export default function HomeScreen() {
     }
   };
 
-  
+  useFocusEffect(
+    useCallback(() =>{
+      if(activeUserId) {
+        fetchChildren(activeUserId);
+      }
+    }, [activeUserId]))
 
   const handleSelectUser = (userId: number) => {
     setActiveUserId(userId);
