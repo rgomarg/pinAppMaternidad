@@ -1,4 +1,4 @@
-import { IsNumber, IsPositive, IsDateString, IsNotEmpty, IsInt } from 'class-validator';
+import { IsNumber, IsPositive, IsDateString, IsNotEmpty, IsInt, IsOptional } from 'class-validator';
 
 
 export class CreateMeasurementDto {
@@ -10,16 +10,16 @@ export class CreateMeasurementDto {
 
     @IsNotEmpty({ message: 'La fecha es obligatoria'})
     @IsDateString({}, { message: 'La fecha debe tener un formato válido (ej. 2026-10-07)' })
-    date!:number;
+    date!:string;
 
-    @IsNotEmpty({message: 'El peso es obligatorio'})
+    @IsOptional({message: 'El peso es obligatorio'})
     @IsNumber()
     @IsPositive({message: 'El peso debe ser positivo'})
-    weight!: number;
+    weight?: number;
 
-    @IsNotEmpty({message: 'La altura es obligatoria'})
+    @IsOptional({message: 'La altura es obligatoria'})
     @IsNumber()
     @IsPositive({message: 'La altura debe ser positiva'})
-    height!: number;
+    height?: number;
 }
 

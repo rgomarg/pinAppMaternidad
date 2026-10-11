@@ -14,11 +14,10 @@ export class MeasurementsService {
       data: {
         childId: createMeasurementDto.childId,
         date: new Date(createMeasurementDto.date),
-        weight: createMeasurementDto.weight,
-        height: createMeasurementDto.height,
-
+        weight: createMeasurementDto.weight ?? null,
+        height: createMeasurementDto.height ?? null,
       },
-    });
+    })
   }
 
 

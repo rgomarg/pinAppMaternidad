@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -9,23 +9,92 @@ import {
   Platform 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { API_URL } from '../api/config';
 
 interface ActualizarPesoModalProps {
   visible: boolean;
-  onClose: () => void;
+  childId?: number | null;
   childName?: string;
   pesoAnterior?: number;
+  onClose: () => void;
+  onSuccess? : ()=> void; 
 }
 
 export default function ActualizarPesoModal({ 
-  visible, 
-  onClose, 
+  visible,    
+  childId,  
   childName = 'Sofía Ramírez',
-  pesoAnterior = 116 
+  pesoAnterior = 116,
+  onClose,
+  onSuccess,
 }: ActualizarPesoModalProps) {
   
-  const [nuevaPeso, setNuevoPeso] = useState('');
-  const [fecha, setFecha] = useState('30/09/2026'); 
+  const [nuevoPeso, setNuevoPeso] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  const [fecha, setFecha] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      setFecha(new Date());
+      setShowDatePicker(false);
+    }
+  }, [visible]);
+
+  const formatDate = (d: Date) => {
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+      if (event.type === 'set' && selectedDate) {
+        setFecha(selectedDate);
+      }
+    } else {
+      if (selectedDate) {
+        setFecha(selectedDate);
+      }
+    }
+  };
+
+  const handleGuardar = async () => {
+    if (!childId || !nuevoPeso) return;
+
+    setGuardando(true);
+    try{
+      const response = await fetch(`${API_URL}/measurements`, {
+        method: 'POST',
+        headers:{
+          'Content-Type': 'application/json', // Le avisamos de que le mandamos un JSON
+        },
+        body: JSON.stringify({
+          childId: childId,   
+          date: fecha.toISOString(),
+          weight: parseFloat(nuevoPeso.replace(',', '.')), // Convertimos el texto "12,5" a número 12.5        
+        }),
+      });
+
+      if(response.ok){
+        setNuevoPeso(''); //Dejarlo limpio paral a próxima vez.
+        onClose(); //cerrar el modal
+        onSuccess?.();
+      }else{
+        const errorData = await response.json();
+        console.error('El backend rechazó los datos:', errorData);
+        alert('Error al guardar la medición');
+      }
+      }catch (error) {
+        console.error('Error de red o conexión:', error);
+        alert('No se pudo conectar con el servidor');
+      } finally {
+        setGuardando(false);
+      }
+    }
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
@@ -46,7 +115,10 @@ export default function ActualizarPesoModal({
             
             <Text className="text-lg font-bold text-nanny-text">Actualizar peso</Text>
             
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleGuardar}
+              disabled={guardando}
+              >
               <Text className="text-nanny-muted text-base font-medium">Guardar</Text>
             </TouchableOpacity>
           </View>
@@ -59,7 +131,7 @@ export default function ActualizarPesoModal({
             </View>
             <View>
               <Text className="font-bold text-nanny-text text-base">{childName}</Text>
-              <Text className="text-nanny-muted text-sm mt-0.5">Peso anterior: {pesoAnterior} cm</Text>
+              <Text className="text-nanny-muted text-sm mt-0.5">Peso anterior: {pesoAnterior} kg</Text>
             </View>
           </View>
 
@@ -72,7 +144,7 @@ export default function ActualizarPesoModal({
                 placeholder="Ej. 118.5"
                 placeholderTextColor="#a39d94"
                 keyboardType="decimal-pad"
-                value={nuevaPeso}
+                value={nuevoPeso}
                 onChangeText={setNuevoPeso}
               />
               {/* Botones de flechas (estilo spinner) */}
@@ -80,23 +152,43 @@ export default function ActualizarPesoModal({
                 <Ionicons name="caret-up" size={10} color="#a39d94" />
                 <Ionicons name="caret-down" size={10} color="#a39d94" />
               </View>
-              <Text className="text-nanny-text font-bold text-base">cm</Text>
+              <Text className="text-nanny-text font-bold text-base">kg</Text>
             </View>
           </View>
 
           {/* Input: Fecha */}
           <View className="mb-6">
             <Text className="text-nanny-muted text-sm mb-2 ml-1">Fecha de la medición *</Text>
-            <View className="flex-row items-center bg-nanny-card rounded-2xl px-4 py-3 h-14">
-              <TextInput
-                className="flex-1 text-base text-nanny-text font-medium"
-                value={fecha}
-                onChangeText={setFecha}
-              />
-              <TouchableOpacity>
-                <Ionicons name="calendar-outline" size={20} color="#3a3a3a" />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              onPress={() => setShowDatePicker(true)}
+              activeOpacity={0.7}
+              className="flex-row items-center bg-nanny-card rounded-2xl px-4 py-3 h-14"
+            >
+              <Text className="flex-1 text-base text-nanny-text font-medium">
+                {formatDate(fecha)}
+              </Text>
+              <Ionicons name="calendar-outline" size={20} color="#3a3a3a" />
+            </TouchableOpacity>
+
+            {showDatePicker && (
+              <View className="mt-2">
+                <DateTimePicker
+                  value={fecha}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                  maximumDate={new Date()}
+                  onChange={handleDateChange}
+                />
+                {Platform.OS === 'ios' && (
+                  <TouchableOpacity 
+                    onPress={() => setShowDatePicker(false)}
+                    className="self-end py-1.5 px-4 bg-nanny-blue rounded-xl mt-2"
+                  >
+                    <Text className="text-white text-xs font-semibold">Listo</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </View>
 
           {/* Mensaje de Info inferior */}

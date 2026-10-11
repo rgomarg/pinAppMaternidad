@@ -113,8 +113,8 @@ model Child {
 model Measurement { 
   id            Int       @id @default(autoincrement())
   date          DateTime
-  weight        Float     // En kg
-  height        Float     // En cm
+  weight        Float?     // En kg
+  height        Float?     // En cm
   
 
   childId       Int

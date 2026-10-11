@@ -73,13 +73,14 @@ export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const activeChild = children.find(c => c.id === activeChildId);
 
-  const pesoActual = activeChild?.measurements?.[0]?.weight;
-  const pesoAnterior = activeChild?.measurements?.[1]?.weight;
-  
+  const medicionesPeso = activeChild?.measurements?.filter((m: any) => m.weight != null) || [];
+  const pesoActual = medicionesPeso[0]?.weight;
+  const pesoAnterior = medicionesPeso[1]?.weight;
   const difPeso = (pesoActual && pesoAnterior) ? (pesoActual - pesoAnterior).toFixed(1) : null;
 
-  const alturaActual = activeChild?.measurements?.[0]?.height;
-  const alturaAnterior = activeChild?.measurements?.[1]?.height;
+  const medicionesAltura = activeChild?.measurements?.filter((m: any) => m.height != null) || [];
+  const alturaActual = medicionesAltura[0]?.height;
+  const alturaAnterior = medicionesAltura[1]?.height;
   const difAltura = (alturaActual && alturaAnterior) ? (alturaActual - alturaAnterior).toFixed(1) : null;
 
   const goToCalendar = () => {
@@ -254,14 +255,30 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
-      <ActualizarAlturaModal 
+      <ActualizarAlturaModal       
         visible={modalAlturaVisible}
+        childId={activeChildId}
+        childName={activeChild?.name}
+        alturaAnterior={alturaActual}
         onClose={() => setModalAlturaVisible(false)} 
+        onSuccess={() => {
+          if(activeUserId){
+            fetchChildren(activeUserId);
+          }
+        }}
       />
 
       <ActualizarPesoModal 
         visible={modalPesoVisible}
+        childId={activeChildId}
+        childName={activeChild?.name}
+        pesoAnterior={pesoActual}
         onClose={() => setModalPesoVisible(false)} 
+        onSuccess={() => { 
+          if (activeUserId){
+            fetchChildren(activeUserId); 
+          }
+        }} 
       />
       
      
