@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -9,24 +9,93 @@ import {
   Platform 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { API_URL } from '../api/config';
 
 interface ActualizarAlturaModalProps {
-  visible: boolean;
-  onClose: () => void;
+  visible: boolean;  
+  childId? : number | null;
   childName?: string;
   alturaAnterior?: number;
+  onClose: () => void;
+  onSuccess?: () => void;
 }
 
+
 export default function ActualizarAlturaModal({ 
-  visible, 
-  onClose, 
+  visible,  
+  childId,
   childName = 'Sofía Ramírez',
-  alturaAnterior = 116 
+  alturaAnterior = 116,
+  onClose,
+  onSuccess,
 }: ActualizarAlturaModalProps) {
   
   const [nuevaAltura, setNuevaAltura] = useState('');
-  const [fecha, setFecha] = useState('30/09/2026'); 
+  const [fecha, setFecha] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [guardando, setGuardando] = useState(false);
 
+  useEffect(() => {
+    if (visible) {
+      setFecha(new Date());
+      setShowDatePicker(false);
+    }
+  }, [visible]);
+
+  const formatDate = (d: Date) => {
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+      if (event.type === 'set' && selectedDate) {
+        setFecha(selectedDate);
+      }
+    } else {
+      if (selectedDate) {
+        setFecha(selectedDate);
+      }
+    }
+  };
+  
+  const handleGuardar = async () => {
+      if (!childId || !nuevaAltura) return;
+  
+      setGuardando(true);
+      try{
+        const response = await fetch(`${API_URL}/measurements`, {
+          method: 'POST',
+          headers:{
+            'Content-Type': 'application/json', // Le avisamos de que le mandamos un JSON
+          },
+          body: JSON.stringify({
+            childId: childId,   
+            date: fecha.toISOString(),
+            height: parseFloat(nuevaAltura.replace(',', '.')), // Convertimos el texto "12,5" a número 12.5        
+        }),
+      });
+  
+      if(response.ok){
+        setNuevaAltura(''); //Dejarlo limpio paral a próxima vez.
+        onClose(); //cerrar el modal
+        onSuccess?.();
+      }else{
+        const errorData = await response.json();
+        console.error('El backend rechazó los datos:', errorData);
+        alert('Error al guardar la medición');
+      }
+    }catch (error) {
+      console.error('Error de red o conexión:', error);
+      alert('No se pudo conectar con el servidor');
+    } finally {
+      setGuardando(false);
+    }
+  }
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
       {/* Fondo oscuro semi-transparente */}
@@ -46,7 +115,10 @@ export default function ActualizarAlturaModal({
             
             <Text className="text-lg font-bold text-nanny-text">Actualizar altura</Text>
             
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleGuardar}
+              disabled= {guardando}
+              >
               <Text className="text-nanny-muted text-base font-medium">Guardar</Text>
             </TouchableOpacity>
           </View>
@@ -87,16 +159,36 @@ export default function ActualizarAlturaModal({
           {/* Input: Fecha */}
           <View className="mb-6">
             <Text className="text-nanny-muted text-sm mb-2 ml-1">Fecha de la medición *</Text>
-            <View className="flex-row items-center bg-nanny-card rounded-2xl px-4 py-3 h-14">
-              <TextInput
-                className="flex-1 text-base text-nanny-text font-medium"
-                value={fecha}
-                onChangeText={setFecha}
-              />
-              <TouchableOpacity>
-                <Ionicons name="calendar-outline" size={20} color="#3a3a3a" />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              onPress={() => setShowDatePicker(true)}
+              activeOpacity={0.7}
+              className="flex-row items-center bg-nanny-card rounded-2xl px-4 py-3 h-14"
+            >
+              <Text className="flex-1 text-base text-nanny-text font-medium">
+                {formatDate(fecha)}
+              </Text>
+              <Ionicons name="calendar-outline" size={20} color="#3a3a3a" />
+            </TouchableOpacity>
+
+            {showDatePicker && (
+              <View className="mt-2">
+                <DateTimePicker
+                  value={fecha}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                  maximumDate={new Date()}
+                  onChange={handleDateChange}
+                />
+                {Platform.OS === 'ios' && (
+                  <TouchableOpacity 
+                    onPress={() => setShowDatePicker(false)}
+                    className="self-end py-1.5 px-4 bg-nanny-blue rounded-xl mt-2"
+                  >
+                    <Text className="text-white text-xs font-semibold">Listo</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </View>
 
           {/* Mensaje de Info inferior */}

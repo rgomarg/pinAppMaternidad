@@ -23,7 +23,7 @@ export class UserService {
           include: {
             measurements: {
               orderBy: { date: 'desc' },
-              take: 2
+              take: 20
             }
           }
         }
