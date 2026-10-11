@@ -58,7 +58,7 @@ export default function CalendarioScreen() {
   // Obtener el userId de los parámetros de la ruta
   const route = useRoute<RouteProp<RootTabParamList, 'Calendario'>>();
   //Para probar un usuario cambia su Id y si se pasa entre navegacion quitar comentarios
-  const userId = 1//route.params?.userId; 
+  const userId = route.params?.userId; 
 
   const [isUserModalVisible, setIsUserModalVisible] = useState(false);
   const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
