@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
 import { API_URL } from '../api/config';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+
 import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
 import ActualizarPesoModal from '../components/MeasuramentWeightForm';
 
@@ -53,9 +55,22 @@ export default function HomeScreen() {
     setActiveUserId(userId);
     setIsUserModalVisible(false);
     fetchChildren(userId);
+
+    // Le pasamos el userId a la pestaña Familia sin cambiar de pestaña
+    const familiaKey = navigation.getState().routes.find((r: any) => r.name === 'Familia')?.key;
+    if (familiaKey) {
+      navigation.dispatch({ ...CommonActions.setParams({ userId }), source: familiaKey });
+    }
+
+    // El calendario usa este usuario para cargar sus hijos y los eventos del día.
+    const calendarioKey = navigation.getState().routes.find((r: any) => r.name === 'Calendario')?.key;
+    if (calendarioKey) {
+      navigation.dispatch({ ...CommonActions.setParams({ userId }), source: calendarioKey });
+    }
   };
 
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
   const activeChild = children.find(c => c.id === activeChildId);
 
   const pesoActual = activeChild?.measurements?.[0]?.weight;
@@ -66,6 +81,11 @@ export default function HomeScreen() {
   const alturaActual = activeChild?.measurements?.[0]?.height;
   const alturaAnterior = activeChild?.measurements?.[1]?.height;
   const difAltura = (alturaActual && alturaAnterior) ? (alturaActual - alturaAnterior).toFixed(1) : null;
+
+  const goToCalendar = () => {
+      // si ya lo ha elegido, se le pasa la informacion
+      navigation.navigate('Calendario', { userId: activeUserId });
+    }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f7f3ec', paddingTop: insets.top }}>
