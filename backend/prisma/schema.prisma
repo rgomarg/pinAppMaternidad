@@ -106,6 +106,7 @@ model Child {
   conditions    Condition[]
   checklists    ChecklistItem[]
   medicine      Medicine[]
+  diseases      Disease[]
   //falta el calendar?? --> Eso será algo q se vea directamente. En la ruta calendar/:childID se hará una llamada para cargar los datos de ese childId, + sus eventos
   
 }
@@ -138,7 +139,11 @@ model Disease {
   diagnosticatedAge     DateTime?  //En que año te lo diagnosticaron
   endDate       DateTime?
 
+  childId       Int
+  child         Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+
   medicine      Medicine[]
+
 
 }
 
