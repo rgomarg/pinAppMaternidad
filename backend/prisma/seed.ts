@@ -21,16 +21,13 @@ async function main() {
   console.log('Sembrando base de datos extendida...');
 
   // ------------------------------------------------------
-  // 1. CREACIÓN DE ETIQUETAS DEL FORO Y ENFERMEDADES BASE
+  // 1. CREACIÓN DE ETIQUETAS DEL FORO
   // ------------------------------------------------------
   const tagLactancia = await prisma.tag.create({ data: { name: 'Lactancia' } });
   const tagSueno = await prisma.tag.create({ data: { name: 'Sueño' } });
   const tagSalud = await prisma.tag.create({ data: { name: 'Salud' } });
   const tagNutricion = await prisma.tag.create({ data: { name: 'Nutrición' } });
   const tagDesarrollo = await prisma.tag.create({ data: { name: 'Desarrollo' } });
-
-  const otitis = await prisma.disease.create({ data: { name: 'Otitis Media', description: 'Infección del oído medio' } });
-  const bronquiolitis = await prisma.disease.create({ data: { name: 'Bronquiolitis', description: 'Infección respiratoria viral' } });
 
   // ------------------------------------------------------
   // 2. CREACIÓN DE USUARIOS CON SUS HIJOS Y REGISTROS
@@ -201,6 +198,23 @@ async function main() {
   // 3. REGISTROS MÉDICOS Y MEDICACIÓN CRUZADA
   // ------------------------------------------------------
   
+  // Enfermedades diagnosticadas a los niños
+  const otitis = await prisma.disease.create({
+    data: {
+      name: 'Otitis Media',
+      description: 'Infección del oído medio',
+      childId: elena.children[0].id,
+    },
+  });
+
+  const bronquiolitis = await prisma.disease.create({
+    data: {
+      name: 'Bronquiolitis',
+      description: 'Infección respiratoria viral',
+      childId: laura.children[0].id,
+    },
+  });
+
   // Mateo (hijo de Elena) toma medicina por la fiebre vinculada a la otitis
   await prisma.medicine.create({
     data: {
