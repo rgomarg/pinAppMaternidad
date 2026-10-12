@@ -21,6 +21,16 @@ export default function HomeScreen() {
   const [children, setChildren] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const updateFamiliaChild = (childId: number | null) => {
+    const familiaKey = navigation.getState().routes.find((r: any) => r.name === 'Familia')?.key;
+    if (familiaKey) {
+      navigation.dispatch({
+        ...CommonActions.setParams({ childId }),
+        source: familiaKey,
+      });
+    }
+  };
+
   const fetchUsers = async () => {
     try {
       const response = await fetch(`${API_URL}/user`);
@@ -40,8 +50,10 @@ export default function HomeScreen() {
         setChildren(data.children);
         if (data.children.length > 0) {
           setActiveChildId(data.children[0].id);
+          updateFamiliaChild(data.children[0].id);
         } else {
           setActiveChildId(null);
+          updateFamiliaChild(null);
         }
       }
     } catch (error) {
@@ -55,12 +67,6 @@ export default function HomeScreen() {
     setActiveUserId(userId);
     setIsUserModalVisible(false);
     fetchChildren(userId);
-
-    // Le pasamos el userId a la pestaña Familia sin cambiar de pestaña
-    const familiaKey = navigation.getState().routes.find((r: any) => r.name === 'Familia')?.key;
-    if (familiaKey) {
-      navigation.dispatch({ ...CommonActions.setParams({ userId }), source: familiaKey });
-    }
 
     // El calendario usa este usuario para cargar sus hijos y los eventos del día.
     const calendarioKey = navigation.getState().routes.find((r: any) => r.name === 'Calendario')?.key;
@@ -129,7 +135,10 @@ export default function HomeScreen() {
                   {children.map((child) => (
                     <TouchableOpacity
                       key={child.id}
-                      onPress={() => setActiveChildId(child.id)}
+                      onPress={() => {
+                        setActiveChildId(child.id);
+                        updateFamiliaChild(child.id);
+                      }}
                       className={`flex-row items-center gap-2 px-4 py-2 rounded-full font-medium ${
                         activeChildId === child.id ? 'bg-nanny-blue' : 'bg-nanny-card'
                       }`}
