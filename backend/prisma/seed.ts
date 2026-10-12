@@ -29,9 +29,15 @@ async function main() {
   const tagNutricion = await prisma.tag.create({ data: { name: 'Nutrición' } });
   const tagDesarrollo = await prisma.tag.create({ data: { name: 'Desarrollo' } });
 
-  const otitis = await prisma.disease.create({ data: { name: 'Otitis Media', description: 'Infección del oído medio' } });
-  const bronquiolitis = await prisma.disease.create({ data: { name: 'Bronquiolitis', description: 'Infección respiratoria viral' } });
+  // const otitis = await prisma.disease.create({ data: { name: 'Otitis Media', description: 'Infección del oído medio' } });
+  // const bronquiolitis = await prisma.disease.create({ data: { name: 'Bronquiolitis', description: 'Infección respiratoria viral' } });
+  const otitis = await prisma.disease.create({ 
+    data: { name: 'Otitis Media', description: 'Infección del oído medio' } as any 
+  });
 
+  const bronquiolitis = await prisma.disease.create({ 
+    data: { name: 'Bronquiolitis', description: 'Infección respiratoria viral' } as any 
+  });
   // ------------------------------------------------------
   // 2. CREACIÓN DE USUARIOS CON SUS HIJOS Y REGISTROS
   // ------------------------------------------------------
