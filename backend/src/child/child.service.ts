@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateChildDto } from './dto/create-child.dto';
 import { UpdateChildDto } from './dto/update-child.dto';
 import { PrismaService } from 'prisma/prisma.service';
@@ -22,6 +22,23 @@ export class ChildService {
         measurements:true,
       }
     })
+  }
+
+  async getDashboardData(id: number) {
+    const child = await this.prisma.child.findUnique({
+      where: { id: id },
+      include: {
+        vaccines: true,
+        conditions: true,
+        medicine: true, 
+      }
+    });
+
+    if (!child) {
+      throw new NotFoundException(`No child with id ${id} found`);
+    }
+
+    return child;
   }
 
   update(id: number, updateChildDto: UpdateChildDto) {
