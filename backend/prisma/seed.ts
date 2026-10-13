@@ -28,7 +28,7 @@ async function main() {
   const tagSalud = await prisma.tag.create({ data: { name: 'Salud' } });
   const tagNutricion = await prisma.tag.create({ data: { name: 'Nutrición' } });
   const tagDesarrollo = await prisma.tag.create({ data: { name: 'Desarrollo' } });
-
+ 
   // ------------------------------------------------------
   // 2. CREACIÓN DE USUARIOS CON SUS HIJOS Y REGISTROS
   // ------------------------------------------------------
@@ -130,6 +130,26 @@ async function main() {
       bloodGroup: 'A+',
       parentId: laura.id,
     },
+  });
+
+  // ------------------------------------------------------
+  // 3. CREACIÓN DE ENFERMEDADES BASE
+  // ------------------------------------------------------
+  //after creating users and children, we can create diseases to link with medicines and conditions (?)
+  const otitis = await prisma.disease.create({
+    data: {
+      name: "Otitis Media",
+      description: "Infección del oído medio",
+      child: { connect: { id: elena.children[0].id } }
+    }
+  });
+
+  const bronquiolitis = await prisma.disease.create({
+    data: {
+      name: "Bronquiolitis",
+      description: "Infección respiratoria viral",
+      child: { connect: { id: laura.children[0].id } }
+    }
   });
 
   // Eventos de prueba para octubre y noviembre de 2026
