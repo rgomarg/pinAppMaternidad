@@ -1,4 +1,4 @@
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
@@ -7,6 +7,8 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 
 import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
 import ActualizarPesoModal from '../components/MeasuramentWeightForm';
+import GrowthChart, { formatMonthYear } from '../components/GrowthChart';
+import { useGrowth } from '../hooks/useGrowth';
 
 
 export default function HomeScreen() {
@@ -35,7 +37,12 @@ export default function HomeScreen() {
     try {
       const response = await fetch(`${API_URL}/user`);
       const data = await response.json();
-      setUsers(data);
+      if (Array.isArray(data)) {
+        setUsers(data);
+      } else {
+        console.error("Error fetching users, response was not an array:", data);
+        setUsers([]);
+      }
     } catch (error) {
       console.error("Error fetching users:", error);
     }
@@ -78,16 +85,19 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const activeChild = children.find(c => c.id === activeChildId);
+  const growth = useGrowth(activeChild);
+  const proyeccionPeso = growth.data?.weight?.projection.at(-1);
+  const proyeccionAltura = growth.data?.height?.projection.at(-1);
 
   const medicionesPeso = activeChild?.measurements?.filter((m: any) => m.weight != null) || [];
   const pesoActual = medicionesPeso[0]?.weight;
   const pesoAnterior = medicionesPeso[1]?.weight;
-  const difPeso = (pesoActual && pesoAnterior) ? (pesoActual - pesoAnterior).toFixed(1) : null;
+  const difPeso = (pesoActual != null && pesoAnterior != null) ? (pesoActual - pesoAnterior).toFixed(1) : null;
 
   const medicionesAltura = activeChild?.measurements?.filter((m: any) => m.height != null) || [];
   const alturaActual = medicionesAltura[0]?.height;
   const alturaAnterior = medicionesAltura[1]?.height;
-  const difAltura = (alturaActual && alturaAnterior) ? (alturaActual - alturaAnterior).toFixed(1) : null;
+  const difAltura = (alturaActual != null && alturaAnterior != null) ? (alturaActual - alturaAnterior).toFixed(1) : null;
 
   const goToCalendar = () => {
       // si ya lo ha elegido, se le pasa la informacion
@@ -173,13 +183,16 @@ export default function HomeScreen() {
                     <Text className="text-nanny-text font-medium text-base">kg</Text>
                   </View>
                   <Text className="text-nanny-green text-xs font-medium mb-1">
-                    {difPeso ?? 'No hay registros anteriores'}
+                    {difPeso != null
+                      ? `${Number(difPeso) > 0 ? `+${difPeso}` : difPeso} kg respecto al anterior`
+                      : 'No hay registros anteriores'}
                   </Text>
 
-                  {/* Meter aquí las predicciones. MARTIN */}
-                  <Text className="text-nanny-red text-xs font-medium mb-1">
-                    Predicciones Martin añadelo
-                  </Text>
+                  {proyeccionPeso && (
+                    <Text className="text-nanny-red text-xs font-medium mb-1">
+                      ↗ {proyeccionPeso.value} kg en {formatMonthYear(proyeccionPeso.date)}
+                    </Text>
+                  )}
                 </View>
 
                 {/* Altura */}
@@ -197,34 +210,28 @@ export default function HomeScreen() {
                     <Text className="text-nanny-text font-medium text-base">cm</Text>
                   </View>
                   <Text className="text-nanny-green text-xs font-medium mb-1">
-                    {difAltura ?? 'No hay registro anterior'}
+                    {difAltura != null
+                      ? `${Number(difAltura) > 0 ? `+${difAltura}` : difAltura} cm respecto al anterior`
+                      : 'No hay registro anterior'}
                   </Text>
 
-                  {/* Meter aquí las predicciones. MARTIN */}
-                  <Text className="text-nanny-red text-font-com text-xs font-medium mb-1">
-                    Predicciones Martin añadelo
-                  </Text>
+                  {proyeccionAltura && (
+                    <Text className="text-nanny-red text-xs font-medium mb-1">
+                      ↗ {proyeccionAltura.value} cm en {formatMonthYear(proyeccionAltura.date)}
+                    </Text>
+                  )}
                 </View>
               </View>
             )}
 
-            {/* Curva de crecimiento (Placeholder) */}
-            <View className="bg-nanny-card p-4 rounded-2xl min-h-[250px] flex-col mb-6">
-              <View className="flex-row justify-between items-center mb-4">
-                <Text className="font-semibold text-lg text-nanny-text">Curva de crecimiento</Text>
-                <View className="flex-row bg-white rounded-full overflow-hidden">
-                  <View className="bg-nanny-blue px-3 py-1">
-                    <Text className="text-white font-medium text-xs">Peso</Text>
-                  </View>
-                  <View className="px-3 py-1">
-                    <Text className="text-nanny-muted font-medium text-xs">Altura</Text>
-                  </View>
-                </View>
-              </View>
-              <View className="flex-1 border-2 border-dashed border-nanny-muted/30 rounded-xl items-center justify-center">
-                <Text className="text-nanny-muted text-center">[Gráfico de {activeChild?.name || '...'}]</Text>
-              </View>
-            </View>
+            {/* Curva de crecimiento con percentiles OMS */}
+            <GrowthChart
+              data={growth.data}
+              loading={growth.loading}
+              error={growth.error}
+              onSelectSex={growth.setSex}
+              onAddMeasurement={(metric) => metric === 'weight' ? setModalPesoVisible(true) : setModalAlturaVisible(true)}
+            />
 
             {/* Frecuencia de enfermedades (Placeholder) */}
             <View className="bg-nanny-card p-4 rounded-2xl min-h-[250px] flex-col">
