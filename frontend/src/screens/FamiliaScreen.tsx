@@ -29,6 +29,7 @@ type ChildPreview = Child & {
   allergies: string | null;
   vaccines: Vaccine[];
   conditions: unknown[];
+  diseases: unknown[];
   medicine: { endDate: string | null }[];
 };
 
@@ -36,6 +37,7 @@ type Dashboard = Child & {
   allergies: string | null;
   vaccines: Vaccine[];
   conditions: { id: number; desciption?: string | null; description?: string | null; timestamp: string }[];
+  diseases: { id: number; name: string; description: string | null; diagnosticatedAge: string | null }[];
   medicine: {
     id: number;
     name: string;
@@ -63,6 +65,31 @@ const palette = {
 };
 
 const Stack = createNativeStackNavigator();
+
+async function fetchChildDashboard(childId: number): Promise<Dashboard> {
+  const dashboardResponse = await fetch(`${API_URL}/child/${childId}/dashboard`);
+  if (dashboardResponse.ok) {
+    return dashboardResponse.json();
+  }
+
+  if (dashboardResponse.status !== 404) {
+    throw new Error(`No se pudo cargar el perfil del niño (${dashboardResponse.status})`);
+  }
+
+  const childResponse = await fetch(`${API_URL}/child/${childId}`);
+  if (!childResponse.ok) {
+    throw new Error(`No se pudo cargar el niño (${childResponse.status})`);
+  }
+
+  const child = await childResponse.json();
+  return {
+    ...child,
+    vaccines: [],
+    conditions: [],
+    medicine: [],
+    diseases: [],
+  };
+}
 
 function Shell({ children }: { children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
@@ -127,6 +154,12 @@ function hasAllergy(allergies: string | null | undefined) {
   return !['ninguna conocida', 'sin alergias registradas'].includes(allergies.trim().toLowerCase());
 }
 
+function allergyNames(allergies: string | null | undefined) {
+  return hasAllergy(allergies)
+    ? allergies!.split(',').map((allergy) => allergy.trim()).filter(Boolean)
+    : [];
+}
+
 function ChildCard({ child, onPress }: { child: ChildPreview; onPress: () => void }) {
   const pendingVaccines = child.vaccines.filter((vaccine) => !vaccine.appliedAt).length;
   const activeMedicines = child.medicine.filter((medicine) => !medicine.endDate || new Date(medicine.endDate) >= new Date()).length;
@@ -140,17 +173,17 @@ function ChildCard({ child, onPress }: { child: ChildPreview; onPress: () => voi
           <Text style={{ color: palette.muted }} className="mt-1 text-sm">
             {getAge(child.birthDate)} años · Sangre {child.bloodGroup || '—'}
           </Text>
-          {hasAllergy(child.allergies) ? (
-            <View className="mt-2 self-start rounded-full bg-[#fff1ec] px-3 py-1">
-              <Text style={{ color: palette.red }} className="text-xs">⚠ {child.allergies}</Text>
+          {allergyNames(child.allergies).map((allergy) => (
+            <View key={allergy} className="mt-2 self-start rounded-full bg-[#fff1ec] px-3 py-1">
+              <Text style={{ color: palette.red }} className="text-xs">⚠ {allergy}</Text>
             </View>
-          ) : null}
+          ))}
         </View>
         <Ionicons name="chevron-forward" size={20} color={palette.muted} />
       </TouchableOpacity>
 
       <View className="flex-row border-y border-[#ddd2c4]">
-        <PreviewStat value={child.conditions.length} label="Condiciones" />
+        <PreviewStat value={child.conditions.length + child.diseases.length} label="Condiciones" />
         <PreviewStat value={activeMedicines} label="Med. activos" />
         <PreviewStat value={pendingVaccines} label="Vacunas pend." valueColor={pendingVaccines ? palette.red : palette.text} />
       </View>
@@ -200,9 +233,7 @@ function ChildPickerScreen() {
       const profile = await response.json();
       const profiles = Array.isArray(profile.children)
         ? await Promise.all(profile.children.map(async (child: Child) => {
-          const dashboardResponse = await fetch(`${API_URL}/child/${child.id}/dashboard`);
-          if (!dashboardResponse.ok) throw new Error();
-          return dashboardResponse.json() as Promise<ChildPreview>;
+          return fetchChildDashboard(child.id) as Promise<ChildPreview>;
         }))
         : [];
       setChildren(profiles);
@@ -286,9 +317,7 @@ function ChildProfileScreen() {
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/child/${route.params.childId}/dashboard`);
-      if (!response.ok) throw new Error();
-      setData(await response.json());
+      setData(await fetchChildDashboard(route.params.childId));
     } catch {
       Alert.alert('Error', 'No se pudo cargar el perfil del niño.');
     } finally {
@@ -336,7 +365,15 @@ function ChildProfileScreen() {
 
         <View className="px-6 pt-7">
           <Section title={`Alergias · ${hasAllergy(data.allergies) ? '1' : '0'}`} onAdd={() => openForm('AddAllergy')}>
-            {hasAllergy(data.allergies) ? <SimpleCard title={data.allergies!} /> : null}
+            {allergyNames(data.allergies).map((allergy) => (
+              <View key={allergy} className="mb-3 flex-row items-center rounded-3xl bg-[#eee5d6] p-5">
+                <View className="mr-4 rounded-full bg-[#fff1ec] px-3 py-1">
+                  <Text style={{ color: palette.red }} className="text-sm font-semibold">Alergia</Text>
+                </View>
+                <Text style={{ color: palette.text }} className="flex-1 text-lg">{allergy}</Text>
+                <Ionicons name="chevron-down" size={18} color={palette.muted} />
+              </View>
+            ))}
           </Section>
 
           <Section title={`Vacunas · ${applied}/${data.vaccines.length} aplicadas`} onAdd={() => openForm('AddVaccine')}>
@@ -357,9 +394,12 @@ function ChildProfileScreen() {
             ))}
           </Section>
 
-          <Section title={`Condiciones · ${data.conditions.length}`} onAdd={() => openForm('AddCondition')}>
+          <Section title={`Condiciones · ${data.conditions.length + data.diseases.length}`} onAdd={() => openForm('AddCondition')}>
             {data.conditions.map((condition) => (
               <SimpleCard key={condition.id} title={condition.description || condition.desciption || 'Condición registrada'} subtitle={`Registrada: ${new Date(condition.timestamp).toLocaleDateString('es-ES')}`} />
+            ))}
+            {data.diseases.map((disease) => (
+              <SimpleCard key={`disease-${disease.id}`} title={disease.name} subtitle={disease.description || undefined} />
             ))}
           </Section>
 

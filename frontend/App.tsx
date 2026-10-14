@@ -9,8 +9,10 @@ import HomeScreen from './src/screens/HomeScreen';
 import CalendarioScreen from './src/screens/CalendarioScreen';
 import FamiliaScreen from './src/screens/FamiliaScreen';
 import ForoScreen from './src/screens/ForoScreen';
-import { FamilySelectionProvider } from './src/context/FamilySelectionContext';
+import ChildRegistrationScreen from './src/screens/ChildRegistrationScreen';
 import CrearEventoScreen from './src/screens/CrearEventoScreen';
+
+import { FamilySelectionProvider } from './src/context/FamilySelectionContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -18,7 +20,6 @@ const Stack = createNativeStackNavigator();
 function TabNavigator() {
   return (
     <FamilySelectionProvider>
-      <NavigationContainer>
         <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false, // We hide the default header to use our custom one in HomeScreen
@@ -58,7 +59,6 @@ function TabNavigator() {
           <Tab.Screen name="Familia" component={FamiliaScreen} />
           <Tab.Screen name="Foro" component={ForoScreen} />
         </Tab.Navigator>
-      </NavigationContainer>
     </FamilySelectionProvider>
   );
 }
