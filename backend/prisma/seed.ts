@@ -1,4 +1,4 @@
-import { PrismaClient, Role, EntityType, ReportStatus, TagCondition } from '@prisma/client';
+import { PrismaClient, Role, EntityType, ReportStatus, TagCondition, Sex } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -46,6 +46,7 @@ async function main() {
           birthDate: new Date('2025-08-15T10:00:00Z'),
           bloodGroup: 'O+',
           allergies: 'Ninguna conocida',
+          sex: Sex.MALE,
           measurements: {
             create: [
               { date: new Date('2025-08-15T10:00:00Z'), weight: 3.2, height: 50 },
@@ -85,6 +86,7 @@ async function main() {
           name: 'Sofía',
           birthDate: new Date('2026-01-10T08:30:00Z'),
           bloodGroup: 'A-',
+          sex: Sex.FEMALE,
           events: {
             create: [
               { title: 'Cita Pediatra - Pesar', date: new Date('2026-02-10T10:00:00Z'), hasReminder: true },
@@ -110,6 +112,7 @@ async function main() {
           birthDate: new Date('2021-03-22T16:00:00Z'),
           bloodGroup: 'B+',
           allergies: 'Penicilina, Polen',
+          sex: Sex.MALE,
           conditions: {
             create: [
               { tag: [TagCondition.FEVER], timestamp: new Date('2026-01-05T20:00:00Z'), notes: '39ºC repentinos' },
@@ -128,28 +131,9 @@ async function main() {
       name: 'Inés',
       birthDate: new Date('2023-04-12T08:00:00.000Z'),
       bloodGroup: 'A+',
+      sex: Sex.FEMALE,
       parentId: laura.id,
     },
-  });
-
-  // ------------------------------------------------------
-  // 3. CREACIÓN DE ENFERMEDADES BASE
-  // ------------------------------------------------------
-  //after creating users and children, we can create diseases to link with medicines and conditions (?)
-  const otitis = await prisma.disease.create({
-    data: {
-      name: "Otitis Media",
-      description: "Infección del oído medio",
-      child: { connect: { id: elena.children[0].id } }
-    }
-  });
-
-  const bronquiolitis = await prisma.disease.create({
-    data: {
-      name: "Bronquiolitis",
-      description: "Infección respiratoria viral",
-      child: { connect: { id: laura.children[0].id } }
-    }
   });
 
   // Eventos de prueba para octubre y noviembre de 2026
