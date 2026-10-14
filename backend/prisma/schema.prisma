@@ -63,6 +63,11 @@ enum TagCondition {
 
 }
 
+enum Sex {
+  MALE
+  FEMALE
+}
+
 
 // ------------------------------------------------------
 // GESTIÓN DE USUARIOS Y AUTENTICACIÓN
@@ -94,6 +99,7 @@ model Child {
   birthDate     DateTime
   bloodGroup    String?
   allergies     String?
+  sex           Sex?      // Necesario para comparar con las curvas de la OMS (distintas para niños y niñas)
   
   // Relación con el padre/madre (User)
   parentId      Int
@@ -106,6 +112,7 @@ model Child {
   conditions    Condition[] // se refiere a las enfermedades o a los sintomas que nosotros llamamos conditions? --> Se refiere a los sintomas que nosotros llamamos conditions. Las enfermedades diagnosticadas se guardan en la tabla Disease
   checklists    ChecklistItem[]// deberia haber una relacion directa con disease????
   medicine      Medicine[]
+  diseases      Disease[]
   //falta el calendar?? --> Eso será algo q se vea directamente. En la ruta calendar/:childID se hará una llamada para cargar los datos de ese childId, + sus eventos
   
 }
@@ -113,8 +120,8 @@ model Child {
 model Measurement { 
   id            Int       @id @default(autoincrement())
   date          DateTime
-  weight        Float     // En kg
-  height        Float     // En cm
+  weight        Float?     // En kg
+  height        Float?     // En cm
   
 
   childId       Int
@@ -138,7 +145,11 @@ model Disease {
   diagnosticatedAge     DateTime?  //En que año te lo diagnosticaron
   endDate       DateTime?
 
+  childId       Int
+  child         Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+
   medicine      Medicine[]
+
 
 }
 

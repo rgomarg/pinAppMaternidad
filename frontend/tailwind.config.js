@@ -17,6 +17,9 @@ module.exports = {
         'nanny-red': '#cc7a66'
       }
     },
+    fontFamily: {
+      comic: ['"Comic Sans MS"', '"Comic Sans"', 'cursive'],
+    }
   },
   plugins: [],
 }

@@ -5,21 +5,44 @@ import { Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../api/config';
 import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
 
+import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
+import ActualizarPesoModal from '../components/MeasuramentWeightForm';
+import GrowthChart, { formatMonthYear } from '../components/GrowthChart';
+import { useGrowth } from '../hooks/useGrowth';
+
 
 export default function HomeScreen() {
   const [activeChildId, setActiveChildId] = useState<number | null>(null);
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
   
   const [isUserModalVisible, setIsUserModalVisible] = useState(false);
+  const [modalAlturaVisible, setModalAlturaVisible] = useState(false);
+  const [modalPesoVisible, setModalPesoVisible] = useState(false);
+
   const [users, setUsers] = useState<any[]>([]);
   const [children, setChildren] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const updateFamiliaChild = (childId: number | null) => {
+    const familiaKey = navigation.getState().routes.find((r: any) => r.name === 'Familia')?.key;
+    if (familiaKey) {
+      navigation.dispatch({
+        ...CommonActions.setParams({ childId }),
+        source: familiaKey,
+      });
+    }
+  };
 
   const fetchUsers = async () => {
     try {
       const response = await fetch(`${API_URL}/user`);
       const data = await response.json();
-      setUsers(data);
+      if (Array.isArray(data)) {
+        setUsers(data);
+      } else {
+        console.error("Error fetching users, response was not an array:", data);
+        setUsers([]);
+      }
     } catch (error) {
       console.error("Error fetching users:", error);
     }
@@ -34,8 +57,10 @@ export default function HomeScreen() {
         setChildren(data.children);
         if (data.children.length > 0) {
           setActiveChildId(data.children[0].id);
+          updateFamiliaChild(data.children[0].id);
         } else {
           setActiveChildId(null);
+          updateFamiliaChild(null);
         }
       }
     } catch (error) {
@@ -57,16 +82,34 @@ export default function HomeScreen() {
     setIsUserModalVisible(false);
     fetchChildren(userId);
 
-    // Le pasamos el userId a la pestaña Familia sin cambiar de pestaña
-    const familiaKey = navigation.getState().routes.find((r: any) => r.name === 'Familia')?.key;
-    if (familiaKey) {
-      navigation.dispatch({ ...CommonActions.setParams({ userId }), source: familiaKey });
+    // El calendario usa este usuario para cargar sus hijos y los eventos del día.
+    const calendarioKey = navigation.getState().routes.find((r: any) => r.name === 'Calendario')?.key;
+    if (calendarioKey) {
+      navigation.dispatch({ ...CommonActions.setParams({ userId }), source: calendarioKey });
     }
   };
 
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const activeChild = children.find(c => c.id === activeChildId);
+  const growth = useGrowth(activeChild);
+  const proyeccionPeso = growth.data?.weight?.projection.at(-1);
+  const proyeccionAltura = growth.data?.height?.projection.at(-1);
+
+  const medicionesPeso = activeChild?.measurements?.filter((m: any) => m.weight != null) || [];
+  const pesoActual = medicionesPeso[0]?.weight;
+  const pesoAnterior = medicionesPeso[1]?.weight;
+  const difPeso = (pesoActual != null && pesoAnterior != null) ? (pesoActual - pesoAnterior).toFixed(1) : null;
+
+  const medicionesAltura = activeChild?.measurements?.filter((m: any) => m.height != null) || [];
+  const alturaActual = medicionesAltura[0]?.height;
+  const alturaAnterior = medicionesAltura[1]?.height;
+  const difAltura = (alturaActual != null && alturaAnterior != null) ? (alturaActual - alturaAnterior).toFixed(1) : null;
+
+  const goToCalendar = () => {
+      // si ya lo ha elegido, se le pasa la informacion
+      navigation.navigate('Calendario', { userId: activeUserId });
+    }
 
   const goToChildRegistration = () => {
     if (!activeUserId) {
@@ -107,7 +150,7 @@ export default function HomeScreen() {
             </View>
           </TouchableOpacity>
         </View>
-
+        
         {loading ? (
           <ActivityIndicator size="large" color="#6d83a1" />
         ) : (
@@ -119,7 +162,10 @@ export default function HomeScreen() {
                   {children.map((child) => (
                     <TouchableOpacity
                       key={child.id}
-                      onPress={() => setActiveChildId(child.id)}
+                      onPress={() => {
+                        setActiveChildId(child.id);
+                        updateFamiliaChild(child.id);
+                      }}
                       className={`flex-row items-center gap-2 px-4 py-2 rounded-full font-medium ${
                         activeChildId === child.id ? 'bg-nanny-blue' : 'bg-nanny-card'
                       }`}
@@ -141,53 +187,68 @@ export default function HomeScreen() {
               <View className="flex-row gap-4 mb-6">
                 {/* Peso */}
                 <View className="flex-1 bg-nanny-card p-4 rounded-2xl relative">
-                  <TouchableOpacity className="absolute top-4 right-4 w-6 h-6 bg-blue-100 rounded-full items-center justify-center">
+                  <TouchableOpacity 
+                    onPress={() => setModalPesoVisible(true)}
+                    className="absolute top-4 right-4 w-10 h-10 bg-blue-100 rounded-full items-center justify-center">                    
                     <Ionicons name="add" size={16} color="#6d83a1" />
                   </TouchableOpacity>
                   <Text className="text-nanny-muted text-sm font-medium mb-2">Peso actual</Text>
                   <View className="flex-row items-baseline gap-1 mb-1">
                     <Text className="text-3xl font-bold text-nanny-text">
-                      {activeChild.measurements?.[0]?.weight ?? '--'}
+                      {pesoActual ?? '--'}
                     </Text>
                     <Text className="text-nanny-text font-medium text-base">kg</Text>
                   </View>
-                  <Text className="text-nanny-green text-xs font-medium mb-1">+0.5 kg ult. 3m</Text>
+                  <Text className="text-nanny-green text-xs font-medium mb-1">
+                    {difPeso != null
+                      ? `${Number(difPeso) > 0 ? `+${difPeso}` : difPeso} kg respecto al anterior`
+                      : 'No hay registros anteriores'}
+                  </Text>
+
+                  {proyeccionPeso && (
+                    <Text className="text-nanny-red text-xs font-medium mb-1">
+                      ↗ {proyeccionPeso.value} kg en {formatMonthYear(proyeccionPeso.date)}
+                    </Text>
+                  )}
                 </View>
 
                 {/* Altura */}
                 <View className="flex-1 bg-nanny-card p-4 rounded-2xl relative">
-                  <TouchableOpacity className="absolute top-4 right-4 w-6 h-6 bg-blue-100 rounded-full items-center justify-center">
+                  <TouchableOpacity 
+                    onPress={() => setModalAlturaVisible(true)}
+                    className="absolute top-4 right-4 w-10 h-10 bg-blue-100 rounded-full items-center justify-center">
                     <Ionicons name="add" size={16} color="#6d83a1" />
                   </TouchableOpacity>
                   <Text className="text-nanny-muted text-sm font-medium mb-2">Altura actual</Text>
                   <View className="flex-row items-baseline gap-1 mb-1">
                     <Text className="text-3xl font-bold text-nanny-text">
-                      {activeChild.measurements?.[0]?.height ?? '--'}
+                      {alturaActual ?? '--'}
                     </Text>
                     <Text className="text-nanny-text font-medium text-base">cm</Text>
                   </View>
-                  <Text className="text-nanny-green text-xs font-medium mb-1">+2 cm ult. 3m</Text>
+                  <Text className="text-nanny-green text-xs font-medium mb-1">
+                    {difAltura != null
+                      ? `${Number(difAltura) > 0 ? `+${difAltura}` : difAltura} cm respecto al anterior`
+                      : 'No hay registro anterior'}
+                  </Text>
+
+                  {proyeccionAltura && (
+                    <Text className="text-nanny-red text-xs font-medium mb-1">
+                      ↗ {proyeccionAltura.value} cm en {formatMonthYear(proyeccionAltura.date)}
+                    </Text>
+                  )}
                 </View>
               </View>
             )}
 
-            {/* Curva de crecimiento (Placeholder) */}
-            <View className="bg-nanny-card p-4 rounded-2xl min-h-[250px] flex-col mb-6">
-              <View className="flex-row justify-between items-center mb-4">
-                <Text className="font-semibold text-lg text-nanny-text">Curva de crecimiento</Text>
-                <View className="flex-row bg-white rounded-full overflow-hidden">
-                  <View className="bg-nanny-blue px-3 py-1">
-                    <Text className="text-white font-medium text-xs">Peso</Text>
-                  </View>
-                  <View className="px-3 py-1">
-                    <Text className="text-nanny-muted font-medium text-xs">Altura</Text>
-                  </View>
-                </View>
-              </View>
-              <View className="flex-1 border-2 border-dashed border-nanny-muted/30 rounded-xl items-center justify-center">
-                <Text className="text-nanny-muted text-center">[Gráfico de {activeChild?.name || '...'}]</Text>
-              </View>
-            </View>
+            {/* Curva de crecimiento con percentiles OMS */}
+            <GrowthChart
+              data={growth.data}
+              loading={growth.loading}
+              error={growth.error}
+              onSelectSex={growth.setSex}
+              onAddMeasurement={(metric) => metric === 'weight' ? setModalPesoVisible(true) : setModalAlturaVisible(true)}
+            />
 
             {/* Frecuencia de enfermedades (Placeholder) */}
             <View className="bg-nanny-card p-4 rounded-2xl min-h-[250px] flex-col">
@@ -227,7 +288,35 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+      <ActualizarAlturaModal       
+        visible={modalAlturaVisible}
+        childId={activeChildId}
+        childName={activeChild?.name}
+        alturaAnterior={alturaActual}
+        onClose={() => setModalAlturaVisible(false)} 
+        onSuccess={() => {
+          if(activeUserId){
+            fetchChildren(activeUserId);
+          }
+        }}
+      />
 
+      <ActualizarPesoModal 
+        visible={modalPesoVisible}
+        childId={activeChildId}
+        childName={activeChild?.name}
+        pesoAnterior={pesoActual}
+        onClose={() => setModalPesoVisible(false)} 
+        onSuccess={() => { 
+          if (activeUserId){
+            fetchChildren(activeUserId); 
+          }
+        }} 
+      />
+      
+     
     </View>
+
+    
   );
 }

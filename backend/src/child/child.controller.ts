@@ -17,6 +17,11 @@ export class ChildController {
     return this.childService.findAll();
   }
 
+  @Get(':id/dashboard')
+  getDashboard(@Param('id') id: string) {
+    return this.childService.getDashboardData(+id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.childService.findOne(+id);
