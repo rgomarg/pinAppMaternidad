@@ -10,6 +10,7 @@ import CalendarioScreen from './src/screens/CalendarioScreen';
 import FamiliaScreen from './src/screens/FamiliaScreen';
 import ForoScreen from './src/screens/ForoScreen';
 import ChildRegistrationScreen from './src/screens/ChildRegistrationScreen';
+import CrearEventoScreen from './src/screens/CrearEventoScreen';
 
 
 const Tab = createBottomTabNavigator();
@@ -67,6 +68,11 @@ export default function App() {
         <Stack.Screen
           name="RegistroHijo"
           component={ChildRegistrationScreen}
+          options={{ presentation: 'modal' }}
+        />
+        <Stack.Screen
+          name="CrearEvento"
+          component={CrearEventoScreen}
           options={{ presentation: 'modal' }}
         />
       </Stack.Navigator>
