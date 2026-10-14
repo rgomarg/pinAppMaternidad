@@ -58,13 +58,13 @@ export class ChildService {
 
   async getDashboardData(id: number) {
     const child = await this.prisma.child.findUnique({
-      where: { id: id },
+      where: { id },
       include: {
         vaccines: true,
         conditions: true,
         medicine: true,
         diseases: true,
-      }
+      },
     });
 
     if (!child) {

@@ -22,6 +22,8 @@ export default function HomeScreen() {
   const [users, setUsers] = useState<any[]>([]);
   const [children, setChildren] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
 
   const updateFamiliaChild = (childId: number | null, userId: number | null = activeUserId) => {
     const navigationState = navigation.getState();
@@ -36,17 +38,25 @@ export default function HomeScreen() {
   };
 
   const fetchUsers = async () => {
+    setUsersLoading(true);
+    setUsersError(null);
     try {
       const response = await fetch(`${API_URL}/user`);
+      if (!response.ok) {
+        throw new Error(`Error del servidor: ${response.status}`);
+      }
       const data = await response.json();
       if (Array.isArray(data)) {
         setUsers(data);
       } else {
-        console.error("Error fetching users, response was not an array:", data);
-        setUsers([]);
+        throw new Error('La respuesta de usuarios no es válida');
       }
     } catch (error) {
       console.error("Error fetching users:", error);
+      setUsers([]);
+      setUsersError('No se pudieron cargar los usuarios. Comprueba que el backend esté activo.');
+    } finally {
+      setUsersLoading(false);
     }
   };
 
@@ -266,19 +276,32 @@ export default function HomeScreen() {
                 <Ionicons name="close" size={24} color="black" />
               </TouchableOpacity>
             </View>
-            <FlatList
-              data={users}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => handleSelectUser(item.id)}
-                  className="p-4 border-b border-gray-100 flex-row items-center justify-between"
-                >
-                  <Text className="text-lg">{item.name}</Text>
-                  <Ionicons name="chevron-forward" size={20} color="gray" />
+            {usersLoading ? (
+              <ActivityIndicator size="large" color="#6d83a1" />
+            ) : usersError ? (
+              <View>
+                <Text className="mb-4 text-center text-sm text-red-400">{usersError}</Text>
+                <TouchableOpacity onPress={fetchUsers} className="self-center rounded-xl bg-[#6d83a1] px-5 py-3">
+                  <Text className="font-semibold text-white">Reintentar</Text>
                 </TouchableOpacity>
-              )}
-            />
+              </View>
+            ) : users.length === 0 ? (
+              <Text className="text-center text-sm text-gray-500">No hay usuarios disponibles.</Text>
+            ) : (
+              <FlatList
+                data={users}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => handleSelectUser(item.id)}
+                    className="flex-row items-center justify-between border-b border-gray-100 p-4"
+                  >
+                    <Text className="text-lg">{item.name}</Text>
+                    <Ionicons name="chevron-forward" size={20} color="gray" />
+                  </TouchableOpacity>
+                )}
+              />
+            )}
           </View>
         </View>
       </Modal>
