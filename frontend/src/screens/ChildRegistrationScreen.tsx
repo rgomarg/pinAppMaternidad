@@ -20,6 +20,13 @@ type RegistroHijoParams = {
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
+const SEX_OPTIONS = [
+    { value: "MALE", label: "Masculino", icon: "male" },
+    { value: "FEMALE", label: "Femenino", icon: "female" },
+] as const;
+
+type Sex = (typeof SEX_OPTIONS)[number]["value"];
+
 const inputClass =
     "bg-nanny-card border border-[#e0d9c9] rounded-2xl px-4 py-4 text-base text-nanny-text";
 
@@ -99,6 +106,7 @@ export default function ChildRegistrationScreen() {
     const [surname, setSurname] = useState("");
     const [birthDate, setBirthDate] = useState<Date | null>(null);
     const [showIosPicker, setShowIosPicker] = useState(false);
+    const [sex, setSex] = useState<Sex | null>(null);
     const [bloodGroup, setBloodGroup] = useState<string | null>(null);
     const [weight, setWeight] = useState("");
     const [height, setHeight] = useState("");
@@ -123,7 +131,7 @@ export default function ChildRegistrationScreen() {
         }
     };
 
-    const isValid = name.trim().length > 0 && birthDate !== null;
+    const isValid = name.trim().length > 0 && birthDate !== null && sex !== null;
 
     const handleSave = async () => {
         if (!isValid || saving) return;
@@ -144,6 +152,7 @@ export default function ChildRegistrationScreen() {
                 body: JSON.stringify({
                     name: `${name.trim()} ${surname.trim()}`.trim(),
                     birthDate: birthDate!.toISOString(),
+                    sex,
                     bloodGroup: bloodGroup ?? undefined,
                     allergies: allergies.length ? allergies.join(", ") : undefined,
                     parentId: userId, // el DTO del backend lo llama parentId
@@ -225,6 +234,34 @@ export default function ChildRegistrationScreen() {
                         onChange={(_, selected) => selected && setBirthDate(selected)}
                     />
                 )}
+
+                <Label>Género *</Label>
+                <View className="flex-row gap-3">
+                    {SEX_OPTIONS.map((option) => {
+                        const selected = sex === option.value;
+                        return (
+                            <TouchableOpacity
+                                key={option.value}
+                                onPress={() => setSex(option.value)}
+                                className={`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-2xl border ${selected
+                                        ? "bg-nanny-blue border-nanny-blue"
+                                        : "bg-nanny-card border-[#e0d9c9]"
+                                    }`}
+                            >
+                                <Ionicons
+                                    name={option.icon}
+                                    size={18}
+                                    color={selected ? "#ffffff" : "#6b6b60"}
+                                />
+                                <Text
+                                    className={`font-semibold ${selected ? "text-white" : "text-nanny-muted"}`}
+                                >
+                                    {option.label}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
 
                 <Label>Grupo sanguíneo</Label>
                 <View className="flex-row flex-wrap gap-2">

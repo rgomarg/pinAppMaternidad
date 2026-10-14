@@ -14,6 +14,7 @@ export class ChildService {
         bloodGroup: createChildDto.bloodGroup,
         allergies: createChildDto.allergies,
         parentId: createChildDto.parentId,
+        sex: createChildDto.sex,
         measurements:
           createChildDto.weight && createChildDto.height
             ? {

@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsString, IsOptional, IsDate, IsNumber } from 'class-validator';
-
+import { IsNotEmpty, IsString, IsOptional, IsDate, IsNumber, IsEnum } from 'class-validator';
+import { Sex } from '@prisma/client';
 
 
 export class CreateChildDto {
@@ -18,7 +18,7 @@ export class CreateChildDto {
 
     @IsOptional()
     @IsString()
-    allergies?: string; // no deberia se un array de strings?
+    allergies?: string; 
 
     @IsNotEmpty()
     @IsNumber()
@@ -35,6 +35,10 @@ export class CreateChildDto {
     @IsOptional()
     @IsString({ each: true })
     diseases?: string[];
+
+    @IsNotEmpty()
+    @IsEnum(Sex)
+    sex!: 'MALE' | 'FEMALE' ;
 
 
 
