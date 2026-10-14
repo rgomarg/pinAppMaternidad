@@ -9,15 +9,17 @@ import HomeScreen from './src/screens/HomeScreen';
 import CalendarioScreen from './src/screens/CalendarioScreen';
 import FamiliaScreen from './src/screens/FamiliaScreen';
 import ForoScreen from './src/screens/ForoScreen';
-import ChildRegistrationScreen from './src/screens/ChildRegistrationScreen';
-
+import { FamilySelectionProvider } from './src/context/FamilySelectionContext';
+import CrearEventoScreen from './src/screens/CrearEventoScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-function Tabs() {
+function TabNavigator() {
   return (
-      <Tab.Navigator
+    <FamilySelectionProvider>
+      <NavigationContainer>
+        <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false, // We hide the default header to use our custom one in HomeScreen
           tabBarIcon: ({ focused, color, size }) => {
@@ -50,12 +52,14 @@ function Tabs() {
             fontWeight: '600',
           }
         })}
-      >
-        <Tab.Screen name="Datos" component={HomeScreen} />
-        <Tab.Screen name="Calendario" component={CalendarioScreen} />
-        <Tab.Screen name="Familia" component={FamiliaScreen} />
-        <Tab.Screen name="Foro" component={ForoScreen} />
-      </Tab.Navigator>
+        >
+          <Tab.Screen name="Datos" component={HomeScreen} />
+          <Tab.Screen name="Calendario" component={CalendarioScreen} />
+          <Tab.Screen name="Familia" component={FamiliaScreen} />
+          <Tab.Screen name="Foro" component={ForoScreen} />
+        </Tab.Navigator>
+      </NavigationContainer>
+    </FamilySelectionProvider>
   );
 }
 
@@ -63,11 +67,13 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Tabs" component={Tabs} />
-        <Stack.Screen
-          name="RegistroHijo"
-          component={ChildRegistrationScreen}
-          options={{ presentation: 'modal' }}
+        {/* Pestañas principales */}
+        <Stack.Screen name="MainTabs" component={TabNavigator} />
+        {/* Pantalla para crear evento */}
+        <Stack.Screen 
+          name="CrearEvento" 
+          component={CrearEventoScreen} 
+          options={{ presentation: 'modal' }} // Se abre como modal nativo deslizable
         />
       </Stack.Navigator>
     </NavigationContainer>
