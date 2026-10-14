@@ -2,18 +2,21 @@ import './global.css';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import HomeScreen from './src/screens/HomeScreen';
 import CalendarioScreen from './src/screens/CalendarioScreen';
 import FamiliaScreen from './src/screens/FamiliaScreen';
 import ForoScreen from './src/screens/ForoScreen';
+import CrearEventoScreen from './src/screens/CrearEventoScreen';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
-export default function App() {
+function TabNavigator() {
   return (
-    <NavigationContainer>
+    
       <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false, // We hide the default header to use our custom one in HomeScreen
@@ -53,6 +56,23 @@ export default function App() {
         <Tab.Screen name="Familia" component={FamiliaScreen} />
         <Tab.Screen name="Foro" component={ForoScreen} />
       </Tab.Navigator>
+    
+  );
+}
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {/* Pestañas principales */}
+        <Stack.Screen name="MainTabs" component={TabNavigator} />
+        {/* Pantalla para crear evento */}
+        <Stack.Screen 
+          name="CrearEvento" 
+          component={CrearEventoScreen} 
+          options={{ presentation: 'modal' }} // Se abre como modal nativo deslizable
+        />
+      </Stack.Navigator>
     </NavigationContainer>
   );
 }
