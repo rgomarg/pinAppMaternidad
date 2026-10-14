@@ -9,8 +9,10 @@ import HomeScreen from './src/screens/HomeScreen';
 import CalendarioScreen from './src/screens/CalendarioScreen';
 import FamiliaScreen from './src/screens/FamiliaScreen';
 import ForoScreen from './src/screens/ForoScreen';
-import { FamilySelectionProvider } from './src/context/FamilySelectionContext';
+import ChildRegistrationScreen from './src/screens/ChildRegistrationScreen';
 import CrearEventoScreen from './src/screens/CrearEventoScreen';
+
+import { FamilySelectionProvider } from './src/context/FamilySelectionContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -74,6 +76,11 @@ export default function App() {
           name="CrearEvento" 
           component={CrearEventoScreen} 
           options={{ presentation: 'modal' }} // Se abre como modal nativo deslizable
+        />
+        <Stack.Screen
+          name="CrearEvento"
+          component={CrearEventoScreen}
+          options={{ presentation: 'modal' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
