@@ -9,7 +9,7 @@ export class ChildController {
 
   @Post()
   create(@Body() createChildDto: CreateChildDto) {
-    return this.childService.create(createChildDto);
+    return this.childService.create(createChildDto); 
   }
 
   @Get()
