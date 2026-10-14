@@ -18,17 +18,17 @@ export class ChildService {
           createChildDto.weight && createChildDto.height
             ? {
               create: {
-                date: new Date(), 
-                weight: createChildDto.weight, 
+                date: new Date(),
+                weight: createChildDto.weight,
                 height: createChildDto.height
               }
             }
             : undefined,
 
-        conditions: createChildDto.diseases
+        diseases: createChildDto.diseases?.length
           ? {
-            create: createChildDto.diseases.map(disease => ({
-              name: disease,
+            create: createChildDto.diseases.map(name => ({
+              name
             })),
           }
           : undefined,
@@ -47,6 +47,10 @@ export class ChildService {
       where: { id: id },
       include: {
         measurements: true,
+        vaccines: true,
+        conditions: true,
+        medicine: true,
+        diseases: true,
       }
     })
   }
@@ -57,7 +61,8 @@ export class ChildService {
       include: {
         vaccines: true,
         conditions: true,
-        medicine: true, 
+        medicine: true,
+        diseases: true,
       }
     });
 

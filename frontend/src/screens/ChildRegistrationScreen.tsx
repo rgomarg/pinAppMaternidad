@@ -149,7 +149,7 @@ export default function ChildRegistrationScreen() {
                     parentId: userId, // el DTO del backend lo llama parentId
                     weight: weight ? parseFloat(weight) : undefined,
                     height: height ? parseFloat(height) : undefined,
-                    //diseases: conditions.length ? conditions : undefined,
+                    diseases: conditions.length ? conditions : undefined,
                 }),
             });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { DiseaseService } from './disease.service';
 import { CreateDiseaseDto } from './dto/create-disease.dto';
 import { UpdateDiseaseDto } from './dto/update-disease.dto';
@@ -12,10 +12,11 @@ export class DiseaseController {
     return this.diseaseService.create(createDiseaseDto);
   }
 
-  @Get()
-  findAll() {
-    return this.diseaseService.findAll();
-  }
+@Get()
+  findAll(@Query('childId') childId?: string) {
+  return this.diseaseService.findAll(childId ? +childId : undefined);
+}
+
 
   @Get(':id')
   findOne(@Param('id') id: string) {

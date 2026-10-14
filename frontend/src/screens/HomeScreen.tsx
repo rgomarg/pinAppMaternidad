@@ -23,11 +23,11 @@ export default function HomeScreen() {
   const [children, setChildren] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const updateFamiliaChild = (childId: number | null) => {
+  const updateFamiliaChild = (childId: number | null, userId?: number) => {
     const familiaKey = navigation.getState().routes.find((r: any) => r.name === 'Familia')?.key;
     if (familiaKey) {
       navigation.dispatch({
-        ...CommonActions.setParams({ childId }),
+        ...CommonActions.setParams({ childId, userId }),
         source: familiaKey,
       });
     }
@@ -57,10 +57,10 @@ export default function HomeScreen() {
         setChildren(data.children);
         if (data.children.length > 0) {
           setActiveChildId(data.children[0].id);
-          updateFamiliaChild(data.children[0].id);
+          updateFamiliaChild(data.children[0].id, userId);
         } else {
           setActiveChildId(null);
-          updateFamiliaChild(null);
+          updateFamiliaChild(null, userId);
         }
       }
     } catch (error) {
