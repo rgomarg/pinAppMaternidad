@@ -20,7 +20,6 @@ const Stack = createNativeStackNavigator();
 function TabNavigator() {
   return (
     <FamilySelectionProvider>
-      <NavigationContainer>
         <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false, // We hide the default header to use our custom one in HomeScreen
@@ -60,7 +59,6 @@ function TabNavigator() {
           <Tab.Screen name="Familia" component={FamiliaScreen} />
           <Tab.Screen name="Foro" component={ForoScreen} />
         </Tab.Navigator>
-      </NavigationContainer>
     </FamilySelectionProvider>
   );
 }
@@ -76,11 +74,6 @@ export default function App() {
           name="CrearEvento" 
           component={CrearEventoScreen} 
           options={{ presentation: 'modal' }} // Se abre como modal nativo deslizable
-        />
-        <Stack.Screen
-          name="CrearEvento"
-          component={CrearEventoScreen}
-          options={{ presentation: 'modal' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
