@@ -57,8 +57,7 @@ export class EventService {
         title: true,
         description: true,
         date: true,
-        notification: true,
-        type: true,
+        hasReminder: true,
         child: {
           select: {
             id: true,

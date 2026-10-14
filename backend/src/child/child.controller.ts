@@ -9,17 +9,12 @@ export class ChildController {
 
   @Post()
   create(@Body() createChildDto: CreateChildDto) {
-    return this.childService.create(createChildDto); 
+    return this.childService.create(createChildDto);
   }
 
   @Get()
   findAll() {
     return this.childService.findAll();
-  }
-
-  @Get(':id/dashboard')
-  getDashboard(@Param('id') id: string) {
-    return this.childService.getDashboardData(+id);
   }
 
   @Get(':id')

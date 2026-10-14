@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -55,6 +55,7 @@ const formatLongDate = (iso: string): string => {
 };
 
 export default function CalendarioScreen() {
+  const navigation = useNavigation<any>();
   // Obtener el userId de los parámetros de la ruta
   const route = useRoute<RouteProp<RootTabParamList, 'Calendario'>>();
   //Para probar un usuario cambia su Id y si se pasa entre navegacion quitar comentarios
@@ -130,7 +131,8 @@ export default function CalendarioScreen() {
     };
   }, [userId]);
 
-  useEffect(() => {
+  useFocusEffect(
+    useCallback(() => {
     let cancelled = false;
 
     if (!userId) return;
@@ -163,7 +165,7 @@ export default function CalendarioScreen() {
     return () => {
       cancelled = true;
     };
-  }, [userId, selectedDate]);
+  }, [userId, selectedDate]));
 
   const eventsForSelectedChild = useMemo(
     () => selectedChildId === null ? events : events.filter(event => event.child?.id === selectedChildId),
@@ -309,6 +311,28 @@ export default function CalendarioScreen() {
           )}
         </View>
       </ScrollView>
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate('CrearEvento', { userId, selectedDate })}
+        style={{
+          position: 'absolute',
+          bottom: 24,
+          right: 24,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: '#6d83a1',
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4.65,
+          elevation: 8,
+        }}
+      >
+        <Ionicons name="add" size={32} color="#ffffff" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
