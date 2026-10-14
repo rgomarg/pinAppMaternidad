@@ -9,9 +9,11 @@ import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
 import ActualizarPesoModal from '../components/MeasuramentWeightForm';
 import GrowthChart, { formatMonthYear } from '../components/GrowthChart';
 import { useGrowth } from '../hooks/useGrowth';
+import { useFamilySelection } from '../context/FamilySelectionContext';
 
 
 export default function HomeScreen() {
+  const { setSelectedUserId } = useFamilySelection();
   const [activeChildId, setActiveChildId] = useState<number | null>(null);
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
   
@@ -23,12 +25,14 @@ export default function HomeScreen() {
   const [children, setChildren] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const updateFamiliaChild = (childId: number | null) => {
-    const familiaKey = navigation.getState().routes.find((r: any) => r.name === 'Familia')?.key;
+  const updateFamiliaChild = (childId: number | null, userId: number | null = activeUserId) => {
+    const navigationState = navigation.getState();
+    const familiaKey = navigationState.routes.find((r: any) => r.name === 'Familia')?.key;
     if (familiaKey) {
       navigation.dispatch({
-        ...CommonActions.setParams({ childId }),
+        ...CommonActions.setParams({ childId, userId }),
         source: familiaKey,
+        target: navigationState.key,
       });
     }
   };
@@ -57,10 +61,10 @@ export default function HomeScreen() {
         setChildren(data.children);
         if (data.children.length > 0) {
           setActiveChildId(data.children[0].id);
-          updateFamiliaChild(data.children[0].id);
+          updateFamiliaChild(data.children[0].id, userId);
         } else {
           setActiveChildId(null);
-          updateFamiliaChild(null);
+          updateFamiliaChild(null, userId);
         }
       }
     } catch (error) {
@@ -72,7 +76,9 @@ export default function HomeScreen() {
 
   const handleSelectUser = (userId: number) => {
     setActiveUserId(userId);
+    setSelectedUserId(userId);
     setIsUserModalVisible(false);
+    updateFamiliaChild(null, userId);
     fetchChildren(userId);
 
     // El calendario usa este usuario para cargar sus hijos y los eventos del día.

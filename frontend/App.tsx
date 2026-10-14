@@ -8,13 +8,15 @@ import HomeScreen from './src/screens/HomeScreen';
 import CalendarioScreen from './src/screens/CalendarioScreen';
 import FamiliaScreen from './src/screens/FamiliaScreen';
 import ForoScreen from './src/screens/ForoScreen';
+import { FamilySelectionProvider } from './src/context/FamilySelectionContext';
 
 const Tab = createBottomTabNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Tab.Navigator
+    <FamilySelectionProvider>
+      <NavigationContainer>
+        <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false, // We hide the default header to use our custom one in HomeScreen
           tabBarIcon: ({ focused, color, size }) => {
@@ -47,12 +49,13 @@ export default function App() {
             fontWeight: '600',
           }
         })}
-      >
-        <Tab.Screen name="Datos" component={HomeScreen} />
-        <Tab.Screen name="Calendario" component={CalendarioScreen} />
-        <Tab.Screen name="Familia" component={FamiliaScreen} />
-        <Tab.Screen name="Foro" component={ForoScreen} />
-      </Tab.Navigator>
-    </NavigationContainer>
+        >
+          <Tab.Screen name="Datos" component={HomeScreen} />
+          <Tab.Screen name="Calendario" component={CalendarioScreen} />
+          <Tab.Screen name="Familia" component={FamiliaScreen} />
+          <Tab.Screen name="Foro" component={ForoScreen} />
+        </Tab.Navigator>
+      </NavigationContainer>
+    </FamilySelectionProvider>
   );
 }
