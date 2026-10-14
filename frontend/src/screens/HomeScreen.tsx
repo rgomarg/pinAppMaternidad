@@ -7,8 +7,6 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 
 import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
 import ActualizarPesoModal from '../components/MeasuramentWeightForm';
-import GrowthChart, { formatMonthYear } from '../components/GrowthChart';
-import { useGrowth } from '../hooks/useGrowth';
 import { useFamilySelection } from '../context/FamilySelectionContext';
 
 
@@ -81,6 +79,12 @@ export default function HomeScreen() {
     updateFamiliaChild(null, userId);
     fetchChildren(userId);
 
+    // Le pasamos el userId a la pestaña Familia sin cambiar de pestaña
+    const familiaKey = navigation.getState().routes.find((r: any) => r.name === 'Familia')?.key;
+    if (familiaKey) {
+      navigation.dispatch({ ...CommonActions.setParams({ userId }), source: familiaKey });
+    }
+
     // El calendario usa este usuario para cargar sus hijos y los eventos del día.
     const calendarioKey = navigation.getState().routes.find((r: any) => r.name === 'Calendario')?.key;
     if (calendarioKey) {
@@ -91,9 +95,6 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const activeChild = children.find(c => c.id === activeChildId);
-  const growth = useGrowth(activeChild);
-  const proyeccionPeso = growth.data?.weight?.projection.at(-1);
-  const proyeccionAltura = growth.data?.height?.projection.at(-1);
 
   const medicionesPeso = activeChild?.measurements?.filter((m: any) => m.weight != null) || [];
   const pesoActual = medicionesPeso[0]?.weight;
@@ -151,10 +152,7 @@ export default function HomeScreen() {
                   {children.map((child) => (
                     <TouchableOpacity
                       key={child.id}
-                      onPress={() => {
-                        setActiveChildId(child.id);
-                        updateFamiliaChild(child.id);
-                      }}
+                      onPress={() => setActiveChildId(child.id)}
                       className={`flex-row items-center gap-2 px-4 py-2 rounded-full font-medium ${
                         activeChildId === child.id ? 'bg-nanny-blue' : 'bg-nanny-card'
                       }`}
@@ -194,11 +192,10 @@ export default function HomeScreen() {
                       : 'No hay registros anteriores'}
                   </Text>
 
-                  {proyeccionPeso && (
-                    <Text className="text-nanny-red text-xs font-medium mb-1">
-                      ↗ {proyeccionPeso.value} kg en {formatMonthYear(proyeccionPeso.date)}
-                    </Text>
-                  )}
+                  {/* Meter aquí las predicciones. MARTIN */}
+                  <Text className="text-nanny-red text-xs font-medium mb-1">
+                    Predicciones Martin añadelo
+                  </Text>
                 </View>
 
                 {/* Altura */}
@@ -221,23 +218,31 @@ export default function HomeScreen() {
                       : 'No hay registro anterior'}
                   </Text>
 
-                  {proyeccionAltura && (
-                    <Text className="text-nanny-red text-xs font-medium mb-1">
-                      ↗ {proyeccionAltura.value} cm en {formatMonthYear(proyeccionAltura.date)}
-                    </Text>
-                  )}
+                  {/* Meter aquí las predicciones. MARTIN */}
+                  <Text className="text-nanny-red text-font-com text-xs font-medium mb-1">
+                    Predicciones Martin añadelo
+                  </Text>
                 </View>
               </View>
             )}
 
-            {/* Curva de crecimiento con percentiles OMS */}
-            <GrowthChart
-              data={growth.data}
-              loading={growth.loading}
-              error={growth.error}
-              onSelectSex={growth.setSex}
-              onAddMeasurement={(metric) => metric === 'weight' ? setModalPesoVisible(true) : setModalAlturaVisible(true)}
-            />
+            {/* Curva de crecimiento (Placeholder) */}
+            <View className="bg-nanny-card p-4 rounded-2xl min-h-[250px] flex-col mb-6">
+              <View className="flex-row justify-between items-center mb-4">
+                <Text className="font-semibold text-lg text-nanny-text">Curva de crecimiento</Text>
+                <View className="flex-row bg-white rounded-full overflow-hidden">
+                  <View className="bg-nanny-blue px-3 py-1">
+                    <Text className="text-white font-medium text-xs">Peso</Text>
+                  </View>
+                  <View className="px-3 py-1">
+                    <Text className="text-nanny-muted font-medium text-xs">Altura</Text>
+                  </View>
+                </View>
+              </View>
+              <View className="flex-1 border-2 border-dashed border-nanny-muted/30 rounded-xl items-center justify-center">
+                <Text className="text-nanny-muted text-center">[Gráfico de {activeChild?.name || '...'}]</Text>
+              </View>
+            </View>
 
             {/* Frecuencia de enfermedades (Placeholder) */}
             <View className="bg-nanny-card p-4 rounded-2xl min-h-[250px] flex-col">

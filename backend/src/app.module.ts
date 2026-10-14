@@ -15,10 +15,9 @@ import { ThreadModule } from './thread/thread.module';
 import { MessageModule } from './message/message.module';
 import { TagModule } from './tag/tag.module';
 import { ReportModule } from './report/report.module';
-import { GrowthModule } from './growth/growth.module';
 
 @Module({
-  imports: [PrismaModule, MeasurementsModule, UserModule, ChildModule, VaccineModule, DiseaseModule, CheckListItemModule, MedicineModule, EventModule, ConditionModule, ThreadModule, MessageModule, TagModule, ReportModule, GrowthModule],
+  imports: [PrismaModule, MeasurementsModule, UserModule, ChildModule, VaccineModule, DiseaseModule, CheckListItemModule, MedicineModule, EventModule, ConditionModule, ThreadModule, MessageModule, TagModule, ReportModule],
   controllers: [AppController],
   providers: [AppService],
 })

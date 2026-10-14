@@ -1,4 +1,4 @@
-import { PrismaClient, Role, EntityType, ReportStatus, TagCondition, Sex } from '@prisma/client';
+import { PrismaClient, Role, EntityType, ReportStatus, TagCondition } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -28,7 +28,7 @@ async function main() {
   const tagSalud = await prisma.tag.create({ data: { name: 'Salud' } });
   const tagNutricion = await prisma.tag.create({ data: { name: 'Nutrición' } });
   const tagDesarrollo = await prisma.tag.create({ data: { name: 'Desarrollo' } });
- 
+
   // ------------------------------------------------------
   // 2. CREACIÓN DE USUARIOS CON SUS HIJOS Y REGISTROS
   // ------------------------------------------------------
@@ -46,7 +46,6 @@ async function main() {
           birthDate: new Date('2025-08-15T10:00:00Z'),
           bloodGroup: 'O+',
           allergies: 'Ninguna conocida',
-          sex: Sex.MALE,
           measurements: {
             create: [
               { date: new Date('2025-08-15T10:00:00Z'), weight: 3.2, height: 50 },
@@ -86,7 +85,6 @@ async function main() {
           name: 'Sofía',
           birthDate: new Date('2026-01-10T08:30:00Z'),
           bloodGroup: 'A-',
-          sex: Sex.FEMALE,
           events: {
             create: [
               { title: 'Cita Pediatra - Pesar', date: new Date('2026-02-10T10:00:00Z'), hasReminder: true },
@@ -112,7 +110,6 @@ async function main() {
           birthDate: new Date('2021-03-22T16:00:00Z'),
           bloodGroup: 'B+',
           allergies: 'Penicilina, Polen',
-          sex: Sex.MALE,
           conditions: {
             create: [
               { tag: [TagCondition.FEVER], timestamp: new Date('2026-01-05T20:00:00Z'), notes: '39ºC repentinos' },
@@ -131,7 +128,6 @@ async function main() {
       name: 'Inés',
       birthDate: new Date('2023-04-12T08:00:00.000Z'),
       bloodGroup: 'A+',
-      sex: Sex.FEMALE,
       parentId: laura.id,
     },
   });
