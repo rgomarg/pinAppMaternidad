@@ -29,6 +29,20 @@ enum EntityType {
   MESSAGE
 }
 
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+enum NotificationType {
+  EVENT         // Alertas de eventos del calendario
+  VACCINE       // Recordatorio de próxima vacuna (scheduledFor)
+  MEDICINE      // Recordatorio de toma de medicación (intervalHours)
+  COMMUNITY     // Respuestas a hilos/mensajes del foro
+  SYSTEM        // Avisos generales de la app
+}
+
 enum TagCondition {
   HEADACHE
   FEVER
@@ -68,6 +82,12 @@ enum Sex {
   FEMALE
 }
 
+enum EventType {
+  MEDICINE
+  VACCINE
+  MEDICAL_APPOINTMENT
+  GENERAL
+}
 
 // ------------------------------------------------------
 // GESTIÓN DE USUARIOS Y AUTENTICACIÓN
@@ -87,6 +107,7 @@ model User {
   threads       Thread[]  // Relación con el foro (Owner)
   messages      Message[]
   reportsMade   Report[]  @relation("ReporterUser")
+  notifications Notification[]
   //falta un enlace con notification? Pa poder notificar al user?
 }
 
@@ -99,7 +120,7 @@ model Child {
   birthDate     DateTime
   bloodGroup    String?
   allergies     String?
-  sex           Sex?      // Necesario para comparar con las curvas de la OMS (distintas para niños y niñas)
+  sex           Sex      // Necesario para comparar con las curvas de la OMS (distintas para niños y niñas)
   
   // Relación con el padre/madre (User)
   parentId      Int
@@ -136,6 +157,8 @@ model Vaccine {
   
   childId       Int
   child         Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  notifications Notification[]
 }
 
 model Disease {
@@ -184,6 +207,8 @@ model Medicine {
   // Relación opcional: Qué enfermedad diagnosticada motivó la toma. PUeedes no registrar Disease pero si que te has tomado algo.
   diseaseId        Int?
   disease          Disease?   @relation(fields: [diseaseId], references: [id])
+
+  notifications Notification[]
 }
 
 // ------------------------------------------------------
@@ -194,10 +219,15 @@ model Event {
   title         String
   description   String?
   date          DateTime
-  hasReminder   Boolean   @default(false)
-  
+  notification   Boolean   @default(false)
+  type          EventType @default(GENERAL)
+
+
   childId       Int
   child         Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  notifications Notification[]
+
 }
 
 model Condition { 
@@ -211,6 +241,30 @@ model Condition {
   child         Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
 
   medicine      Medicine[]
+}
+
+model Notification {
+  id          Int                @id @default(autoincrement())
+  type        NotificationType   @default(EVENT)
+  title       String             // Ej: "Recordatorio: Vacuna de Mateo"
+  body        String             // Ej: "Mañana toca la vacuna de los 4 meses."
+  scheduledAt DateTime           // Momento exacto en que debe emitirse
+  sentAt      DateTime?          // Cuándo se envió realmente
+  status      NotificationStatus @default(PENDING)
+  data        Json?              // Metadatos para redirigir en la app móvil al pulsar la notificación
+  // 1. Destinatario (Quién recibe la alerta)
+  userId      Int
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // 2. Relaciones opcionales con los módulos de tu app
+  eventId     Int?
+  event       Event?             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  vaccineId   Int?
+  vaccine     Vaccine?           @relation(fields: [vaccineId], references: [id], onDelete: Cascade)
+  medicineId  Int?
+  medicine    Medicine?          @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  @@index([scheduledAt, status])
 }
 
 
