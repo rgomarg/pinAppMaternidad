@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
 import { API_URL } from '../api/config';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
 
 import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
 import ActualizarPesoModal from '../components/MeasuramentWeightForm';
@@ -23,11 +23,11 @@ export default function HomeScreen() {
   const [children, setChildren] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const updateFamiliaChild = (childId: number | null) => {
+  const updateFamiliaChild = (childId: number | null, userId?: number) => {
     const familiaKey = navigation.getState().routes.find((r: any) => r.name === 'Familia')?.key;
     if (familiaKey) {
       navigation.dispatch({
-        ...CommonActions.setParams({ childId }),
+        ...CommonActions.setParams({ childId, userId }),
         source: familiaKey,
       });
     }
@@ -57,10 +57,10 @@ export default function HomeScreen() {
         setChildren(data.children);
         if (data.children.length > 0) {
           setActiveChildId(data.children[0].id);
-          updateFamiliaChild(data.children[0].id);
+          updateFamiliaChild(data.children[0].id, userId);
         } else {
           setActiveChildId(null);
-          updateFamiliaChild(null);
+          updateFamiliaChild(null, userId);
         }
       }
     } catch (error) {
@@ -69,6 +69,13 @@ export default function HomeScreen() {
       setLoading(false);
     }
   };
+
+  useFocusEffect(
+    useCallback(() =>{
+      if(activeUserId) {
+        fetchChildren(activeUserId);
+      }
+    }, [activeUserId]))
 
   const handleSelectUser = (userId: number) => {
     setActiveUserId(userId);
@@ -102,6 +109,16 @@ export default function HomeScreen() {
   const goToCalendar = () => {
       // si ya lo ha elegido, se le pasa la informacion
       navigation.navigate('Calendario', { userId: activeUserId });
+    }
+
+  const goToChildRegistration = () => {
+    if (!activeUserId) {
+      alert("Primero debes seleccionar un usuario arriba a la derecha.");
+      return;
+    }
+      // si ya lo ha elegido, se le pasa la informacion
+
+      navigation.navigate('RegistroHijo', { userId: activeUserId });
     }
 
   return (

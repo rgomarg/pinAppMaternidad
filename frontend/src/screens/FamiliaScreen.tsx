@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 // import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
 import { API_URL } from '../api/config';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,8 +44,18 @@ interface ChildDashboard {
 export default function FamiliaScreen() {
   const insets = useSafeAreaInsets();
   const route = useRoute<any>();
+  const navigation = useNavigation<any>();
   
   const childId: number | null = route.params?.childId ?? null;
+  const userId: number | undefined = route.params?.userId;
+
+  const goToChildRegistration = () => {
+    if (!userId) {
+      Alert.alert('Aviso', 'Primero debes seleccionar un usuario.');
+      return;
+    }
+    navigation.navigate('RegistroHijo', { userId });
+  };
   
   const [data, setData] = useState<ChildDashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -155,6 +165,13 @@ export default function FamiliaScreen() {
         <Text className="text-base font-semibold text-gray-500 text-center">
           Selecciona un usuario con al menos un niño para ver sus datos.
         </Text>
+        <TouchableOpacity
+          onPress={goToChildRegistration}
+          className="flex-row items-center justify-center gap-2 mt-6 px-6 py-4 rounded-2xl border border-dashed border-gray-400"
+        >
+          <Ionicons name="add-circle-outline" size={20} color="#808080" />
+          <Text className="text-gray-500 font-medium">Añadir niño/a</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -270,6 +287,14 @@ export default function FamiliaScreen() {
             })
           )}
         </View>
+
+        <TouchableOpacity
+          onPress={goToChildRegistration}
+          className="flex-row items-center justify-center gap-2 py-4 rounded-2xl border border-dashed border-gray-400"
+        >
+          <Ionicons name="add-circle-outline" size={20} color="#808080" />
+          <Text className="text-gray-500 font-medium">Añadir niño/a</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Modal para nueva vacuna */}

@@ -5,10 +5,38 @@ import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class ChildService {
-  constructor (private readonly prisma: PrismaService){}
+  constructor(private readonly prisma: PrismaService) { }
+  async create(createChildDto: CreateChildDto) {
+    return await this.prisma.child.create({
+      data: {
+        name: createChildDto.name,
+        birthDate: createChildDto.birthDate,
+        bloodGroup: createChildDto.bloodGroup,
+        allergies: createChildDto.allergies,
+        parentId: createChildDto.parentId,
+        sex: createChildDto.sex,
+        measurements:
+          createChildDto.weight && createChildDto.height
+            ? {
+              create: {
+                date: new Date(),
+                weight: createChildDto.weight,
+                height: createChildDto.height
+              }
+            }
+            : undefined,
 
-  create(createChildDto: CreateChildDto) {
-    return 'This action adds a new child';
+        diseases: createChildDto.diseases?.length
+          ? {
+            create: createChildDto.diseases.map(name => ({
+              name
+            })),
+          }
+          : undefined,
+
+
+      }
+    })
   }
 
   findAll() {
@@ -17,9 +45,13 @@ export class ChildService {
 
   findOne(id: number) {
     return this.prisma.child.findUnique({
-      where: {id:id},
-      include:{
-        measurements:true,
+      where: { id: id },
+      include: {
+        measurements: true,
+        vaccines: true,
+        conditions: true,
+        medicine: true,
+        diseases: true,
       }
     })
   }
@@ -30,7 +62,8 @@ export class ChildService {
       include: {
         vaccines: true,
         conditions: true,
-        medicine: true, 
+        medicine: true,
+        diseases: true,
       }
     });
 
