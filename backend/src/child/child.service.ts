@@ -86,4 +86,20 @@ export class ChildService {
   remove(id: number) {
     return `This action removes a #${id} child`;
   }
+  async exportData(id: number) {
+    const child = await this.prisma.child.findUnique({
+      where: { id },
+      include: {
+        measurements: true,
+        vaccines: true,
+        conditions: true,
+        medicine: true,
+        diseases: true,
+      }
+    });
+    if(!child) {
+      throw new NotFoundException(`No child with id ${id} found`);
+    }
+    return child;
+  }
 }
