@@ -290,6 +290,17 @@ function ChildPickerScreen() {
         {loading ? <ActivityIndicator size="large" color={palette.blue} /> : children.map((child) => (
           <ChildCard key={child.id} child={child} onPress={() => navigation.navigate('ChildProfile', { childId: child.id })} />
         ))}
+        {userId !== null && (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('RegistroHijo', { userId })}
+            className="flex-row items-center justify-center rounded-3xl border border-dashed border-[#6d83a1] py-4"
+            accessibilityRole="button"
+            accessibilityLabel="Añadir hijo"
+          >
+            <Ionicons name="add" size={20} color={palette.blue} />
+            <Text style={{ color: palette.blue }} className="ml-2 text-base font-semibold">Añadir hijo</Text>
+          </TouchableOpacity>
+        )}
         {/* {!loading && children.length === 0 && (
           <Text className="mt-3 text-sm text-[#8A7F75]">
             {userId === null
