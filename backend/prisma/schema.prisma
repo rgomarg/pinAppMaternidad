@@ -120,7 +120,7 @@ model Child {
   birthDate     DateTime
   bloodGroup    String?
   allergies     String?
-  sex           Sex      // Necesario para comparar con las curvas de la OMS (distintas para niños y niñas)
+  sex           Sex?     // Necesario para comparar con las curvas de la OMS (distintas para niños y niñas)
   
   // Relación con el padre/madre (User)
   parentId      Int
