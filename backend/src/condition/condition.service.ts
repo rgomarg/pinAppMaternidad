@@ -1,26 +1,37 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateConditionDto } from './dto/create-condition.dto';
 import { UpdateConditionDto } from './dto/update-condition.dto';
+import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class ConditionService {
+  constructor(private readonly prisma: PrismaService) {}
+
   create(createConditionDto: CreateConditionDto) {
-    return 'This action adds a new condition';
+    return this.prisma.condition.create({
+      data: {
+        tag: [],
+        desciption: createConditionDto.desciption,
+        notes: createConditionDto.notes,
+        timestamp: createConditionDto.timestamp,
+        childId: createConditionDto.childId,
+      },
+    });
   }
 
   findAll() {
-    return `This action returns all condition`;
+    return this.prisma.condition.findMany({ orderBy: { timestamp: 'desc' } });
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} condition`;
+    return this.prisma.condition.findUnique({ where: { id } });
   }
 
   update(id: number, updateConditionDto: UpdateConditionDto) {
-    return `This action updates a #${id} condition`;
+    return this.prisma.condition.update({ where: { id }, data: updateConditionDto });
   }
 
   remove(id: number) {
-    return `This action removes a #${id} condition`;
+    return this.prisma.condition.delete({ where: { id } });
   }
 }

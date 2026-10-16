@@ -75,7 +75,12 @@ export class ChildService {
   }
 
   update(id: number, updateChildDto: UpdateChildDto) {
-    return `This action updates a #${id} child`;
+    return this.prisma.child.update({
+      where: { id },
+      data: {
+        allergies: updateChildDto.allergies,
+      },
+    });
   }
 
   remove(id: number) {

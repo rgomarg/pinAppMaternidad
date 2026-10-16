@@ -23,6 +23,7 @@ type Child = {
   name: string;
   birthDate: string;
   bloodGroup?: string | null;
+  allergies?: string | null;
 };
 
 type ChildPreview = Child & {
@@ -52,6 +53,14 @@ type Vaccine = {
   name: string;
   appliedAt: string | null;
   scheduledFor: string | null;
+};
+
+type AllergySeverity = 'leve' | 'moderada' | 'severa';
+
+type Allergy = {
+  name: string;
+  severity: AllergySeverity;
+  notes?: string;
 };
 
 const palette = {
@@ -154,10 +163,24 @@ function hasAllergy(allergies: string | null | undefined) {
   return !['ninguna conocida', 'sin alergias registradas'].includes(allergies.trim().toLowerCase());
 }
 
-function allergyNames(allergies: string | null | undefined) {
-  return hasAllergy(allergies)
-    ? allergies!.split(',').map((allergy) => allergy.trim()).filter(Boolean)
-    : [];
+function allergyRecords(allergies: string | null | undefined): Allergy[] {
+  if (!hasAllergy(allergies)) return [];
+  try {
+    const parsed = JSON.parse(allergies!);
+    if (Array.isArray(parsed) && parsed.every((item) => item && typeof item.name === 'string')) {
+      return parsed.map((item) => ({
+        name: item.name.trim(),
+        severity: ['leve', 'moderada', 'severa'].includes(item.severity) ? item.severity : 'moderada',
+        notes: typeof item.notes === 'string' ? item.notes : undefined,
+      })).filter((item) => item.name);
+    }
+  } catch {
+    // Older records use a comma-separated string.
+  }
+  return allergies!.split(',').map((name) => ({
+    name: name.trim(),
+    severity: 'moderada' as AllergySeverity,
+  })).filter((item) => item.name);
 }
 
 function ChildCard({ child, onPress }: { child: ChildPreview; onPress: () => void }) {
@@ -173,9 +196,11 @@ function ChildCard({ child, onPress }: { child: ChildPreview; onPress: () => voi
           <Text style={{ color: palette.muted }} className="mt-1 text-sm">
             {getAge(child.birthDate)} años · Sangre {child.bloodGroup || '—'}
           </Text>
-          {allergyNames(child.allergies).map((allergy) => (
-            <View key={allergy} className="mt-2 self-start rounded-full bg-[#fff1ec] px-3 py-1">
-              <Text style={{ color: palette.red }} className="text-xs">⚠ {allergy}</Text>
+          {allergyRecords(child.allergies).map((allergy) => (
+            <View key={allergy.name} className={`mt-2 self-start rounded-full px-3 py-1 ${allergy.severity === 'severa' ? 'bg-[#ffe1dc]' : 'bg-[#fff1ec]'}`}>
+              <Text style={{ color: palette.red }} className="text-xs">
+                {allergy.severity === 'severa' ? '⚠ Alergia severa: ' : '⚠ '}{allergy.name}
+              </Text>
             </View>
           ))}
         </View>
@@ -332,6 +357,11 @@ function ChildProfileScreen() {
   }
 
   const applied = data.vaccines.filter((vaccine) => vaccine.appliedAt).length;
+  const vaccinesByRecent = [...data.vaccines].sort((a, b) => {
+    const dateA = new Date(a.appliedAt || a.scheduledFor || 0).getTime();
+    const dateB = new Date(b.appliedAt || b.scheduledFor || 0).getTime();
+    return dateB - dateA || b.id - a.id;
+  });
   const openForm = (screen: string) => navigation.navigate(screen, { child: data });
 
   return (
@@ -364,20 +394,32 @@ function ChildProfileScreen() {
         </View>
 
         <View className="px-6 pt-7">
-          <Section title={`Alergias · ${hasAllergy(data.allergies) ? '1' : '0'}`} onAdd={() => openForm('AddAllergy')}>
-            {allergyNames(data.allergies).map((allergy) => (
-              <View key={allergy} className="mb-3 flex-row items-center rounded-3xl bg-[#eee5d6] p-5">
-                <View className="mr-4 rounded-full bg-[#fff1ec] px-3 py-1">
-                  <Text style={{ color: palette.red }} className="text-sm font-semibold">Alergia</Text>
+          <Section title={`Alergias · ${allergyRecords(data.allergies).length}`} onAdd={() => openForm('AddAllergy')}>
+            {allergyRecords(data.allergies).map((allergy) => {
+              const isSevere = allergy.severity === 'severa';
+              return (
+              <View
+                key={allergy.name}
+                className={`mb-3 flex-row items-center rounded-3xl border p-5 ${isSevere ? 'border-[#c64b3b] bg-[#fff0ec]' : 'border-transparent bg-[#eee5d6]'}`}
+                accessibilityLabel={`${isSevere ? 'Alerta: ' : ''}Alergia ${allergy.name}, gravedad ${allergy.severity}`}
+              >
+                <View className={`mr-4 h-10 w-10 items-center justify-center rounded-full ${isSevere ? 'bg-[#c64b3b]' : 'bg-[#fff1ec]'}`}>
+                  <Ionicons name={isSevere ? 'warning' : 'alert-circle-outline'} size={20} color={isSevere ? '#ffffff' : palette.red} />
                 </View>
-                <Text style={{ color: palette.text }} className="flex-1 text-lg">{allergy}</Text>
+                <View className="flex-1">
+                  <Text style={{ color: palette.text }} className="text-lg">{allergy.name}</Text>
+                  <Text style={{ color: isSevere ? '#a33327' : palette.muted }} className="mt-1 text-sm font-semibold">
+                    {isSevere ? 'ALERTA · Alergia severa' : `Gravedad: ${allergy.severity}`}
+                  </Text>
+                </View>
                 <Ionicons name="chevron-down" size={18} color={palette.muted} />
               </View>
-            ))}
+              );
+            })}
           </Section>
 
           <Section title={`Vacunas · ${applied}/${data.vaccines.length} aplicadas`} onAdd={() => openForm('AddVaccine')}>
-            {data.vaccines.map((vaccine) => (
+            {vaccinesByRecent.map((vaccine) => (
               <View key={vaccine.id} className="mb-3 flex-row items-center rounded-3xl bg-[#eee5d6] p-5">
                 <View className={`mr-4 h-9 w-9 items-center justify-center rounded-full ${vaccine.appliedAt ? 'bg-[#e5f1e9]' : 'bg-[#fff0d8]'}`}>
                   <Ionicons name={vaccine.appliedAt ? 'checkmark' : 'time-outline'} size={18} color={vaccine.appliedAt ? palette.green : '#bd7110'} />
@@ -538,7 +580,6 @@ function AddVaccineScreen() {
           childId: child.id,
           appliedAt: applied ? appliedAt?.toISOString() : null,
           scheduledFor: scheduledFor?.toISOString(),
-          lot,
         }),
       });
       if (!response.ok) throw new Error();
@@ -574,26 +615,104 @@ function AddVaccineScreen() {
 }
 
 function AddAllergyScreen() {
+  const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const child = route.params.child as Child;
   const [name, setName] = useState('');
+  const [severity, setSeverity] = useState<AllergySeverity>('moderada');
   const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    const allergy = name.trim();
+    if (!allergy) return Alert.alert('Falta información', 'Introduce el nombre de la alergia.');
+    setSaving(true);
+    try {
+      const existing = allergyRecords(child.allergies);
+      const withoutDuplicate = existing.filter((item) => item.name.toLocaleLowerCase() !== allergy.toLocaleLowerCase());
+      const allergies = JSON.stringify([...withoutDuplicate, {
+        name: allergy,
+        severity,
+        notes: notes.trim() || undefined,
+      }]);
+      const response = await fetch(`${API_URL}/child/${child.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allergies }),
+      });
+      if (!response.ok) throw new Error();
+      navigation.goBack();
+    } catch {
+      Alert.alert('Error', 'No se pudo guardar la alergia.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <FormLayout title="Nueva alergia" child={child} onSave={() => Alert.alert('Información', 'El registro de alergias estará disponible próximamente.')} saving={false}>
+    <FormLayout title="Nueva alergia" child={child} onSave={save} saving={saving}>
       <Field label="Nombre *" placeholder="Ej. Frutos secos" value={name} onChangeText={setName} />
+      <Text style={{ color: palette.muted }} className="mb-2 text-base">Gravedad *</Text>
+      <View className="mb-6 flex-row gap-2">
+        {(['leve', 'moderada', 'severa'] as AllergySeverity[]).map((option) => {
+          const selected = severity === option;
+          const optionColor = option === 'severa' ? '#a33327' : option === 'moderada' ? '#a3651d' : '#3f805c';
+          return (
+            <TouchableOpacity
+              key={option}
+              onPress={() => setSeverity(option)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+              style={{ borderColor: selected ? optionColor : '#ddd2c4', backgroundColor: selected ? '#fff7ed' : palette.card }}
+              className="flex-1 items-center rounded-3xl border p-4"
+            >
+              <Text style={{ color: selected ? optionColor : palette.muted }} className="text-sm font-semibold">
+                {option.charAt(0).toUpperCase() + option.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
       <Field label="Reacción o indicaciones" placeholder="Describe la reacción y qué hacer en caso de exposición" value={notes} onChangeText={setNotes} multiline />
     </FormLayout>
   );
 }
 
 function AddConditionScreen() {
+  const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const child = route.params.child as Child;
   const [name, setName] = useState('');
   const [date, setDate] = useState<Date | null>(null);
   const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!name.trim()) return Alert.alert('Falta información', 'Introduce el nombre de la condición.');
+    if (!date) return Alert.alert('Falta información', 'Selecciona la fecha de diagnóstico.');
+    setSaving(true);
+    try {
+      const response = await fetch(`${API_URL}/disease`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          description: notes.trim() || undefined,
+          diagnosticatedAge: date.toISOString(),
+          childId: child.id,
+        }),
+      });
+      if (!response.ok) throw new Error();
+      navigation.goBack();
+    } catch {
+      Alert.alert('Error', 'No se pudo guardar la condición.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <FormLayout title="Nueva condición" child={child} onSave={() => Alert.alert('Información', 'El registro de condiciones estará disponible próximamente.')} saving={false}>
+    <FormLayout title="Nueva condición" child={child} onSave={save} saving={saving}>
       <Field label="Nombre *" placeholder="Ej. Asma leve" value={name} onChangeText={setName} />
       <DateField label="Fecha de diagnóstico *" value={date} onChange={setDate} />
       <Field label="Notas y seguimiento" placeholder="Tratamiento, especialista o indicaciones relevantes" value={notes} onChangeText={setNotes} multiline />
@@ -602,6 +721,7 @@ function AddConditionScreen() {
 }
 
 function AddMedicineScreen() {
+  const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const child = route.params.child as Child;
   const [name, setName] = useState('');
@@ -609,8 +729,44 @@ function AddMedicineScreen() {
   const [frequency, setFrequency] = useState('');
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [times, setTimes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    const trimmedName = name.trim();
+    const trimmedDosage = dosage.trim();
+    const intervalHours = Number.parseInt(frequency.match(/\d+/)?.[0] || '', 10);
+    if (!trimmedName || !trimmedDosage || !frequency.trim()) {
+      return Alert.alert('Falta información', 'Completa nombre, dosis y frecuencia.');
+    }
+    if (!Number.isInteger(intervalHours) || intervalHours <= 0) {
+      return Alert.alert('Frecuencia no válida', 'Introduce una frecuencia como "cada 8 h".');
+    }
+    if (!startDate) return Alert.alert('Falta información', 'Selecciona la fecha de inicio.');
+    setSaving(true);
+    try {
+      const response = await fetch(`${API_URL}/medicine`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: trimmedName,
+          dosage: trimmedDosage,
+          intervalHours,
+          startDate: startDate.toISOString(),
+          instructions: times.trim() ? `Horarios: ${times.trim()}` : undefined,
+          childId: child.id,
+        }),
+      });
+      if (!response.ok) throw new Error();
+      navigation.goBack();
+    } catch {
+      Alert.alert('Error', 'No se pudo guardar el medicamento.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <FormLayout title="Nuevo medicamento" child={child} onSave={() => Alert.alert('Información', 'El registro de medicamentos estará disponible próximamente.')} saving={false}>
+    <FormLayout title="Nuevo medicamento" child={child} onSave={save} saving={saving}>
       <Field label="Nombre del medicamento *" placeholder="Ej. Loratadina 5 mg" value={name} onChangeText={setName} />
       <View className="flex-row gap-3">
         <View className="flex-1"><Field label="Dosis *" placeholder="Ej. 5 ml" value={dosage} onChangeText={setDosage} /></View>
