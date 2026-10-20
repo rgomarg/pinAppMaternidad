@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, Text, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { forumApi, type Tag, type ThreadSummary } from '../../api/forum';
 import TagChips from '../../components/foro/TagChips';
@@ -10,6 +10,7 @@ const PAGE_SIZE = 20;
 
 export default function ThreadListScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagId, setTagId] = useState<number | null>(null);
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
@@ -85,7 +86,9 @@ export default function ThreadListScreen() {
         <FlatList
           data={threads}
           keyExtractor={(thread) => String(thread.id)}
-          renderItem={({ item }) => <ThreadCard thread={item} onPress={() => {}} />}
+          renderItem={({ item }) => (
+            <ThreadCard thread={item} onPress={() => navigation.navigate('ThreadDetail', { threadId: item.id })} />
+          )}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}
           refreshControl={
             <RefreshControl
