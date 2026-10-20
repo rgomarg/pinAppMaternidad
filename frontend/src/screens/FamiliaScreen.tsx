@@ -201,7 +201,7 @@ function ChildCard({ child, onPress }: { child: ChildPreview; onPress: () => voi
   const destination = new Directory(Paths.cache, 'pdfs');
   destination.create({idempotent:true});
   const url = `${API_URL}/child/${childId}/export`;
-  const file =  await File.downloadFileAsync(url, destination);  
+  const file =  await File.downloadFileAsync(url, destination, { idempotent: true });  
 
   if(!await Sharing.isAvailableAsync()) {
     Alert.alert('Error', 'No se puede compartir el PDF en este dispositivo.');
@@ -213,6 +213,7 @@ function ChildCard({ child, onPress }: { child: ChildPreview; onPress: () => voi
   });
 }
 catch (error) {
+  console.error('Error exportando PDF:', error);
   Alert.alert('Error', 'No se pudo exportar el PDF.');
 }
 finally {

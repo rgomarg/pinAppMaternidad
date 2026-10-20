@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { dirname, join } from 'path';
+import { dirname, join, resolve } from 'path';
 import pdfmake from 'pdfmake';
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { ChildService } from './child.service';
@@ -23,6 +23,9 @@ export class ChildExportService {
     constructor(private readonly childService: ChildService) {
         // pdfmake no trae fuentes cargadas en Node: se apuntan a las Roboto que incluye el paquete
         const fontsDir = join(dirname(require.resolve('pdfmake')), '..', 'fonts', 'Roboto');
+        // El PDF no descarga recursos externos y solo puede leer del disco las fuentes
+        pdfmake.setUrlAccessPolicy(() => false);
+        pdfmake.setLocalAccessPolicy((path: string) => resolve(path).startsWith(resolve(fontsDir)));
         pdfmake.setFonts({
             Roboto: {
                 normal: join(fontsDir, 'Roboto-Regular.ttf'),
