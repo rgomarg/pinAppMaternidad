@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, HttpCode } from '@nestjs/common';
 import { ThreadService } from './thread.service';
 import { CreateThreadDto } from './dto/create-thread.dto';
 import { UpdateThreadDto } from './dto/update-thread.dto';
@@ -25,12 +25,13 @@ export class ThreadController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateThreadDto: UpdateThreadDto) {
-    return this.threadService.update(+id, updateThreadDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateThreadDto: UpdateThreadDto) {
+    return this.threadService.update(id, updateThreadDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.threadService.remove(+id);
+  @HttpCode(204)
+  remove(@Param('id', ParseIntPipe) id: number, @Query('userId', ParseIntPipe) userId: number) {
+    return this.threadService.remove(id, userId);
   }
 }
