@@ -33,10 +33,11 @@ type Child = {
 };
 
 type CalendarEvent = {
-  id: number;
+  id: number | string;
   title: string;
   description?: string | null;
   date: string;
+  type?: 'GENERAL' | 'MEDICAL_APPOINTMENT' | 'VACCINE' | 'MEDICINE';
   child: Child;
 };
 
@@ -52,6 +53,50 @@ const formatLongDate = (iso: string): string => {
   const [year, month, day] = iso.split('-').map(Number);
   const date = new Date(year, month - 1, day);
   return `${DAYS[date.getDay()]}, ${day} de ${MONTHS[month - 1].toLowerCase()} de ${year}`;
+};
+
+const formatEventTime = (isoString?: string): string => {
+  if (!isoString) return '--:--';
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return '--:--';
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
+const getEventVisuals = (type?: string) => {
+  switch (type) {
+    case 'MEDICAL_APPOINTMENT':
+      return {
+        icon: 'pulse-outline' as const,
+        bg: 'bg-[#FBEBE8]',
+        border: 'border-[#F1CDC6]',
+        color: '#C0705A',
+        badge: 'Cita médica',
+      };
+    case 'MEDICINE':
+      return {
+        icon: 'medkit-outline' as const,
+        bg: 'bg-[#EBF3ED]',
+        border: 'border-[#CCE3D2]',
+        color: '#4B8862',
+        badge: 'Medicamento',
+      };
+    case 'VACCINE':
+      return {
+        icon: 'shield-outline' as const,
+        bg: 'bg-[#FFF6E6]',
+        border: 'border-[#FFE3B3]',
+        color: '#C4831D',
+        badge: 'Vacuna',
+      };
+    default:
+      return {
+        icon: 'calendar-outline' as const,
+        bg: 'bg-[#F0ECF8]',
+        border: 'border-[#D9D0EC]',
+        color: '#7C5BB0',
+        badge: 'General',
+      };
+  }
 };
 
 export default function CalendarioScreen() {
@@ -142,15 +187,38 @@ export default function CalendarioScreen() {
       setEventsError(null);
 
       try {
-        const response = await fetch(
-          `${API_URL}/event/guardian/${userId}?date=${encodeURIComponent(selectedDate)}`,
-        );
-        if (!response.ok) {
-          throw new Error(`Error al cargar los eventos (${response.status})`);
-        }
+        // Lanzamos las tres llamadas en paralelo (Eventos, Medicinas y Vacunas)
+        const [responseEvents, responseMedicine, responseVaccine] = await Promise.all([
+          fetch(`${API_URL}/event/guardian/${userId}?date=${encodeURIComponent(selectedDate)}`),
+          fetch(`${API_URL}/medicine/guardian/${userId}?date=${encodeURIComponent(selectedDate)}`),
+          fetch(`${API_URL}/vaccine/guardian/${userId}?date=${encodeURIComponent(selectedDate)}`),
+        ]);
 
-        const data: CalendarEvent[] = await response.json();
-        if (!cancelled) setEvents(Array.isArray(data) ? data : []);
+        const dataEvents: CalendarEvent[] = responseEvents.ok ? await responseEvents.json() : [];
+        const dataMedicines: CalendarEvent[] = responseMedicine.ok ? await responseMedicine.json() : [];
+        const dataVaccines: CalendarEvent[] = responseVaccine.ok ? await responseVaccine.json() : [];
+
+        const medicineKeys = new Set(
+          dataMedicines.map((medicine) =>
+            `${medicine.child.id}:${medicine.title.trim().toLocaleLowerCase()}:${medicine.date.slice(0, 10)}`,
+          ),
+        );
+
+        // El medicamento es la fuente completa (dosis, intervalo e instrucciones).
+        // Si también existe como evento antiguo, conservamos solo la tarjeta del medicamento.
+        const uniqueEvents = dataEvents.filter((event) => {
+          if (event.type !== 'MEDICINE') return true;
+          const key = `${event.child?.id}:${event.title.trim().toLocaleLowerCase()}:${event.date.slice(0, 10)}`;
+          return !medicineKeys.has(key);
+        });
+
+        // Unificamos los resultados y usamos IDs con prefijo por tipo de origen para
+        // evitar colisiones entre eventos, medicamentos y vacunas.
+        const combined = [...uniqueEvents, ...dataMedicines, ...dataVaccines]
+        // Ordenamos cronológicamente por hora
+        combined.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        if (!cancelled) setEvents(combined);
       } catch (error) {
         if (!cancelled) {
           setEvents([]);
@@ -167,10 +235,10 @@ export default function CalendarioScreen() {
     };
   }, [userId, selectedDate]));
 
-  const eventsForSelectedChild = useMemo(
-    () => selectedChildId === null ? events : events.filter(event => event.child?.id === selectedChildId),
-    [events, selectedChildId],
-  );
+  const eventsForSelectedChild = useMemo(() => {
+    const list = selectedChildId === null ? events : events.filter(event => event.child?.id === selectedChildId);
+    return [...list].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [events, selectedChildId]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f7f3ec'}}>
@@ -294,20 +362,36 @@ export default function CalendarioScreen() {
               {userId ? 'No hay eventos para este día.' : 'Selecciona un usuario para consultar sus eventos.'}
             </Text>
           ) : (
-            eventsForSelectedChild.map((event) => (
-              <View key={event.id} className="mt-4 rounded-2xl border border-[#D9D0EC] bg-[#F0ECF8] px-5 py-4">
-                <View className="flex-row items-center">
-                  <Ionicons name="calendar-outline" size={18} color="#7C5BB0" />
-                  <Text className="ml-2 text-sm font-semibold text-[#7C5BB0]">
-                    {event.child?.name ?? 'Hijo'}
-                  </Text>
+            eventsForSelectedChild.map((event) => {
+              const visuals = getEventVisuals(event.type);
+              const timeStr = formatEventTime(event.date);
+
+              return (
+                <View
+                  key={event.id}
+                  className={`mt-4 rounded-2xl border ${visuals.border} ${visuals.bg} px-5 py-4`}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <Ionicons name={visuals.icon} size={18} color={visuals.color} />
+                      <Text style={{ color: visuals.color }} className="ml-2 text-sm font-semibold">
+                        {event.child?.name ?? 'Hijo'} • {visuals.badge}
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center rounded-full bg-white/70 px-2.5 py-0.5 shadow-sm">
+                      <Ionicons name="time-outline" size={13} color={visuals.color} style={{ marginRight: 4 }} />
+                      <Text style={{ color: visuals.color }} className="text-xs font-bold">
+                        {timeStr}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text className="mt-2 text-lg font-semibold text-[#2B2B2B]">{event.title}</Text>
+                  {!!event.description && (
+                    <Text className="mt-1 text-base text-[#7A726A]">{event.description}</Text>
+                  )}
                 </View>
-                <Text className="mt-3 text-lg font-semibold text-[#2B2B2B]">{event.title}</Text>
-                {!!event.description && (
-                  <Text className="mt-2 text-base text-[#7A726A]">{event.description}</Text>
-                )}
-              </View>
-            ))
+              );
+            })
           )}
         </View>
       </ScrollView>
