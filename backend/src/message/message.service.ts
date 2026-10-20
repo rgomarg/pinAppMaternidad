@@ -44,6 +44,40 @@ export class MessageService {
     return { ...message, likedByMe: false, replies: [] };
   }
 
+  // Idempotente: si el usuario ya dio like no se duplica ni suma al contador
+  async like(id: number, userId: number) {
+    await this.assertVisible(id);
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+    if (!user) {
+      throw new NotFoundException(`No user with id ${userId} found`);
+    }
+    return this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.messageLike.createMany({
+        data: { userId, messageId: id },
+        skipDuplicates: true,
+      });
+      const message = await tx.message.update({
+        where: { id },
+        data: { likesCount: { increment: count } },
+        select: { likesCount: true },
+      });
+      return { likesCount: message.likesCount, likedByMe: true };
+    });
+  }
+
+  async unlike(id: number, userId: number) {
+    await this.assertVisible(id);
+    return this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.messageLike.deleteMany({ where: { userId, messageId: id } });
+      const message = await tx.message.update({
+        where: { id },
+        data: { likesCount: { decrement: count } },
+        select: { likesCount: true },
+      });
+      return { likesCount: message.likesCount, likedByMe: false };
+    });
+  }
+
   // Las respuestas al mensaje no se borran: su parentId pasa a null (onDelete: SetNull)
   async remove(id: number, userId: number) {
     const message = await this.prisma.message.findUnique({ where: { id }, select: { authorId: true } });
@@ -54,5 +88,15 @@ export class MessageService {
       throw new ForbiddenException('Only the author can delete this message');
     }
     await this.prisma.message.delete({ where: { id } });
+  }
+
+  private async assertVisible(id: number) {
+    const message = await this.prisma.message.findFirst({
+      where: { id, isHidden: false, thread: { isHidden: false } },
+      select: { id: true },
+    });
+    if (!message) {
+      throw new NotFoundException(`No message with id ${id} found`);
+    }
   }
 }
