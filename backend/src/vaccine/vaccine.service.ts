@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateVaccineDto } from './dto/create-vaccine.dto';
 import { UpdateVaccineDto } from './dto/update-vaccine.dto';
 import { PrismaService } from 'prisma/prisma.service';
+import { getDateRange } from '../common/date-range';
 
 @Injectable()
 export class VaccineService {
@@ -36,17 +37,8 @@ export class VaccineService {
     return `This action removes a #${id} vaccine`;
   }
 
-  async findVaccineForGuardianOnDate(guardianId: number, date: string) {
-    // El cliente envía una fecha en formato YYYY-MM-DD.
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
-
-    if (!match) {
-      throw new BadRequestException('La fecha debe tener el formato YYYY-MM-DD');
-    }
-
-    const [, year, month, day] = match;
-    const start = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-    const end = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day) + 1));
+  async findVaccineForGuardianOnDate(guardianId: number, date?: string, from?: string, to?: string) {
+    const { start, end } = getDateRange(date, from, to);
 
     const vaccines = await this.prisma.vaccine.findMany({
       where: {

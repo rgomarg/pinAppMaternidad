@@ -35,8 +35,10 @@ export class VaccineController {
   @Get('guardian/:guardianId')
   findVaccineForGuardianOnDate(
     @Param('guardianId', ParseIntPipe) guardianId: number,
-    @Query('date') date: string,
+    @Query('date') date?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
   ) {
-    return this.vaccineService.findVaccineForGuardianOnDate(guardianId, date);
+    return this.vaccineService.findVaccineForGuardianOnDate(guardianId, date, from, to);
   }
 }

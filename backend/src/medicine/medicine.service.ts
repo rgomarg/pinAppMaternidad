@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateMedicineDto } from './dto/create-medicine.dto';
 import { UpdateMedicineDto } from './dto/update-medicine.dto';
 import { PrismaService } from 'prisma/prisma.service';
+import { getDateRange } from '../common/date-range';
 
 @Injectable()
 export class MedicineService {
@@ -37,17 +38,8 @@ export class MedicineService {
     return this.prisma.medicine.delete({ where: { id } });
   }
 
-  async findMedicineForGuardianOnDate(guardianId: number, date: string) {
-    // El cliente envía una fecha en formato YYYY-MM-DD.
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
-
-    if (!match) {
-      throw new BadRequestException('La fecha debe tener el formato YYYY-MM-DD');
-    }
-
-    const [, year, month, day] = match;
-    const start = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-    const end = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day) + 1));
+  async findMedicineForGuardianOnDate(guardianId: number, date?: string, from?: string, to?: string) {
+    const { start, end } = getDateRange(date, from, to);
 
     const medicines = await this.prisma.medicine.findMany({
       where: {
@@ -91,6 +83,8 @@ export class MedicineService {
         title: medicine.name,
         description: details.join(' · '),
         date: medicine.startDate.toISOString(),
+        startDate: medicine.startDate.toISOString(),
+        endDate: medicine.endDate?.toISOString() ?? null,
         type: 'MEDICINE' as const,
         child: medicine.child,
       };

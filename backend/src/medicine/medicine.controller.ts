@@ -35,8 +35,10 @@ export class MedicineController {
   @Get('guardian/:guardianId')
   findMedicineForGuardianOnDate(
     @Param('guardianId', ParseIntPipe) guardianId: number,
-    @Query('date') date: string,
+    @Query('date') date?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
   ) {
-    return this.medicineService.findMedicineForGuardianOnDate(guardianId, date);
+    return this.medicineService.findMedicineForGuardianOnDate(guardianId, date, from, to);
   }
 }

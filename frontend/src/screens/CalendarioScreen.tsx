@@ -37,8 +37,25 @@ type CalendarEvent = {
   title: string;
   description?: string | null;
   date: string;
+  startDate?: string;
+  endDate?: string | null;
   type?: 'GENERAL' | 'MEDICAL_APPOINTMENT' | 'VACCINE' | 'MEDICINE';
   child: Child;
+};
+
+const EVENT_COLORS = {
+  MEDICINE: '#4B8862',
+  MEDICAL_APPOINTMENT: '#C0705A',
+  GENERAL: '#7C5BB0',
+  VACCINE: '#C4831D',
+} as const;
+
+const getMonthRange = (monthDate: string) => {
+  const [year, month] = monthDate.split('-').map(Number);
+  const from = `${year}-${String(month).padStart(2, '0')}-01`;
+  const nextMonth = new Date(Date.UTC(year, month, 1));
+  const to = `${nextMonth.getUTCFullYear()}-${String(nextMonth.getUTCMonth() + 1).padStart(2, '0')}-01`;
+  return { from, to };
 };
 
 const getToday = () => {
@@ -109,6 +126,7 @@ export default function CalendarioScreen() {
   const [isUserModalVisible, setIsUserModalVisible] = useState(false);
   const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
   const [selectedDate, setSelectedDate] = useState(getToday);
+  const [visibleMonth, setVisibleMonth] = useState(getToday);
   const [children, setChildren] = useState<Child[]>([]);
   const [guardianName, setGuardianName] = useState('');
   const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
@@ -185,13 +203,15 @@ export default function CalendarioScreen() {
     const loadEvents = async () => {
       setLoadingEvents(true);
       setEventsError(null);
+      const { from, to } = getMonthRange(visibleMonth);
+      const rangeQuery = `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
 
       try {
-        // Lanzamos las tres llamadas en paralelo (Eventos, Medicinas y Vacunas)
+        // Cargamos los eventos de todo el mes en paralelo por categoría.
         const [responseEvents, responseMedicine, responseVaccine] = await Promise.all([
-          fetch(`${API_URL}/event/guardian/${userId}?date=${encodeURIComponent(selectedDate)}`),
-          fetch(`${API_URL}/medicine/guardian/${userId}?date=${encodeURIComponent(selectedDate)}`),
-          fetch(`${API_URL}/vaccine/guardian/${userId}?date=${encodeURIComponent(selectedDate)}`),
+          fetch(`${API_URL}/event/guardian/${userId}?${rangeQuery}`),
+          fetch(`${API_URL}/medicine/guardian/${userId}?${rangeQuery}`),
+          fetch(`${API_URL}/vaccine/guardian/${userId}?${rangeQuery}`),
         ]);
 
         const dataEvents: CalendarEvent[] = responseEvents.ok ? await responseEvents.json() : [];
@@ -233,12 +253,63 @@ export default function CalendarioScreen() {
     return () => {
       cancelled = true;
     };
-  }, [userId, selectedDate]));
+  }, [userId, visibleMonth]));
 
   const eventsForSelectedChild = useMemo(() => {
-    const list = selectedChildId === null ? events : events.filter(event => event.child?.id === selectedChildId);
-    return [...list].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [events, selectedChildId]);
+    return events
+      .filter((event) => {
+        if (selectedChildId !== null && event.child?.id !== selectedChildId) return false;
+        if (event.type === 'MEDICINE') {
+          const startDate = (event.startDate ?? event.date).slice(0, 10);
+          const endDate = event.endDate?.slice(0, 10);
+          return startDate <= selectedDate && (!endDate || endDate >= selectedDate);
+        }
+        return event.date.slice(0, 10) === selectedDate;
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [events, selectedChildId, selectedDate]);
+
+  const markedDates = useMemo(() => {
+    const dateTypes = new Map<string, Set<keyof typeof EVENT_COLORS>>();
+    const addMarker = (date: string, type: keyof typeof EVENT_COLORS) => {
+      const types = dateTypes.get(date) ?? new Set<keyof typeof EVENT_COLORS>();
+      types.add(type);
+      dateTypes.set(date, types);
+    };
+
+    const { from, to } = getMonthRange(visibleMonth);
+    const visibleEvents = selectedChildId === null
+      ? events
+      : events.filter((event) => event.child?.id === selectedChildId);
+
+    visibleEvents.forEach((event) => {
+      const type = event.type ?? 'GENERAL';
+      if (type === 'MEDICINE') {
+        const firstDay = (event.startDate ?? event.date).slice(0, 10);
+        const lastDay = event.endDate?.slice(0, 10) ?? `${to.slice(0, 7)}-31`;
+        let day = firstDay > from ? firstDay : from;
+        while (day < to && day <= lastDay) {
+          addMarker(day, 'MEDICINE');
+          const next = new Date(`${day}T00:00:00Z`);
+          next.setUTCDate(next.getUTCDate() + 1);
+          day = next.toISOString().slice(0, 10);
+        }
+      } else {
+        addMarker(event.date.slice(0, 10), type);
+      }
+    });
+
+    const marked: Record<string, { selected?: boolean; selectedColor?: string; dots?: { key: string; color: string }[] }> = {};
+    dateTypes.forEach((types, date) => {
+      marked[date] = {
+        dots: (Object.keys(EVENT_COLORS) as (keyof typeof EVENT_COLORS)[])
+          .filter((type) => types.has(type))
+          .map((type) => ({ key: type, color: EVENT_COLORS[type] })),
+      };
+    });
+    marked[selectedDate] = { ...marked[selectedDate], selected: true, selectedColor: '#77a2ff' };
+    return marked;
+  }, [events, selectedChildId, selectedDate, visibleMonth]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f7f3ec'}}>
@@ -328,10 +399,31 @@ export default function CalendarioScreen() {
           
         </View>
 
+        <View className="mb-4 mt-1 flex-row flex-wrap items-center justify-center">
+          {[
+            { type: 'MEDICINE', label: 'Medicamento' },
+            { type: 'MEDICAL_APPOINTMENT', label: 'Cita médica' },
+            { type: 'GENERAL', label: 'General' },
+            { type: 'VACCINE', label: 'Vacuna' },
+          ].map(({ type, label }) => (
+            <View key={type} className="mx-2 my-1 flex-row items-center">
+              <View className="mr-1.5 h-2.5 w-2.5 rounded-full" style={{ backgroundColor: EVENT_COLORS[type as keyof typeof EVENT_COLORS] }} />
+              <Text className="text-xs text-[#6F665F]">{label}</Text>
+            </View>
+          ))}
+        </View>
+
         <Calendar
           firstDay={1}
-          onDayPress={(day) => setSelectedDate(day.dateString)}
-          current={selectedDate}
+          markingType="multi-dot"
+          onDayPress={(day) => {
+            setSelectedDate(day.dateString);
+            if (day.dateString.slice(0, 7) !== visibleMonth.slice(0, 7)) {
+              setVisibleMonth(day.dateString);
+            }
+          }}
+          onMonthChange={(month) => setVisibleMonth(month.dateString)}
+          current={visibleMonth}
           style={{ backgroundColor: 'transparent'}}
           theme={{ 
             calendarBackground: 'transparent', 
@@ -346,7 +438,7 @@ export default function CalendarioScreen() {
           renderArrow={(direction: 'left' | 'right') => (
             <Ionicons name={direction === 'left' ? 'chevron-back' : 'chevron-forward'} size={22} color="#7385A3" />
           )}
-          markedDates={{ [selectedDate]: { selected: true, selectedColor: '#77a2ff' } }}
+          markedDates={markedDates}
         />
 
         <View className="h-px bg-[#E6E0D8] mt-2" />
