@@ -13,9 +13,10 @@ type Props = {
   depth?: number;
   userId: number | null;
   onReply: (message: MessageNode) => void;
+  onDelete: (message: MessageNode) => void;
 };
 
-export default function MessageItem({ message, depth = 0, userId, onReply }: Props) {
+export default function MessageItem({ message, depth = 0, userId, onReply, onDelete }: Props) {
   return (
     <View>
       <View className="mb-3 rounded-3xl bg-white p-4">
@@ -32,6 +33,16 @@ export default function MessageItem({ message, depth = 0, userId, onReply }: Pro
             <Ionicons name="return-down-forward" size={16} color="#6d83a1" />
             <Text className="ml-1 text-sm text-nanny-blue">Responder</Text>
           </TouchableOpacity>
+          {message.author.id === userId && (
+            <TouchableOpacity
+              onPress={() => onDelete(message)}
+              className="ml-auto"
+              accessibilityRole="button"
+              accessibilityLabel="Eliminar mensaje"
+            >
+              <Ionicons name="trash-outline" size={16} color="#808080" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -41,7 +52,7 @@ export default function MessageItem({ message, depth = 0, userId, onReply }: Pro
           className="border-nanny-card"
         >
           {message.replies.map((reply) => (
-            <MessageItem key={reply.id} message={reply} depth={depth + 1} userId={userId} onReply={onReply} />
+            <MessageItem key={reply.id} message={reply} depth={depth + 1} userId={userId} onReply={onReply} onDelete={onDelete} />
           ))}
         </View>
       )}

@@ -51,6 +51,33 @@ export default function ThreadDetailScreen() {
     }, [loadThread]),
   );
 
+  const confirmDelete = (title: string, message: string, onConfirm: () => Promise<void>) =>
+    Alert.alert(title, message, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: () =>
+          onConfirm().catch((e) =>
+            Alert.alert('No se pudo eliminar', e instanceof Error ? e.message : 'Inténtalo de nuevo.'),
+          ),
+      },
+    ]);
+
+  const deleteThread = () =>
+    confirmDelete('Eliminar hilo', 'Se borrarán también todas sus respuestas.', async () => {
+      await forumApi.deleteThread(threadId, selectedUserId!);
+      navigation.goBack();
+    });
+
+  // Las respuestas al mensaje no se pierden: pasan al primer nivel del hilo
+  const deleteMessage = (message: MessageNode) =>
+    confirmDelete('Eliminar mensaje', 'Esta acción no se puede deshacer.', async () => {
+      await forumApi.deleteMessage(message.id, selectedUserId!);
+      if (replyingTo?.id === message.id) setReplyingTo(null);
+      await loadThread();
+    });
+
   const sendReply = async (content: string) => {
     if (!selectedUserId) return false;
     try {
@@ -76,15 +103,22 @@ export default function ThreadDetailScreen() {
       style={{ flex: 1, paddingTop: insets.top }}
       className="bg-nanny-bg"
     >
-      <TouchableOpacity
-        onPress={() => navigation.goBack()}
-        className="flex-row items-center self-start px-6 py-3"
-        accessibilityRole="button"
-        accessibilityLabel="Volver al foro"
-      >
-        <Ionicons name="chevron-back" size={18} color="#6d83a1" />
-        <Text className="ml-1 text-sm text-nanny-blue">Foro</Text>
-      </TouchableOpacity>
+      <View className="flex-row items-center justify-between px-6 py-3">
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          className="flex-row items-center"
+          accessibilityRole="button"
+          accessibilityLabel="Volver al foro"
+        >
+          <Ionicons name="chevron-back" size={18} color="#6d83a1" />
+          <Text className="ml-1 text-sm text-nanny-blue">Foro</Text>
+        </TouchableOpacity>
+        {thread && thread.owner.id === selectedUserId && (
+          <TouchableOpacity onPress={deleteThread} accessibilityRole="button" accessibilityLabel="Eliminar hilo">
+            <Ionicons name="trash-outline" size={20} color="#cc7a66" />
+          </TouchableOpacity>
+        )}
+      </View>
 
       {loading ? (
         <ActivityIndicator size="large" color="#6d83a1" style={{ marginTop: 48 }} />
@@ -132,7 +166,13 @@ export default function ThreadDetailScreen() {
             <Text className="text-nanny-muted">Nadie ha respondido todavía.</Text>
           ) : (
             thread.messages.map((message) => (
-              <MessageItem key={message.id} message={message} userId={selectedUserId} onReply={setReplyingTo} />
+              <MessageItem
+                key={message.id}
+                message={message}
+                userId={selectedUserId}
+                onReply={setReplyingTo}
+                onDelete={deleteMessage}
+              />
             ))
           )}
         </ScrollView>
