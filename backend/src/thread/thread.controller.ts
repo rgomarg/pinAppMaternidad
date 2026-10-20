@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe } from '@nestjs/common';
 import { ThreadService } from './thread.service';
 import { CreateThreadDto } from './dto/create-thread.dto';
 import { UpdateThreadDto } from './dto/update-thread.dto';
 import { ListThreadsQueryDto } from './dto/list-threads-query.dto';
+import { UserIdQueryDto } from './dto/user-id-query.dto';
 
 @Controller('thread')
 export class ThreadController {
@@ -19,8 +20,8 @@ export class ThreadController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.threadService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number, @Query() { userId }: UserIdQueryDto) {
+    return this.threadService.findOne(id, userId);
   }
 
   @Patch(':id')
