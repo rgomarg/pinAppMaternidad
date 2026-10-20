@@ -1,12 +1,15 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import ThreadListScreen from './foro/ThreadListScreen';
+
+// Stack propio dentro de la pestaña (como FamiliaScreen) para que las pantallas
+// del foro sigan dentro de FamilySelectionProvider y vean el usuario seleccionado
+const Stack = createNativeStackNavigator();
 
 export default function ForoScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-nanny-bg items-center justify-center">
-      <Text className="text-2xl font-bold text-nanny-text mb-2">Foro</Text>
-      <Text className="text-nanny-muted">Próximamente...</Text>
-    </SafeAreaView>
+    <Stack.Navigator initialRouteName="ThreadList" screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ThreadList" component={ThreadListScreen} />
+    </Stack.Navigator>
   );
 }
