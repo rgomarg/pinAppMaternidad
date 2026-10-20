@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { forumApi, type Tag, type ThreadSummary } from '../../api/forum';
+import { useFamilySelection } from '../../context/FamilySelectionContext';
 import TagChips from '../../components/foro/TagChips';
 import ThreadCard from '../../components/foro/ThreadCard';
 
@@ -11,6 +13,7 @@ const PAGE_SIZE = 20;
 export default function ThreadListScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const { selectedUserId } = useFamilySelection();
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagId, setTagId] = useState<number | null>(null);
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
@@ -67,6 +70,14 @@ export default function ThreadListScreen() {
     setTagId((current) => (current === id ? null : id));
   };
 
+  const openNewThread = () => {
+    if (!selectedUserId) {
+      Alert.alert('Selecciona un usuario', 'Elige un usuario en la pestaña Datos para poder publicar en el foro.');
+      return;
+    }
+    navigation.navigate('NewThread');
+  };
+
   return (
     <View style={{ flex: 1, paddingTop: insets.top }} className="bg-nanny-bg">
       <View className="px-6 pb-4 pt-2">
@@ -89,7 +100,7 @@ export default function ThreadListScreen() {
           renderItem={({ item }) => (
             <ThreadCard thread={item} onPress={() => navigation.navigate('ThreadDetail', { threadId: item.id })} />
           )}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 112 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -109,6 +120,16 @@ export default function ThreadListScreen() {
           }
         />
       )}
+
+      <TouchableOpacity
+        onPress={openNewThread}
+        style={{ position: 'absolute', right: 24, bottom: 24, elevation: 4 }}
+        className="h-14 w-14 items-center justify-center rounded-full bg-nanny-blue shadow-lg"
+        accessibilityRole="button"
+        accessibilityLabel="Nuevo hilo"
+      >
+        <Ionicons name="add" size={28} color="#ffffff" />
+      </TouchableOpacity>
     </View>
   );
 }
