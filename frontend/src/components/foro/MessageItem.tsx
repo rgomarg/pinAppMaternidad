@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { MessageNode } from '../../api/forum';
 import AuthorAvatar, { ProBadge, timeAgo } from './AuthorAvatar';
@@ -10,9 +10,10 @@ const MAX_INDENT_DEPTH = 3;
 type Props = {
   message: MessageNode;
   depth?: number;
+  onReply: (message: MessageNode) => void;
 };
 
-export default function MessageItem({ message, depth = 0 }: Props) {
+export default function MessageItem({ message, depth = 0, onReply }: Props) {
   return (
     <View>
       <View className="mb-3 rounded-3xl bg-white p-4">
@@ -26,6 +27,10 @@ export default function MessageItem({ message, depth = 0 }: Props) {
         <View className="mt-3 flex-row items-center">
           <Ionicons name="heart-outline" size={16} color="#808080" />
           <Text className="ml-1 text-sm text-nanny-muted">{message.likesCount}</Text>
+          <TouchableOpacity onPress={() => onReply(message)} className="ml-5 flex-row items-center" accessibilityRole="button">
+            <Ionicons name="return-down-forward" size={16} color="#6d83a1" />
+            <Text className="ml-1 text-sm text-nanny-blue">Responder</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -35,7 +40,7 @@ export default function MessageItem({ message, depth = 0 }: Props) {
           className="border-nanny-card"
         >
           {message.replies.map((reply) => (
-            <MessageItem key={reply.id} message={reply} depth={depth + 1} />
+            <MessageItem key={reply.id} message={reply} depth={depth + 1} onReply={onReply} />
           ))}
         </View>
       )}

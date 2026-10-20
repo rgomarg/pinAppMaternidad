@@ -1,12 +1,23 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { forumApi, type ThreadDetail } from '../../api/forum';
+import { forumApi, type MessageNode, type ThreadDetail } from '../../api/forum';
 import { useFamilySelection } from '../../context/FamilySelectionContext';
 import AuthorAvatar, { ProBadge, timeAgo } from '../../components/foro/AuthorAvatar';
 import MessageItem from '../../components/foro/MessageItem';
+import ReplyComposer from '../../components/foro/ReplyComposer';
 
 export default function ThreadDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -19,6 +30,7 @@ export default function ThreadDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<MessageNode | null>(null);
 
   // selectedUserId permite al backend marcar los mensajes con like del usuario
   const loadThread = useCallback(async () => {
@@ -39,8 +51,31 @@ export default function ThreadDetailScreen() {
     }, [loadThread]),
   );
 
+  const sendReply = async (content: string) => {
+    if (!selectedUserId) return false;
+    try {
+      await forumApi.createMessage({
+        content,
+        authorId: selectedUserId,
+        threadId,
+        parentId: replyingTo?.id,
+      });
+      setReplyingTo(null);
+      // Se recarga el hilo para ver la respuesta en su sitio del árbol
+      await loadThread();
+      return true;
+    } catch (e) {
+      Alert.alert('No se pudo enviar', e instanceof Error ? e.message : 'Inténtalo de nuevo.');
+      return false;
+    }
+  };
+
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-nanny-bg">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1, paddingTop: insets.top }}
+      className="bg-nanny-bg"
+    >
       <TouchableOpacity
         onPress={() => navigation.goBack()}
         className="flex-row items-center self-start px-6 py-3"
@@ -96,10 +131,25 @@ export default function ThreadDetailScreen() {
           {thread.messages.length === 0 ? (
             <Text className="text-nanny-muted">Nadie ha respondido todavía.</Text>
           ) : (
-            thread.messages.map((message) => <MessageItem key={message.id} message={message} />)
+            thread.messages.map((message) => (
+              <MessageItem key={message.id} message={message} onReply={setReplyingTo} />
+            ))
           )}
         </ScrollView>
       )}
-    </View>
+
+      {thread &&
+        (selectedUserId ? (
+          <ReplyComposer
+            replyingTo={replyingTo?.author.name ?? null}
+            onCancelReply={() => setReplyingTo(null)}
+            onSend={sendReply}
+          />
+        ) : (
+          <Text className="border-t border-nanny-card bg-white px-6 py-4 text-center text-sm text-nanny-muted">
+            Elige un usuario en la pestaña Datos para poder responder.
+          </Text>
+        ))}
+    </KeyboardAvoidingView>
   );
 }
