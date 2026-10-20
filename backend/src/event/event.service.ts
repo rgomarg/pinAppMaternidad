@@ -2,13 +2,23 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EventType } from '@prisma/client';
 
 @Injectable()
 export class EventService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(createEventDto: CreateEventDto) {
-    return 'This action adds a new event';
+    return this.prisma.event.create({
+      data: {
+        title: createEventDto.title.trim(),
+        description: createEventDto.description?.trim() || null,
+        date: createEventDto.date,
+        notification: createEventDto.notification ?? false,
+        type: createEventDto.type ?? EventType.GENERAL,
+        childId: createEventDto.childId,
+      }
+    });
   }
 
   findAll() {
