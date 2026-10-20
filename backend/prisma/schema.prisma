@@ -101,6 +101,7 @@ model User {
   avatarUrl     String?   // URL de Cloudinary/AWS S3
   role          Role      @default(USER)
   createdAt     DateTime  @default(now())
+  pushToken     String?   //Guarda el ExponentPushToken del movil que sea el user  
 
   // Relaciones
   children      Child[]
