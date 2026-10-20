@@ -132,7 +132,7 @@ export default function ThreadDetailScreen() {
             <Text className="text-nanny-muted">Nadie ha respondido todavía.</Text>
           ) : (
             thread.messages.map((message) => (
-              <MessageItem key={message.id} message={message} onReply={setReplyingTo} />
+              <MessageItem key={message.id} message={message} userId={selectedUserId} onReply={setReplyingTo} />
             ))
           )}
         </ScrollView>

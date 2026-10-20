@@ -3,6 +3,7 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { MessageNode } from '../../api/forum';
 import AuthorAvatar, { ProBadge, timeAgo } from './AuthorAvatar';
+import LikeButton from './LikeButton';
 
 // A partir de este nivel las respuestas ya no se sangran más (pantallas estrechas)
 const MAX_INDENT_DEPTH = 3;
@@ -10,10 +11,11 @@ const MAX_INDENT_DEPTH = 3;
 type Props = {
   message: MessageNode;
   depth?: number;
+  userId: number | null;
   onReply: (message: MessageNode) => void;
 };
 
-export default function MessageItem({ message, depth = 0, onReply }: Props) {
+export default function MessageItem({ message, depth = 0, userId, onReply }: Props) {
   return (
     <View>
       <View className="mb-3 rounded-3xl bg-white p-4">
@@ -25,8 +27,7 @@ export default function MessageItem({ message, depth = 0, onReply }: Props) {
         </View>
         <Text className="text-base leading-6 text-nanny-text">{message.content}</Text>
         <View className="mt-3 flex-row items-center">
-          <Ionicons name="heart-outline" size={16} color="#808080" />
-          <Text className="ml-1 text-sm text-nanny-muted">{message.likesCount}</Text>
+          <LikeButton message={message} userId={userId} />
           <TouchableOpacity onPress={() => onReply(message)} className="ml-5 flex-row items-center" accessibilityRole="button">
             <Ionicons name="return-down-forward" size={16} color="#6d83a1" />
             <Text className="ml-1 text-sm text-nanny-blue">Responder</Text>
@@ -40,7 +41,7 @@ export default function MessageItem({ message, depth = 0, onReply }: Props) {
           className="border-nanny-card"
         >
           {message.replies.map((reply) => (
-            <MessageItem key={reply.id} message={reply} depth={depth + 1} onReply={onReply} />
+            <MessageItem key={reply.id} message={reply} depth={depth + 1} userId={userId} onReply={onReply} />
           ))}
         </View>
       )}
