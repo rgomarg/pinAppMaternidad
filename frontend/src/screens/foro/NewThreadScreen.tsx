@@ -30,6 +30,8 @@ export default function NewThreadScreen() {
   const [content, setContent] = useState('');
   const [tagIds, setTagIds] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
+  // Los errores se muestran tras el primer intento de publicar, no mientras se escribe
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     forumApi.getTags().then(setTags).catch(() => setTags([]));
@@ -38,10 +40,16 @@ export default function NewThreadScreen() {
   const toggleTag = (id: number) =>
     setTagIds((current) => (current.includes(id) ? current.filter((tagId) => tagId !== id) : [...current, id]));
 
-  const canPublish = title.trim().length > 0 && content.trim().length > 0 && !saving;
+  const errors = {
+    title: title.trim() ? null : 'El título es obligatorio',
+    content: content.trim() ? null : 'El mensaje es obligatorio',
+    tags: tagIds.length > 0 ? null : 'Debes seleccionar al menos una etiqueta',
+  };
+  const isValid = !errors.title && !errors.content && !errors.tags;
 
   const publish = async () => {
-    if (!selectedUserId || !canPublish) return;
+    setSubmitted(true);
+    if (!selectedUserId || !isValid || saving) return;
     setSaving(true);
     try {
       const thread = await forumApi.createThread({
@@ -69,11 +77,11 @@ export default function NewThreadScreen() {
           <Text className="text-base text-nanny-blue">Cancelar</Text>
         </TouchableOpacity>
         <Text className="text-lg font-bold text-nanny-text">Nuevo hilo</Text>
-        <TouchableOpacity onPress={publish} disabled={!canPublish} accessibilityRole="button">
+        <TouchableOpacity onPress={publish} disabled={saving} accessibilityRole="button">
           {saving ? (
             <ActivityIndicator color="#6d83a1" />
           ) : (
-            <Text className={`text-base font-semibold ${canPublish ? 'text-nanny-blue' : 'text-nanny-muted'}`}>
+            <Text className={`text-base font-semibold ${submitted && !isValid ? 'text-nanny-muted' : 'text-nanny-blue'}`}>
               Publicar
             </Text>
           )}
@@ -90,9 +98,12 @@ export default function NewThreadScreen() {
           placeholderTextColor="#a8a29a"
           className="mb-1 rounded-2xl bg-white px-4 py-3 text-base text-nanny-text"
         />
-        <Text className="mb-5 text-right text-xs text-nanny-muted">
-          {title.length}/{MAX_TITLE}
-        </Text>
+        <View className="mb-5 flex-row">
+          <FieldError message={submitted ? errors.title : null} />
+          <Text className="text-xs text-nanny-muted">
+            {title.length}/{MAX_TITLE}
+          </Text>
+        </View>
 
         <Text className="mb-2 text-sm font-semibold text-nanny-muted">Mensaje</Text>
         <TextInput
@@ -104,12 +115,22 @@ export default function NewThreadScreen() {
           multiline
           textAlignVertical="top"
           style={{ minHeight: 160 }}
-          className="mb-5 rounded-2xl bg-white px-4 py-3 text-base text-nanny-text"
+          className="mb-1 rounded-2xl bg-white px-4 py-3 text-base text-nanny-text"
         />
+        <View className="mb-5 flex-row">
+          <FieldError message={submitted ? errors.content : null} />
+        </View>
 
         <Text className="mb-2 text-sm font-semibold text-nanny-muted">Etiquetas</Text>
         <TagChips tags={tags} selected={tagIds} onToggle={toggleTag} />
+        <View className="mt-1 flex-row">
+          <FieldError message={submitted ? errors.tags : null} />
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
+}
+
+function FieldError({ message }: { message: string | null }) {
+  return <Text className="flex-1 text-xs text-red-500">{message ?? ''}</Text>;
 }

@@ -84,7 +84,7 @@ export const forumApi = {
 
   getThread: (id: number, userId?: number | null) => request<ThreadDetail>(`/thread/${id}${query({ userId })}`),
 
-  createThread: (data: { title: string; content: string; ownerId: number; tagIds?: number[] }) =>
+  createThread: (data: { title: string; content: string; ownerId: number; tagIds: number[] }) =>
     request<ThreadSummary>('/thread', { method: 'POST', body: JSON.stringify(data) }),
 
   deleteThread: (id: number, userId: number) =>
