@@ -89,7 +89,7 @@ export default function NewThreadScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
-        <Text className="mb-2 text-sm font-semibold text-nanny-muted">Título</Text>
+        <Text className="mb-2 text-sm font-semibold text-nanny-muted">Título *</Text>
         <TextInput
           value={title}
           onChangeText={setTitle}
@@ -105,7 +105,7 @@ export default function NewThreadScreen() {
           </Text>
         </View>
 
-        <Text className="mb-2 text-sm font-semibold text-nanny-muted">Mensaje</Text>
+        <Text className="mb-2 text-sm font-semibold text-nanny-muted">Mensaje *</Text>
         <TextInput
           value={content}
           onChangeText={setContent}
@@ -121,7 +121,7 @@ export default function NewThreadScreen() {
           <FieldError message={submitted ? errors.content : null} />
         </View>
 
-        <Text className="mb-2 text-sm font-semibold text-nanny-muted">Etiquetas</Text>
+        <Text className="mb-2 text-sm font-semibold text-nanny-muted">Etiquetas *</Text>
         <TagChips tags={tags} selected={tagIds} onToggle={toggleTag} />
         <View className="mt-1 flex-row">
           <FieldError message={submitted ? errors.tags : null} />
