@@ -11,11 +11,21 @@ import FamiliaScreen from './src/screens/FamiliaScreen';
 import ForoScreen from './src/screens/ForoScreen';
 import ChildRegistrationScreen from './src/screens/ChildRegistrationScreen';
 import CrearEventoScreen from './src/screens/CrearEventoScreen';
-
+import * as Notifications from 'expo-notifications';
 import { FamilySelectionProvider } from './src/context/FamilySelectionContext';
+
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 function TabNavigator() {
   return (

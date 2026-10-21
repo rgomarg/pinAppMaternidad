@@ -10,6 +10,9 @@ import ActualizarPesoModal from '../components/MeasuramentWeightForm';
 import GrowthChart, { formatMonthYear } from '../components/GrowthChart';
 import { useFamilySelection } from '../context/FamilySelectionContext';
 import { useGrowth } from '../hooks/useGrowth';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import { Platform } from 'react-native';
 
 
 export default function HomeScreen() {
@@ -84,12 +87,68 @@ export default function HomeScreen() {
     }
   };
 
+
+    const registerForPushNotifications = async (userId: number) => {
+    // 1. Comprobar que sea un móvil físico real
+    if (!Device.isDevice) {
+      console.log('Las notificaciones push solo funcionan en dispositivos físicos.');
+      return;
+    }
+
+    // 2. Configurar el canal para Android (imprescindible en Android para que suene)
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#6d83a1',
+      });
+    }
+
+    // 3. Pedir permisos al usuario
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+      console.log('Permiso de notificaciones denegado por el usuario.');
+      return;
+    }
+
+    try {
+      // 4. Obtener el token único de Expo
+      const tokenData = await Notifications.getExpoPushTokenAsync();
+      const token = tokenData.data;
+      console.log('Token obtenido del móvil:', token);
+
+      // 5. Enviar el token a tu backend para guardarlo en User.pushToken
+      await fetch(`${API_URL}/notifications/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          pushToken: token,
+        }),
+      });
+
+      console.log(`✅ Token registrado con éxito en el backend para el usuario ${userId}`);
+    } catch (error) {
+      console.error('Error registrando el token en el backend:', error);
+    }
+  };
+
   const handleSelectUser = (userId: number) => {
     setActiveUserId(userId);
     setSelectedUserId(userId);
     setIsUserModalVisible(false);
     updateFamiliaChild(null, userId);
     fetchChildren(userId);
+
+    registerForPushNotifications(userId);
 
     // Le pasamos el userId a la pestaña Familia sin cambiar de pestaña
     const familiaKey = navigation.getState().routes.find((r: any) => r.name === 'Familia')?.key;
