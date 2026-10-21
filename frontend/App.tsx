@@ -69,6 +69,8 @@ export default function App() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {/* Pestañas principales */}
         <Stack.Screen name="MainTabs" component={TabNavigator} />
+        {/* Pantalla para añadir un hijo */}
+        <Stack.Screen name="RegistroHijo" component={ChildRegistrationScreen} />
         {/* Pantalla para crear evento */}
         <Stack.Screen 
           name="CrearEvento" 
