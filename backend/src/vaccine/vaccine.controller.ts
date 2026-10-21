@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query } from '@nestjs/common';
 import { VaccineService } from './vaccine.service';
 import { CreateVaccineDto } from './dto/create-vaccine.dto';
 import { UpdateVaccineDto } from './dto/update-vaccine.dto';
@@ -30,5 +30,15 @@ export class VaccineController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.vaccineService.remove(+id);
+  }
+
+  @Get('guardian/:guardianId')
+  findVaccineForGuardianOnDate(
+    @Param('guardianId', ParseIntPipe) guardianId: number,
+    @Query('date') date?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.vaccineService.findVaccineForGuardianOnDate(guardianId, date, from, to);
   }
 }

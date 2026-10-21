@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateMedicineDto } from './dto/create-medicine.dto';
 import { UpdateMedicineDto } from './dto/update-medicine.dto';
 import { PrismaService } from 'prisma/prisma.service';
+import { getDateRange } from '../common/date-range';
 
 @Injectable()
 export class MedicineService {
@@ -35,5 +36,58 @@ export class MedicineService {
 
   remove(id: number) {
     return this.prisma.medicine.delete({ where: { id } });
+  }
+
+  async findMedicineForGuardianOnDate(guardianId: number, date?: string, from?: string, to?: string) {
+    const { start, end } = getDateRange(date, from, to);
+
+    const medicines = await this.prisma.medicine.findMany({
+      where: {
+        child: {
+          parentId: guardianId,
+        },
+        startDate: {
+          lt: end,
+        },
+        OR: [
+          { endDate: null },
+          { endDate: { gte: start } },
+        ],
+      },
+      select: {
+        id:true,
+        name:true,
+        dosage:true,
+        intervalHours:true,
+        startDate:true,
+        endDate:true,
+        instructions:true,
+        child: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return medicines.map((medicine) => {
+      const details = [
+        medicine.dosage,
+        medicine.intervalHours ? `Cada ${medicine.intervalHours} h` : null,
+        medicine.instructions?.trim() || null,
+      ].filter(Boolean);
+
+      return {
+        id: `medicine-${medicine.id}`,
+        title: medicine.name,
+        description: details.join(' · '),
+        date: medicine.startDate.toISOString(),
+        startDate: medicine.startDate.toISOString(),
+        endDate: medicine.endDate?.toISOString() ?? null,
+        type: 'MEDICINE' as const,
+        child: medicine.child,
+      };
+    });
   }
 }
