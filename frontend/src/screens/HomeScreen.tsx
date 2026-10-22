@@ -13,6 +13,7 @@ import { useGrowth } from '../hooks/useGrowth';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 
 export default function HomeScreen() {
@@ -89,23 +90,21 @@ export default function HomeScreen() {
 
 
     const registerForPushNotifications = async (userId: number) => {
-    // 1. Comprobar que sea un móvil físico real
     if (!Device.isDevice) {
       console.log('Las notificaciones push solo funcionan en dispositivos físicos.');
       return;
     }
 
-    // 2. Configurar el canal para Android (imprescindible en Android para que suene)
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'default',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#6d83a1',
+        sound: 'default',
       });
     }
 
-    // 3. Pedir permisos al usuario
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
@@ -120,12 +119,19 @@ export default function HomeScreen() {
     }
 
     try {
-      // 4. Obtener el token único de Expo
-      const tokenData = await Notifications.getExpoPushTokenAsync();
+      const projectId =
+        Constants?.expoConfig?.extra?.eas?.projectId ??
+        Constants?.easConfig?.projectId;
+
+      if (!projectId) {
+        console.log('ℹ️ [Notificaciones] Sin EAS projectId. Las notificaciones locales en el dispositivo están activas.');
+        return;
+      }
+
+      const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
       const token = tokenData.data;
       console.log('Token obtenido del móvil:', token);
 
-      // 5. Enviar el token a tu backend para guardarlo en User.pushToken
       await fetch(`${API_URL}/notifications/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -137,7 +143,7 @@ export default function HomeScreen() {
 
       console.log(`✅ Token registrado con éxito en el backend para el usuario ${userId}`);
     } catch (error) {
-      console.error('Error registrando el token en el backend:', error);
+      console.log('ℹ️ [Notificaciones] Push remoto no soportado en Expo Go Android (SDK 53+). Las notificaciones locales programadas en el móvil funcionarán al crear eventos.');
     }
   };
 

@@ -15,6 +15,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { API_URL } from '../api/config';
+import * as Notifications from 'expo-notifications';
 
 type Child = {
   id: number;
@@ -262,23 +263,76 @@ export default function CrearEventoScreen() {
         notifType = 'MEDICINE';
       }
 
-      // Si se activó la notificación y se calculó una fecha válida
-      if (enableNotification && userId && createdId && scheduledNotifTime) {
-        await fetch(`${API_URL}/notifications`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: notifTitle,
-            body: notifBody,
-            scheduledAt: scheduledNotifTime.toISOString(),
-            userId,
-            type: notifType,
-            eventId: notifType === 'EVENT' ? createdId : undefined,
-            vaccineId: notifType === 'VACCINE' ? createdId : undefined,
-            medicineId: notifType === 'MEDICINE' ? createdId : undefined,
-            data: { screen: 'Calendario', id: createdId },
-          }),
-        }).catch((err) => console.warn('No se pudo registrar la notificación push:', err));
+      // Si se activó la notificación y se calculó una fecha válida      
+      if (enableNotification && createdId && scheduledNotifTime) {
+        // 1. Programar la alerta nativa en el reloj del móvil
+        try {
+          const perm = await Notifications.requestPermissionsAsync({
+            ios: {
+              allowAlert: true,
+              allowBadge: true,
+              allowSound: true,
+            },
+          });
+          if (perm.status === 'granted') {
+            if (Platform.OS === 'android') {
+              await Notifications.setNotificationChannelAsync('default', {
+                name: 'default',
+                importance: Notifications.AndroidImportance.MAX,
+                vibrationPattern: [0, 250, 250, 250],
+                lightColor: '#6d83a1',
+                sound: 'default',
+              });
+            }
+
+            const now = Date.now();
+            let finalTriggerDate = scheduledNotifTime;
+            // Si la fecha programada ya pasó o es para hoy en breves minutos y la antelación la sitúa en el pasado,
+            // la ajustamos para sonar en 3 segundos para que el usuario la reciba
+            if (finalTriggerDate.getTime() <= now) {
+              finalTriggerDate = new Date(now + 3000);
+            }
+
+            const notifId = await Notifications.scheduleNotificationAsync({
+              content: {
+                title: notifTitle,
+                body: notifBody,
+                sound: 'default',
+                priority: Notifications.AndroidNotificationPriority.HIGH,
+                data: { screen: 'Calendario', id: createdId },
+              },
+              trigger: {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                date: finalTriggerDate,
+                channelId: 'default',
+              },
+            });
+            console.log('✅ Alerta nativa programada con éxito [ID:', notifId, '] para:', finalTriggerDate);
+          } else {
+            console.warn('⚠️ Permiso de notificaciones no concedido en el dispositivo.');
+          }
+        } catch (notifErr) {
+          console.warn('Error al programar alerta en el dispositivo:', notifErr);
+        }
+
+        // 2. Guardar también en tu backend (para base de datos y registro)
+        if (userId) {
+          await fetch(`${API_URL}/notifications`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: notifTitle,
+              body: notifBody,
+              scheduledAt: scheduledNotifTime.toISOString(),
+              userId,
+              type: notifType,
+              eventId: notifType === 'EVENT' ? createdId : undefined,
+              vaccineId: notifType === 'VACCINE' ? createdId : undefined,
+              medicineId: notifType === 'MEDICINE' ? createdId : undefined,
+              data: { screen: 'Calendario', id: createdId },
+            }),
+          }).catch((err) => console.warn('No se pudo registrar en backend:', err));
+        }
       }
 
       navigation.goBack();
@@ -704,6 +758,45 @@ export default function CrearEventoScreen() {
                   ℹ️ Se programará la alerta para la próxima toma. Una vez enviada, el sistema programará la siguiente automáticamente sin saturar tu calendario.
                 </Text>
               )}
+
+              <TouchableOpacity
+                onPress={async () => {
+                  try {
+                    await Notifications.requestPermissionsAsync();
+                    if (Platform.OS === 'android') {
+                      await Notifications.setNotificationChannelAsync('default', {
+                        name: 'default',
+                        importance: Notifications.AndroidImportance.MAX,
+                        vibrationPattern: [0, 250, 250, 250],
+                        lightColor: '#6d83a1',
+                        sound: 'default',
+                      });
+                    }
+                    await Notifications.scheduleNotificationAsync({
+                      content: {
+                        title: '🔔 Alerta de prueba',
+                        body: '¡Las alertas funcionan perfectamente en tu dispositivo!',
+                        sound: 'default',
+                        priority: Notifications.AndroidNotificationPriority.HIGH,
+                      },
+                      trigger: {
+                        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+                        seconds: 2,
+                        channelId: 'default',
+                      },
+                    });
+                    Alert.alert('Prueba en curso', 'En 2 segundos sonará la alerta en tu dispositivo.');
+                  } catch (e: any) {
+                    Alert.alert('Error', e?.message || 'Error desconocido');
+                  }
+                }}
+                className="mt-3.5 flex-row items-center justify-center rounded-xl border border-[#6d83a1] bg-[#eef3f8] py-2.5 px-4"
+              >
+                <Ionicons name="notifications-outline" size={16} color="#6d83a1" />
+                <Text className="ml-2 text-xs font-semibold text-[#6d83a1]">
+                  Probar alerta ahora (sonará en 2s)
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
