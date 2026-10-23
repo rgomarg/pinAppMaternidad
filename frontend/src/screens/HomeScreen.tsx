@@ -102,7 +102,7 @@ export default function HomeScreen() {
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#6d83a1',
         sound: 'default',
-      });
+      }).catch(() => {});
     }
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync();

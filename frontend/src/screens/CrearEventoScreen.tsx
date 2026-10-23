@@ -282,7 +282,7 @@ export default function CrearEventoScreen() {
                 vibrationPattern: [0, 250, 250, 250],
                 lightColor: '#6d83a1',
                 sound: 'default',
-              });
+              }).catch(()=> {});
             }
 
             const now = Date.now();
@@ -770,7 +770,7 @@ export default function CrearEventoScreen() {
                         vibrationPattern: [0, 250, 250, 250],
                         lightColor: '#6d83a1',
                         sound: 'default',
-                      });
+                      }).catch(() => {});
                     }
                     await Notifications.scheduleNotificationAsync({
                       content: {

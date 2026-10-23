@@ -87,7 +87,7 @@ export default function App() {
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#6d83a1',
           sound: 'default',
-        });
+        }).catch(() => {});
       }
       // 2. Solicitar permisos de notificación al iniciar (compatible con iOS y Android)
       await Notifications.requestPermissionsAsync({
