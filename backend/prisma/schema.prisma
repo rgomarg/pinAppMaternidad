@@ -155,6 +155,7 @@ model Vaccine {
   name          String
   scheduledFor  DateTime?  // Fecha calculada por el sistema o manual tb se puede cambiar
   appliedAt     DateTime? //null para saber si NO se ha puesto
+  notification  Boolean   @default(false)
   
   childId       Int
   child         Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
@@ -196,6 +197,7 @@ model Medicine {
   startDate        DateTime  @default(now()) // Inicio del tratamiento
   endDate          DateTime? // Fin del tratamiento (nulo si es crónico o "a demanda")
   instructions     String?   @db.Text // Instrucciones extra (ej. "Junto con comida")
+  notification     Boolean   @default(false)
 
   // Relación obligatoria: Quién toma la medicación
   childId          Int

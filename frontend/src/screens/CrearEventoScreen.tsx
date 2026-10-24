@@ -16,6 +16,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { API_URL } from '../api/config';
 import * as Notifications from 'expo-notifications';
+import {
+  checkNotificationPermissions,
+  scheduleLocalEventNotification,
+  registerBackendNotification,
+  NOTIFICATION_PERMISSION_REQUIRED_TITLE,
+  NOTIFICATION_PERMISSION_REQUIRED_MESSAGE,
+} from '../services/notificationService';
 
 type Child = {
   id: number;
@@ -165,6 +172,23 @@ export default function CrearEventoScreen() {
     setEndDate(base);
   };
 
+  // Manejo de activación de alerta desde el switch
+  const handleToggleNotification = async (value: boolean) => {
+    if (value) {
+      const hasPermission = await checkNotificationPermissions();
+      if (!hasPermission) {
+        Alert.alert(
+          NOTIFICATION_PERMISSION_REQUIRED_TITLE,
+          NOTIFICATION_PERMISSION_REQUIRED_MESSAGE,
+          [{ text: 'Entendido' }],
+        );
+        setEnableNotification(false);
+        return;
+      }
+    }
+    setEnableNotification(value);
+  };
+
   // Validaciones y Guardado
   const handleSave = async () => {
     if (!selectedChildId) {
@@ -190,6 +214,21 @@ export default function CrearEventoScreen() {
     setSaving(true);
 
     try {
+      // Si el usuario intentó configurar alerta, comprobamos permisos a nivel de sistema del móvil
+      let notificationAllowed = false;
+      let permissionRestricted = false;
+
+      if (enableNotification) {
+        const hasPermissions = await checkNotificationPermissions();
+        if (hasPermissions) {
+          notificationAllowed = true;
+        } else {
+          // El sistema detecta la restricción del dispositivo
+          permissionRestricted = true;
+          notificationAllowed = false;
+        }
+      }
+
       let createdId: number | null = null;
       let scheduledNotifTime: Date | null = null;
       let notifTitle = '';
@@ -206,7 +245,7 @@ export default function CrearEventoScreen() {
             date: date.toISOString(),
             type: eventType,
             childId: selectedChildId,
-            notification: enableNotification,
+            notification: notificationAllowed,
           }),
         });
         if (!res.ok) throw new Error('Error al crear el evento');
@@ -226,6 +265,7 @@ export default function CrearEventoScreen() {
             childId: selectedChildId,
             appliedAt: vaccineApplied ? date.toISOString() : null,
             scheduledFor: !vaccineApplied ? date.toISOString() : null,
+            notification: notificationAllowed,
           }),
         });
         if (!res.ok) throw new Error('Error al registrar la vacuna');
@@ -251,6 +291,7 @@ export default function CrearEventoScreen() {
             endDate: endDate ? endDate.toISOString() : null,
             instructions: instructions.trim() || undefined,
             childId: selectedChildId,
+            notification: notificationAllowed,
           }),
         });
         if (!res.ok) throw new Error('Error al registrar el medicamento');
@@ -263,76 +304,53 @@ export default function CrearEventoScreen() {
         notifType = 'MEDICINE';
       }
 
-      // Si se activó la notificación y se calculó una fecha válida      
-      if (enableNotification && createdId && scheduledNotifTime) {
-        // 1. Programar la alerta nativa en el reloj del móvil
+      // Si los permisos están concedidos y se activó la notificación
+      if (notificationAllowed && createdId && scheduledNotifTime) {
         try {
-          const perm = await Notifications.requestPermissionsAsync({
-            ios: {
-              allowAlert: true,
-              allowBadge: true,
-              allowSound: true,
-            },
+          const uniqueId = notifType === 'EVENT' ? createdId : `${notifType.toLowerCase()}-${createdId}`;
+          await scheduleLocalEventNotification({
+            eventId: uniqueId,
+            itemType: notifType,
+            title: notifTitle,
+            body: notifBody,
+            targetDate: scheduledNotifTime,
+            advanceMinutes: 0,
           });
-          if (perm.status === 'granted') {
-            if (Platform.OS === 'android') {
-              await Notifications.setNotificationChannelAsync('default', {
-                name: 'default',
-                importance: Notifications.AndroidImportance.MAX,
-                vibrationPattern: [0, 250, 250, 250],
-                lightColor: '#6d83a1',
-                sound: 'default',
-              }).catch(()=> {});
-            }
 
-            const now = Date.now();
-            let finalTriggerDate = scheduledNotifTime;
-            // Si la fecha programada ya pasó o es para hoy en breves minutos y la antelación la sitúa en el pasado,
-            // la ajustamos para sonar en 3 segundos para que el usuario la reciba
-            if (finalTriggerDate.getTime() <= now) {
-              finalTriggerDate = new Date(now + 3000);
-            }
-
-            const notifId = await Notifications.scheduleNotificationAsync({
-              content: {
-                title: notifTitle,
-                body: notifBody,
-                sound: 'default',
-                priority: Notifications.AndroidNotificationPriority.HIGH,
-                data: { screen: 'Calendario', id: createdId },
-              },
-              trigger: {
-                type: Notifications.SchedulableTriggerInputTypes.DATE,
-                date: finalTriggerDate,
-                channelId: 'default',
-              },
+          // Registrar también en el backend
+          if (userId) {
+            await registerBackendNotification({
+              userId,
+              eventId: notifType === 'EVENT' ? createdId : undefined,
+              vaccineId: notifType === 'VACCINE' ? createdId : undefined,
+              medicineId: notifType === 'MEDICINE' ? createdId : undefined,
+              type: notifType,
+              title: notifTitle,
+              body: notifBody,
+              scheduledAt: scheduledNotifTime.toISOString(),
             });
-            console.log('✅ Alerta nativa programada con éxito [ID:', notifId, '] para:', finalTriggerDate);
-          } else {
-            console.warn('⚠️ Permiso de notificaciones no concedido en el dispositivo.');
           }
         } catch (notifErr) {
           console.warn('Error al programar alerta en el dispositivo:', notifErr);
         }
+      }
 
-        // 2. Guardar también en tu backend (para base de datos y registro)
-        if (userId) {
-          await fetch(`${API_URL}/notifications`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              title: notifTitle,
-              body: notifBody,
-              scheduledAt: scheduledNotifTime.toISOString(),
-              userId,
-              type: notifType,
-              eventId: notifType === 'EVENT' ? createdId : undefined,
-              vaccineId: notifType === 'VACCINE' ? createdId : undefined,
-              medicineId: notifType === 'MEDICINE' ? createdId : undefined,
-              data: { screen: 'Calendario', id: createdId },
-            }),
-          }).catch((err) => console.warn('No se pudo registrar en backend:', err));
-        }
+      // Si el dispositivo tenía las notificaciones desactivadas a nivel de sistema:
+      // Se despliega el mensaje informativo indicado y se garantiza que el evento
+      // se mantiene guardado en la agenda sin bloquear el uso del calendario.
+      if (permissionRestricted) {
+        Alert.alert(
+          NOTIFICATION_PERMISSION_REQUIRED_TITLE,
+          `${NOTIFICATION_PERMISSION_REQUIRED_MESSAGE}\n\nEl evento se ha guardado correctamente en tu calendario sin la alerta vinculada.`,
+          [
+            {
+              text: 'Entendido',
+              onPress: () => navigation.goBack(),
+            },
+          ],
+          { cancelable: false },
+        );
+        return;
       }
 
       navigation.goBack();
@@ -718,7 +736,7 @@ export default function CrearEventoScreen() {
             </View>
             <Switch
               value={enableNotification}
-              onValueChange={setEnableNotification}
+              onValueChange={handleToggleNotification}
               trackColor={{ false: '#ded6c7', true: '#6d83a1' }}
             />
           </View>

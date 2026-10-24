@@ -2,10 +2,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL } from '../api/config';
+import {
+  checkNotificationPermissions,
+  scheduleLocalEventNotification,
+  cancelLocalEventNotification,
+  registerBackendNotification,
+  NOTIFICATION_PERMISSION_REQUIRED_TITLE,
+  NOTIFICATION_PERMISSION_REQUIRED_MESSAGE,
+} from '../services/notificationService';
 
 
 
@@ -43,6 +59,7 @@ type CalendarEvent = {
   endDate?: string | null;
   type?: 'GENERAL' | 'MEDICAL_APPOINTMENT' | 'VACCINE' | 'MEDICINE';
   child: Child;
+  notification?: boolean;
 };
 
 const EVENT_COLORS = {
@@ -137,6 +154,7 @@ export default function CalendarioScreen() {
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [childrenError, setChildrenError] = useState<string | null>(null);
   const [eventsError, setEventsError] = useState<string | null>(null);
+  const [togglingEventId, setTogglingEventId] = useState<number | string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -313,6 +331,156 @@ export default function CalendarioScreen() {
     return marked;
   }, [events, selectedChildId, selectedDate, visibleMonth]);
 
+  const handleToggleNotification = async (event: CalendarEvent) => {
+    let endpoint = '';
+    let itemType: 'EVENT' | 'VACCINE' | 'MEDICINE' = 'EVENT';
+    let numericId = 0;
+
+    const idStr = String(event.id);
+    if (idStr.startsWith('vaccine-')) {
+      numericId = parseInt(idStr.replace('vaccine-', ''), 10);
+      endpoint = `${API_URL}/vaccine/${numericId}`;
+      itemType = 'VACCINE';
+    } else if (idStr.startsWith('medicine-')) {
+      numericId = parseInt(idStr.replace('medicine-', ''), 10);
+      endpoint = `${API_URL}/medicine/${numericId}`;
+      itemType = 'MEDICINE';
+    } else {
+      // Proviene de la tabla Event (incluso si es cita médica, vacuna o medicamento guardado como Event)
+      numericId = typeof event.id === 'number' ? event.id : parseInt(idStr.replace('event-', ''), 10);
+      endpoint = `${API_URL}/event/${numericId}`;
+      itemType = 'EVENT';
+    }
+
+    if (isNaN(numericId) || !endpoint) {
+      Alert.alert('Error', 'Identificador del registro no válido.');
+      return;
+    }
+
+    const currentNotification = !!event.notification;
+    const nextNotification = !currentNotification;
+
+    // Si el usuario intenta activar la alerta, verificar permisos a nivel de sistema del móvil
+    if (nextNotification) {
+      const hasPermission = await checkNotificationPermissions();
+      if (!hasPermission) {
+        Alert.alert(
+          NOTIFICATION_PERMISSION_REQUIRED_TITLE,
+          NOTIFICATION_PERMISSION_REQUIRED_MESSAGE,
+          [{ text: 'Entendido' }],
+        );
+        return;
+      }
+    }
+
+    setTogglingEventId(event.id);
+
+    try {
+      // 1. Actualizar el atributo booleano en el backend con fallback automático
+      let res = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notification: nextNotification }),
+      });
+
+      // Si devuelve 404, verificar de forma defensiva la tabla alternativa
+      if (res.status === 404) {
+        if (endpoint.includes('/vaccine/')) {
+          const altRes = await fetch(`${API_URL}/event/${numericId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notification: nextNotification }),
+          });
+          if (altRes.ok) {
+            res = altRes;
+            endpoint = `${API_URL}/event/${numericId}`;
+            itemType = 'EVENT';
+          }
+        } else if (endpoint.includes('/medicine/')) {
+          const altRes = await fetch(`${API_URL}/event/${numericId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notification: nextNotification }),
+          });
+          if (altRes.ok) {
+            res = altRes;
+            endpoint = `${API_URL}/event/${numericId}`;
+            itemType = 'EVENT';
+          }
+        } else if (endpoint.includes('/event/')) {
+          const fallbackTarget =
+            event.type === 'VACCINE' ? 'vaccine' : event.type === 'MEDICINE' ? 'medicine' : null;
+          if (fallbackTarget) {
+            const altRes = await fetch(`${API_URL}/${fallbackTarget}/${numericId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ notification: nextNotification }),
+            });
+            if (altRes.ok) {
+              res = altRes;
+              endpoint = `${API_URL}/${fallbackTarget}/${numericId}`;
+              itemType = fallbackTarget === 'vaccine' ? 'VACCINE' : 'MEDICINE';
+            }
+          }
+        }
+      }
+
+      if (!res.ok) {
+        throw new Error('No se pudo actualizar el estado de la notificación');
+      }
+
+      // 2. Gestionar alerta local en el dispositivo
+      if (nextNotification) {
+        const eventDate = new Date(event.date);
+        const prefix =
+          event.type === 'MEDICINE' || itemType === 'MEDICINE'
+            ? 'Toma de medicación'
+            : event.type === 'VACCINE' || itemType === 'VACCINE'
+            ? 'Recordatorio de vacuna'
+            : event.type === 'MEDICAL_APPOINTMENT'
+            ? 'Cita médica'
+            : 'Recordatorio';
+
+        await scheduleLocalEventNotification({
+          eventId: event.id,
+          itemType,
+          title: `${prefix}: ${event.title}`,
+          body: `Programado para ${event.child?.name || 'tu hijo/a'}`,
+          targetDate: eventDate,
+          advanceMinutes: event.type === 'MEDICINE' || itemType === 'MEDICINE' ? 0 : 15,
+        });
+
+        if (userId) {
+          await registerBackendNotification({
+            userId,
+            eventId: itemType === 'EVENT' ? numericId : undefined,
+            vaccineId: itemType === 'VACCINE' ? numericId : undefined,
+            medicineId: itemType === 'MEDICINE' ? numericId : undefined,
+            type: itemType,
+            title: `${prefix}: ${event.title}`,
+            body: `Programado para ${event.child?.name || 'tu hijo/a'}`,
+            scheduledAt: new Date(
+              eventDate.getTime() - (event.type === 'MEDICINE' || itemType === 'MEDICINE' ? 0 : 15) * 60 * 1000,
+            ).toISOString(),
+          });
+        }
+      } else {
+        await cancelLocalEventNotification(event.id, itemType);
+      }
+
+      // 3. Actualizar estado local reactivo
+      setEvents((prev) =>
+        prev.map((e) => (e.id === event.id ? { ...e, notification: nextNotification } : e)),
+      );
+    } catch (error) {
+      console.error('Error al alternar notificación:', error);
+      Alert.alert('Error', 'No se pudo actualizar la notificación.');
+    } finally {
+      setTogglingEventId(null);
+    }
+  };
+
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f7f3ec'}}>
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }} style={{ flex: 1 }}>
@@ -459,30 +627,84 @@ export default function CalendarioScreen() {
             eventsForSelectedChild.map((event) => {
               const visuals = getEventVisuals(event.type);
               const timeStr = formatEventTime(event.date);
+              const isToggling = togglingEventId === event.id;
+              const hasNotification = !!event.notification;
 
               return (
-                <View
-                  key={event.id}
-                  className={`mt-4 rounded-2xl border ${visuals.border} ${visuals.bg} px-5 py-4`}
-                >
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center">
-                      <Ionicons name={visuals.icon} size={18} color={visuals.color} />
-                      <Text style={{ color: visuals.color }} className="ml-2 text-sm font-semibold">
-                        {event.child?.name ?? 'Hijo'} • {visuals.badge}
-                      </Text>
+                <View key={event.id} className="mt-4 flex-row items-center">
+                  {/* Tarjeta del evento (a la izquierda) */}
+                  <View
+                    className={`flex-1 rounded-2xl border ${visuals.border} ${visuals.bg} px-4 py-3.5`}
+                  >
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center flex-1 mr-2">
+                        <Ionicons name={visuals.icon} size={18} color={visuals.color} />
+                        <Text
+                          numberOfLines={1}
+                          style={{ color: visuals.color }}
+                          className="ml-2 text-sm font-semibold"
+                        >
+                          {event.child?.name ?? 'Hijo'} • {visuals.badge}
+                        </Text>
+                      </View>
+                      <View className="flex-row items-center rounded-full bg-white/70 px-2.5 py-0.5 shadow-sm">
+                        <Ionicons
+                          name="time-outline"
+                          size={13}
+                          color={visuals.color}
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text style={{ color: visuals.color }} className="text-xs font-bold">
+                          {timeStr}
+                        </Text>
+                      </View>
                     </View>
-                    <View className="flex-row items-center rounded-full bg-white/70 px-2.5 py-0.5 shadow-sm">
-                      <Ionicons name="time-outline" size={13} color={visuals.color} style={{ marginRight: 4 }} />
-                      <Text style={{ color: visuals.color }} className="text-xs font-bold">
-                        {timeStr}
-                      </Text>
-                    </View>
+                    <Text className="mt-2 text-base font-semibold text-[#2B2B2B]">
+                      {event.title}
+                    </Text>
+                    {!!event.description && (
+                      <Text className="mt-1 text-sm text-[#7A726A]">{event.description}</Text>
+                    )}
                   </View>
-                  <Text className="mt-2 text-lg font-semibold text-[#2B2B2B]">{event.title}</Text>
-                  {!!event.description && (
-                    <Text className="mt-1 text-base text-[#7A726A]">{event.description}</Text>
-                  )}
+
+                  {/* Botón de campanica a la derecha de la tarjeta */}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => handleToggleNotification(event)}
+                    disabled={isToggling}
+                    style={{
+                      marginLeft: 10,
+                      width: 44,
+                      height: 44,
+                      borderRadius: 22,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: hasNotification ? '#e5edf7' : '#ece6d9',
+                      borderWidth: 1.5,
+                      borderColor: hasNotification ? '#6d83a1' : '#ded6c7',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.08,
+                      shadowRadius: 2,
+                      elevation: 1,
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      hasNotification
+                        ? 'Desactivar notificaciones para este evento'
+                        : 'Activar notificaciones para este evento'
+                    }
+                  >
+                    {isToggling ? (
+                      <ActivityIndicator size="small" color="#6d83a1" />
+                    ) : (
+                      <Ionicons
+                        name={hasNotification ? 'notifications' : 'notifications-off-outline'}
+                        size={20}
+                        color={hasNotification ? '#4a678f' : '#8A7F75'}
+                      />
+                    )}
+                  </TouchableOpacity>
                 </View>
               );
             })

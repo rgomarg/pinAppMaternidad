@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDate, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateVaccineDto {
   @IsString()
@@ -19,4 +19,8 @@ export class CreateVaccineDto {
   @Type(() => Date)
   @IsDate()
   scheduledFor?: Date | null;
+
+  @IsOptional()
+  @IsBoolean()
+  notification?: boolean;
 }
