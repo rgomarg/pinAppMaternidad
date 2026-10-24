@@ -19,7 +19,10 @@ export default function LikeButton({ message, userId }: Props) {
 
   const toggle = async () => {
     if (!userId) {
-      Alert.alert('Selecciona un usuario', 'Elige un usuario en la pestaña Datos para dar me gusta.');
+      Alert.alert(
+        'Usuario no seleccionado',
+        'Para votar comentarios, por favor selecciona un usuario desde la pestaña Inicio (icono de perfil arriba a la derecha).',
+      );
       return;
     }
     if (pending) return;
@@ -47,17 +50,18 @@ export default function LikeButton({ message, userId }: Props) {
   return (
     <TouchableOpacity
       onPress={toggle}
-      className="flex-row items-center"
+      activeOpacity={0.7}
+      className="flex-row items-center py-1 pr-2"
       accessibilityRole="button"
       accessibilityState={{ selected: state.likedByMe }}
-      accessibilityLabel={`Me gusta, ${state.likesCount}`}
+      accessibilityLabel={state.likedByMe ? `Quitar voto, ${state.likesCount} votos` : `Votar, ${state.likesCount} votos`}
     >
       <Ionicons
-        name={state.likedByMe ? 'heart' : 'heart-outline'}
+        name={state.likedByMe ? 'thumbs-up' : 'thumbs-up-outline'}
         size={16}
-        color={state.likedByMe ? '#cc7a66' : '#808080'}
+        color={state.likedByMe ? '#6d83a1' : '#808080'}
       />
-      <Text className={`ml-1 text-sm ${state.likedByMe ? 'text-nanny-red' : 'text-nanny-muted'}`}>
+      <Text className={`ml-1 text-sm font-medium ${state.likedByMe ? 'text-nanny-blue' : 'text-nanny-muted'}`}>
         {state.likesCount}
       </Text>
     </TouchableOpacity>

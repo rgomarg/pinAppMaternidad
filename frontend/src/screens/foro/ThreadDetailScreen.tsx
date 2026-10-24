@@ -137,6 +137,15 @@ export default function ThreadDetailScreen() {
             />
           }
         >
+          {!selectedUserId && (
+            <View className="mb-4 flex-row items-center rounded-2xl border border-amber-200 bg-amber-50 p-3">
+              <Ionicons name="information-circle-outline" size={18} color="#b45309" />
+              <Text className="ml-2 flex-1 text-xs text-amber-800">
+                Estás en modo lectura. Para votar comentarios o responder, selecciona un usuario en Inicio.
+              </Text>
+            </View>
+          )}
+
           <View className="mb-6">
             <View className="mb-3 flex-row items-center">
               <AuthorAvatar author={thread.owner} />
@@ -187,7 +196,7 @@ export default function ThreadDetailScreen() {
           />
         ) : (
           <Text className="border-t border-nanny-card bg-white px-6 py-4 text-center text-sm text-nanny-muted">
-            Elige un usuario en la pestaña Datos para poder responder.
+            Elige un usuario en la pestaña Inicio para poder votar y responder.
           </Text>
         ))}
     </KeyboardAvoidingView>
