@@ -12,6 +12,7 @@ import ForoScreen from './src/screens/ForoScreen';
 import ChildRegistrationScreen from './src/screens/ChildRegistrationScreen';
 import CrearEventoScreen from './src/screens/CrearEventoScreen';
 import LoginScreen from './src/screens/LoginScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
 
 import { FamilySelectionProvider } from './src/context/FamilySelectionContext';
 
@@ -71,6 +72,8 @@ export default function App() {
           <Stack.Screen name="MainTabs" component={TabNavigator} />
           {/* Pantalla de Login */}
           <Stack.Screen name="Login" component={LoginScreen} />
+          {/* Pantalla de Registro */}
+          <Stack.Screen name="Register" component={RegisterScreen} />
           {/* Pantalla para añadir un hijo */}
           <Stack.Screen name="RegistroHijo" component={ChildRegistrationScreen} />
           {/* Pantalla para crear evento */}

@@ -293,6 +293,14 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Enlace para registrarse */}
+        <View className="flex-row items-center justify-center mb-6">
+          <Text className="text-sm text-[#726B64]">¿No tienes cuenta todavía? </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')} hitSlop={8}>
+            <Text className="text-sm font-bold text-[#4E6E7E]">Regístrate</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Acceso rápido a usuarios de prueba */}
         <View className="bg-white/60 rounded-2xl p-3.5 border border-[#E5DDD0]">
           <Text className="text-[11px] font-bold text-[#726B64] uppercase tracking-wider mb-2 text-center">

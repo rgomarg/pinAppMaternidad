@@ -1,15 +1,53 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { PrismaService } from 'prisma/prisma.service';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createUserDto: CreateUserDto) {        
-    return 'This action adds a new user';
+  async create(createUserDto: CreateUserDto) {
+    const emailClean = createUserDto.email.trim().toLowerCase();
+
+    // Comprobar si ya existe un usuario con ese correo
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: emailClean,
+          mode: 'insensitive',
+        },
+      },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('Ya existe una cuenta registrada con este correo electrónico');
+    }
+
+    // Crear el nuevo usuario
+    const newUser = await this.prisma.user.create({
+      data: {
+        name: createUserDto.name.trim(),
+        email: emailClean,
+        password: createUserDto.password,
+        role: Role.USER,
+      },
+      include: {
+        children: {
+          include: {
+            measurements: {
+              orderBy: { date: 'desc' },
+              take: 20,
+            },
+          },
+        },
+      },
+    });
+
+    const { password, ...safeUser } = newUser;
+    return safeUser;
   }
 
   async login(loginUserDto: LoginUserDto) {
