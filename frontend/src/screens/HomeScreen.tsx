@@ -11,9 +11,8 @@ import GrowthChart, { formatMonthYear } from '../components/GrowthChart';
 import { useFamilySelection } from '../context/FamilySelectionContext';
 import { useGrowth } from '../hooks/useGrowth';
 
-
-export default function HomeScreen() {
-  const { setSelectedUserId } = useFamilySelection();
+export default function HomeScreen({ route }: any) {
+  const { setSelectedUserId, selectedUserId } = useFamilySelection();
   const [activeChildId, setActiveChildId] = useState<number | null>(null);
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
   
@@ -106,6 +105,15 @@ export default function HomeScreen() {
 
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+
+  // Si llega un userId por navegación o por el contexto global de login
+  useEffect(() => {
+    const targetUserId = route?.params?.userId || selectedUserId;
+    if (targetUserId && targetUserId !== activeUserId) {
+      handleSelectUser(targetUserId);
+    }
+  }, [route?.params?.userId, selectedUserId]);
+
   const activeChild = children.find(c => c.id === activeChildId);
   const growth = useGrowth(activeChild);
   const proyeccionPeso = growth.data?.weight?.projection.at(-1);
@@ -122,9 +130,8 @@ export default function HomeScreen() {
   const difAltura = (alturaActual != null && alturaAnterior != null) ? (alturaActual - alturaAnterior).toFixed(1) : null;
 
   const goToCalendar = () => {
-      // si ya lo ha elegido, se le pasa la informacion
-      navigation.navigate('Calendario', { userId: activeUserId });
-    }
+    navigation.navigate('Calendario', { userId: activeUserId });
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f7f3ec', paddingTop: insets.top }}>
@@ -267,13 +274,43 @@ export default function HomeScreen() {
       {/* Modal para elegir usuario */}
       <Modal visible={isUserModalVisible} animationType="slide" transparent={true}>
         <View className="flex-1 justify-end bg-black/50">
-          <View className="bg-white rounded-t-3xl p-6 min-h-[300px]">
+          <View className="bg-white rounded-t-3xl p-6 min-h-[340px]">
             <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-xl font-bold">Elegir Usuario</Text>
-              <TouchableOpacity onPress={() => setIsUserModalVisible(false)}>
-                <Ionicons name="close" size={24} color="black" />
+              <Text className="text-xl font-bold text-[#24211E]">Cuenta de Usuario</Text>
+              <TouchableOpacity onPress={() => setIsUserModalVisible(false)} hitSlop={10}>
+                <Ionicons name="close" size={24} color="#555" />
               </TouchableOpacity>
             </View>
+
+            {/* Opción destacada de Iniciar Sesión (Login) */}
+            <TouchableOpacity
+              onPress={() => {
+                setIsUserModalVisible(false);
+                navigation.navigate('Login');
+              }}
+              activeOpacity={0.85}
+              className="mb-4 flex-row items-center justify-between rounded-2xl bg-[#4E6E7E] p-4 shadow-sm"
+            >
+              <View className="flex-row items-center flex-1 mr-2">
+                <View className="mr-3 h-10 w-10 items-center justify-center rounded-xl bg-white/20">
+                  <Ionicons name="log-in-outline" size={22} color="white" />
+                </View>
+                <View className="flex-1">
+                  <Text className="font-bold text-white text-base">Iniciar Sesión (Login)</Text>
+                  <Text className="text-xs text-white/80">Accede con tu correo y contraseña</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="white" />
+            </TouchableOpacity>
+
+            <View className="flex-row items-center mb-3">
+              <View className="flex-1 h-[1px] bg-gray-200" />
+              <Text className="px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                O cambiar a perfil rápido
+              </Text>
+              <View className="flex-1 h-[1px] bg-gray-200" />
+            </View>
+
             {usersLoading ? (
               <ActivityIndicator size="large" color="#6d83a1" />
             ) : usersError ? (
@@ -284,7 +321,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               </View>
             ) : users.length === 0 ? (
-              <Text className="text-center text-sm text-gray-500">No hay usuarios disponibles.</Text>
+              <Text className="text-center text-sm text-gray-500 py-4">No hay usuarios disponibles.</Text>
             ) : (
               <FlatList
                 data={users}
@@ -292,10 +329,26 @@ export default function HomeScreen() {
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     onPress={() => handleSelectUser(item.id)}
-                    className="flex-row items-center justify-between border-b border-gray-100 p-4"
+                    className={`flex-row items-center justify-between border-b border-gray-100 p-3.5 rounded-xl ${
+                      activeUserId === item.id ? 'bg-[#EEF3F6]' : ''
+                    }`}
                   >
-                    <Text className="text-lg">{item.name}</Text>
-                    <Ionicons name="chevron-forward" size={20} color="gray" />
+                    <View className="flex-row items-center">
+                      <View className="w-8 h-8 rounded-full bg-[#E5DDD0] items-center justify-center mr-3">
+                        <Ionicons name="person" size={14} color="#4E6E7E" />
+                      </View>
+                      <View>
+                        <Text className={`text-base font-medium ${activeUserId === item.id ? 'text-[#4E6E7E] font-bold' : 'text-gray-800'}`}>
+                          {item.name}
+                        </Text>
+                        <Text className="text-xs text-gray-400">{item.email}</Text>
+                      </View>
+                    </View>
+                    {activeUserId === item.id ? (
+                      <Ionicons name="checkmark-circle" size={20} color="#4E6E7E" />
+                    ) : (
+                      <Ionicons name="chevron-forward" size={18} color="gray" />
+                    )}
                   </TouchableOpacity>
                 )}
               />
@@ -303,6 +356,7 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
       <ActualizarAlturaModal       
         visible={modalAlturaVisible}
         childId={activeChildId}
@@ -310,7 +364,7 @@ export default function HomeScreen() {
         alturaAnterior={alturaActual}
         onClose={() => setModalAlturaVisible(false)} 
         onSuccess={() => {
-          if(activeUserId){
+          if (activeUserId) {
             fetchChildren(activeUserId);
           }
         }}
@@ -323,15 +377,11 @@ export default function HomeScreen() {
         pesoAnterior={pesoActual}
         onClose={() => setModalPesoVisible(false)} 
         onSuccess={() => { 
-          if (activeUserId){
+          if (activeUserId) {
             fetchChildren(activeUserId); 
           }
         }} 
       />
-      
-     
     </View>
-
-    
   );
 }
