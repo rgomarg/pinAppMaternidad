@@ -10,6 +10,10 @@ import ActualizarPesoModal from '../components/MeasuramentWeightForm';
 import GrowthChart, { formatMonthYear } from '../components/GrowthChart';
 import { useFamilySelection } from '../context/FamilySelectionContext';
 import { useGrowth } from '../hooks/useGrowth';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 
 export default function HomeScreen() {
@@ -84,12 +88,73 @@ export default function HomeScreen() {
     }
   };
 
+
+    const registerForPushNotifications = async (userId: number) => {
+    if (!Device.isDevice) {
+      console.log('Las notificaciones push solo funcionan en dispositivos físicos.');
+      return;
+    }
+
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#6d83a1',
+        sound: 'default',
+      }).catch(() => {});
+    }
+
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+      console.log('Permiso de notificaciones denegado por el usuario.');
+      return;
+    }
+
+    try {
+      const projectId =
+        Constants?.expoConfig?.extra?.eas?.projectId ??
+        Constants?.easConfig?.projectId;
+
+      if (!projectId) {
+        console.log('ℹ️ [Notificaciones] Sin EAS projectId. Las notificaciones locales en el dispositivo están activas.');
+        return;
+      }
+
+      const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+      const token = tokenData.data;
+      console.log('Token obtenido del móvil:', token);
+
+      await fetch(`${API_URL}/notifications/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          pushToken: token,
+        }),
+      });
+
+      console.log(`✅ Token registrado con éxito en el backend para el usuario ${userId}`);
+    } catch (error) {
+      console.log('ℹ️ [Notificaciones] Push remoto no soportado en Expo Go Android (SDK 53+). Las notificaciones locales programadas en el móvil funcionarán al crear eventos.');
+    }
+  };
+
   const handleSelectUser = (userId: number) => {
     setActiveUserId(userId);
     setSelectedUserId(userId);
     setIsUserModalVisible(false);
     updateFamiliaChild(null, userId);
     fetchChildren(userId);
+
+    registerForPushNotifications(userId);
 
     // Le pasamos el userId a la pestaña Familia sin cambiar de pestaña
     const familiaKey = navigation.getState().routes.find((r: any) => r.name === 'Familia')?.key;

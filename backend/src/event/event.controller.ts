@@ -35,8 +35,10 @@ export class EventController {
   @Get('guardian/:guardianId')
   findEventsForGuardianOnDate(
     @Param('guardianId', ParseIntPipe) guardianId: number,
-    @Query('date') date: string,
+    @Query('date') date?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
   ) {
-    return this.eventService.findEventsForGuardianOnDate(guardianId, date);
+    return this.eventService.findEventsForGuardianOnDate(guardianId, date, from, to);
   }
 }

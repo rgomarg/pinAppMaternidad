@@ -17,9 +17,10 @@ import { TagModule } from './tag/tag.module';
 import { ReportModule } from './report/report.module';
 import { GrowthModule } from './growth/growth.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [PrismaModule, MeasurementsModule, UserModule, ChildModule, VaccineModule, DiseaseModule, CheckListItemModule, MedicineModule, EventModule, ConditionModule, ThreadModule, MessageModule, TagModule, ReportModule, GrowthModule, NotificationsModule],
+  imports: [PrismaModule, MeasurementsModule, UserModule, ChildModule, VaccineModule, DiseaseModule, CheckListItemModule, MedicineModule, EventModule, ConditionModule, ThreadModule, MessageModule, TagModule, ReportModule, GrowthModule, NotificationsModule, ScheduleModule.forRoot(), NotificationsModule],
   controllers: [AppController],
   providers: [AppService],
 })

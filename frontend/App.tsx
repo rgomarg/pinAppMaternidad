@@ -1,5 +1,6 @@
 import './global.css';
-import React from 'react';
+import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -11,11 +12,23 @@ import FamiliaScreen from './src/screens/FamiliaScreen';
 import ForoScreen from './src/screens/ForoScreen';
 import ChildRegistrationScreen from './src/screens/ChildRegistrationScreen';
 import CrearEventoScreen from './src/screens/CrearEventoScreen';
-
+import * as Notifications from 'expo-notifications';
 import { FamilySelectionProvider } from './src/context/FamilySelectionContext';
+
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+// Configurar cómo reacciona la app cuando llega una notificación (incluso con la app abierta)
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 function TabNavigator() {
   return (
@@ -64,6 +77,30 @@ function TabNavigator() {
 }
 
 export default function App() {
+  useEffect(() => {
+    async function configureNotifications() {
+      // 1. Canal predeterminado para Android con máxima importancia y sonido
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#6d83a1',
+          sound: 'default',
+        }).catch(() => {});
+      }
+      // 2. Solicitar permisos de notificación al iniciar (compatible con iOS y Android)
+      await Notifications.requestPermissionsAsync({
+        ios: {
+          allowAlert: true,
+          allowBadge: true,
+          allowSound: true,
+        },
+      });
+    }
+    configureNotifications();
+  }, []);
+
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
