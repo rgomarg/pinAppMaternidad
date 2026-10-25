@@ -22,7 +22,7 @@ const Stack = createNativeStackNavigator();
 // Configurar cómo reacciona la app cuando llega una notificación (incluso con la app abierta)
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+
     shouldShowBanner: true,
     shouldShowList: true,
     shouldPlaySound: true,

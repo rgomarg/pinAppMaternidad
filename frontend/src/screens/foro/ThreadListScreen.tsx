@@ -112,7 +112,7 @@ export default function ThreadListScreen() {
           }
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
-          ListFooterComponent={loadingMore ? <ActivityIndicator color="#6d83a1" /> : null}
+          ListFooterComponent={loadingMore ? <ActivityIndicator color="#6d83a1" /> : undefined}
           ListEmptyComponent={
             <Text className="mt-12 text-center text-nanny-muted">
               {error ?? (tagId ? 'No hay hilos con esta etiqueta todavía.' : 'Todavía no hay hilos. ¡Abre el primero!')}

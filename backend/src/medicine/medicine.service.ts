@@ -157,6 +157,7 @@ export class MedicineService {
         date: medicine.startDate.toISOString(),
         startDate: medicine.startDate.toISOString(),
         endDate: medicine.endDate?.toISOString() ?? null,
+        intervalHours: medicine.intervalHours ?? null,
         type: 'MEDICINE' as const,
         child: medicine.child,
         notification: medicine.notification ?? false,
