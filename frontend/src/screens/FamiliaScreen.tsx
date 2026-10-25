@@ -17,6 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { API_URL } from '../api/config';
 import { useFamilySelection } from '../context/FamilySelectionContext';
+import { Directory, File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 type Child = {
   id: number;
@@ -183,9 +185,42 @@ function allergyRecords(allergies: string | null | undefined): Allergy[] {
   })).filter((item) => item.name);
 }
 
+
+
+
 function ChildCard({ child, onPress }: { child: ChildPreview; onPress: () => void }) {
   const pendingVaccines = child.vaccines.filter((vaccine) => !vaccine.appliedAt).length;
   const activeMedicines = child.medicine.filter((medicine) => !medicine.endDate || new Date(medicine.endDate) >= new Date()).length;
+  
+  const [exporting, setExporting] = useState(false);
+
+
+  async function exportData(childId: number) {
+    setExporting(true);
+  try{
+  const destination = new Directory(Paths.cache, 'pdfs');
+  destination.create({idempotent:true});
+  const url = `${API_URL}/child/${childId}/export`;
+  const file =  await File.downloadFileAsync(url, destination, { idempotent: true });  
+
+  if(!await Sharing.isAvailableAsync()) {
+    Alert.alert('Error', 'No se puede compartir el PDF en este dispositivo.');
+    return;
+  }
+  await Sharing.shareAsync(file.uri, {
+    mimeType: 'application/pdf',
+    UTI: 'com.adobe.pdf'
+  });
+}
+catch (error) {
+  console.error('Error exportando PDF:', error);
+  Alert.alert('Error', 'No se pudo exportar el PDF.');
+}
+finally {
+  setExporting(false);
+}
+  }
+
 
   return (
     <View className="mb-5 overflow-hidden rounded-3xl border border-[#ddd2c4] bg-[#eee5d6]">
@@ -217,7 +252,7 @@ function ChildCard({ child, onPress }: { child: ChildPreview; onPress: () => voi
         <Text style={{ color: palette.muted }} className="flex-1 text-xs">Sin seguimientos registrados</Text>
       </View>
       <TouchableOpacity
-        onPress={() => Alert.alert('Próximamente', 'La opción para compartir o guardar el PDF estará disponible próximamente.')}
+        onPress={() => exportData(child.id)}
         className="items-center border-t border-[#ddd2c4] bg-[#f5eee4] py-3"
         accessibilityRole="button"
         accessibilityLabel={`Compartir o guardar el PDF de ${child.name}`}
@@ -290,6 +325,17 @@ function ChildPickerScreen() {
         {loading ? <ActivityIndicator size="large" color={palette.blue} /> : children.map((child) => (
           <ChildCard key={child.id} child={child} onPress={() => navigation.navigate('ChildProfile', { childId: child.id })} />
         ))}
+        {userId !== null && (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('RegistroHijo', { userId })}
+            className="flex-row items-center justify-center rounded-3xl border border-dashed border-[#6d83a1] py-4"
+            accessibilityRole="button"
+            accessibilityLabel="Añadir hijo"
+          >
+            <Ionicons name="add" size={20} color={palette.blue} />
+            <Text style={{ color: palette.blue }} className="ml-2 text-base font-semibold">Añadir hijo</Text>
+          </TouchableOpacity>
+        )}
         {/* {!loading && children.length === 0 && (
           <Text className="mt-3 text-sm text-[#8A7F75]">
             {userId === null

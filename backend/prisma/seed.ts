@@ -16,6 +16,7 @@ async function main() {
   console.log('Limpiando la base de datos (evitando conflictos de claves foráneas)...');
   await prisma.notification.deleteMany();
   await prisma.report.deleteMany();
+  await prisma.messageLike.deleteMany();
   await prisma.message.deleteMany();
   await prisma.thread.deleteMany();
   await prisma.tag.deleteMany();
@@ -413,7 +414,9 @@ async function main() {
     data: {
       content:
         '¡Mucho ánimo Carlos! Los primeros meses son de supervivencia. Lo que cuentas es súper normal, los bebés no saben enlazar ciclos de sueño aún.',
-      likesCount: 12,
+      // likesCount siempre igual al nº de filas en MessageLike
+      likesCount: 2,
+      likes: { create: [{ userId: carlos.id }, { userId: elena.id }] },
       authorId: laura.id,
       threadId: hiloSueno.id,
     },
@@ -422,7 +425,8 @@ async function main() {
   await prisma.message.create({
     data: {
       content: 'Totalmente. A nosotros nos salvó hacer colecho seguro y usar una mochila de porteo por el día.',
-      likesCount: 5,
+      likesCount: 1,
+      likes: { create: [{ userId: carlos.id }] },
       authorId: elena.id,
       threadId: hiloSueno.id,
     },
@@ -451,7 +455,8 @@ async function main() {
     data: {
       content:
         'Haz un curso de primeros auxilios pediátricos antes de empezar. Te dará mucha seguridad y es fundamental saber actuar.',
-      likesCount: 25,
+      likesCount: 1,
+      likes: { create: [{ userId: laura.id }] },
       authorId: elena.id,
       threadId: hiloBLW.id,
     },

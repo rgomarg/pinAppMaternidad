@@ -107,6 +107,7 @@ model User {
   children      Child[]
   threads       Thread[]  // Relación con el foro (Owner)
   messages      Message[]
+  messageLikes  MessageLike[]
   reportsMade   Report[]  @relation("ReporterUser")
   notifications Notification[]
   //falta un enlace con notification? Pa poder notificar al user?
@@ -287,6 +288,9 @@ model Thread {
 
   messages      Message[]
   tags          Tag[]     
+
+  @@index([createdAt])
+  @@index([ownerId])
 }
 
 model Message { 
@@ -305,8 +309,27 @@ model Message {
 
   // Respuestas anidadas
   parentId      Int?
-  parent        Message?  @relation("MessageReplies", fields: [parentId], references: [id]) //Pa mostrar por front: contestando a... Mirar arriba de un hilo type shit
+  parent        Message?  @relation("MessageReplies", fields: [parentId], references: [id], onDelete: SetNull) //Pa mostrar por front: contestando a... Mirar arriba de un hilo type shit
   replies       Message[] @relation("MessageReplies") //Buscar aquellos mensajes cuyo parentId sea este mensaje. Mirar abajo en un hilo type shit
+
+  likes         MessageLike[]
+
+  @@index([threadId])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model MessageLike { // Un like por usuario y mensaje. Message.likesCount es el contador desnormalizado
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  messageId     Int
+  message       Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime  @default(now())
+
+  @@id([userId, messageId])
+  @@index([messageId])
 }
 
 
