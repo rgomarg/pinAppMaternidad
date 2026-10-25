@@ -58,28 +58,121 @@ export interface ScheduleParams {
   body: string;
   targetDate: Date;
   advanceMinutes?: number;
+  intervalHours?: number | null;
+  endDate?: Date | string | null;
 }
 
 /**
- * Programa una notificación local en el móvil
+ * Programa una o varias notificaciones locales en el móvil para eventos, vacunas o tomas periódicas de medicación.
+ * Si es un medicamento periódico (intervalHours > 0), programa todas las tomas futuras hasta endDate
+ * (o hasta un horizonte de 30 días si es crónico/indefinido).
  */
 export async function scheduleLocalEventNotification(
   params: ScheduleParams,
 ): Promise<string | null> {
-  const { eventId, itemType = 'EVENT', title, body, targetDate, advanceMinutes = 0 } = params;
+  const {
+    eventId,
+    itemType = 'EVENT',
+    title,
+    body,
+    targetDate,
+    advanceMinutes = 0,
+    intervalHours,
+    endDate,
+  } = params;
 
   try {
     await setupNotificationChannel();
 
-    const triggerMs = targetDate.getTime() - advanceMinutes * 60 * 1000;
-    const now = Date.now();
-    let finalDate = new Date(triggerMs);
+    // Limpiar previamente cualquier notificación existente de este registro para evitar duplicados
+    await cancelLocalEventNotification(eventId, itemType);
 
-    // Si la fecha calculada ya pasó pero es hoy en breves minutos o inmediata,
-    // se dispara en 3 segundos para que el usuario la reciba
-    if (finalDate.getTime() <= now) {
-      finalDate = new Date(now + 3000);
+    const now = Date.now();
+    let triggerMs = targetDate.getTime() - advanceMinutes * 60 * 1000;
+
+    // Si es un MEDICAMENTO con intervalo (ej: cada 8h, cada 24h para toma diaria, etc.)
+    if (itemType === 'MEDICINE' && intervalHours && intervalHours > 0) {
+      const intervalMs = intervalHours * 3600 * 1000;
+
+      // Calcular fecha límite del tratamiento
+      let endLimitMs = Infinity;
+      if (endDate) {
+        const endD = new Date(endDate);
+        // Si no tiene hora específica (viene en medianoche 00:00:00), cubrir el último día completo
+        if (endD.getHours() === 0 && endD.getMinutes() === 0 && endD.getSeconds() === 0) {
+          endD.setHours(23, 59, 59, 999);
+        }
+        endLimitMs = endD.getTime();
+      }
+
+      // Límite de horizonte prudente de 30 días para no saturar la cola del SO si es crónico
+      const maxHorizonMs = now + 30 * 24 * 3600 * 1000;
+      if (endLimitMs > maxHorizonMs) {
+        endLimitMs = maxHorizonMs;
+      }
+
+      // Avanzar al futuro si la fecha de inicio del medicamento ya quedó en el pasado
+      while (triggerMs <= now && triggerMs + intervalMs <= endLimitMs) {
+        triggerMs += intervalMs;
+      }
+
+      if (triggerMs <= now || triggerMs > endLimitMs) {
+        console.log(
+          `ℹ️ [Notificaciones] No hay tomas futuras pendientes para "${title}" (tratamiento finalizado).`,
+        );
+        return null;
+      }
+
+      // Programar en bucle todas las tomas futuras del período (máximo 60 por límites del SO)
+      let doseCount = 0;
+      const maxDoses = 60;
+      let firstNotifId: string | null = null;
+
+      while (triggerMs <= endLimitMs && doseCount < maxDoses) {
+        if (triggerMs > now) {
+          const doseDate = new Date(triggerMs);
+          const notifId = await Notifications.scheduleNotificationAsync({
+            content: {
+              title,
+              body,
+              sound: 'default',
+              priority: Notifications.AndroidNotificationPriority.HIGH,
+              data: {
+                screen: 'Calendario',
+                id: eventId,
+                uniqueKey: String(eventId),
+                itemType,
+                doseIndex: doseCount + 1,
+              },
+            },
+            trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.DATE,
+              date: doseDate,
+              channelId: 'default',
+            },
+          });
+
+          if (!firstNotifId) firstNotifId = notifId;
+          doseCount++;
+        }
+        triggerMs += intervalMs;
+      }
+
+      console.log(
+        `✅ [Notificaciones] Se programaron ${doseCount} tomas para "${title}" cada ${intervalHours}h hasta ${new Date(endLimitMs).toLocaleDateString()}.`,
+      );
+      return firstNotifId;
     }
+
+    // Para EVENTOS o VACUNAS individuales (o medicamentos sin intervalo)
+    if (triggerMs <= now) {
+      console.log(
+        `ℹ️ [Notificaciones] No se programa alarma local para "${title}" porque su fecha/hora ya ha vencido.`,
+      );
+      return null;
+    }
+
+    const finalDate = new Date(triggerMs);
 
     const notifId = await Notifications.scheduleNotificationAsync({
       content: {
@@ -101,6 +194,7 @@ export async function scheduleLocalEventNotification(
       },
     });
 
+    console.log(`✅ [Notificaciones] Alerta programada con éxito para "${title}" en: ${finalDate.toLocaleString()}`);
     return notifId;
   } catch (error) {
     console.warn('Error al programar alerta local:', error);
@@ -118,6 +212,7 @@ export async function cancelLocalEventNotification(
   try {
     const targetStr = String(id);
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    let cancelledCount = 0;
     for (const item of scheduled) {
       const data = item.content?.data;
       if (data) {
@@ -125,14 +220,19 @@ export async function cancelLocalEventNotification(
           data.id === id ||
           data.eventId === id ||
           data.uniqueKey === targetStr ||
-          String(data.id) === targetStr;
+          String(data.id) === targetStr ||
+          String(data.eventId) === targetStr;
 
         const matchesType = !itemType || data.itemType === itemType;
 
         if (matchesKey && matchesType) {
           await Notifications.cancelScheduledNotificationAsync(item.identifier);
+          cancelledCount++;
         }
       }
+    }
+    if (cancelledCount > 0) {
+      console.log(`🗑️ [Notificaciones] Se cancelaron ${cancelledCount} alertas del registro ${id}.`);
     }
   } catch (error) {
     console.warn('Error al cancelar alerta local:', error);

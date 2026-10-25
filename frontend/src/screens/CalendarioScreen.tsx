@@ -60,6 +60,7 @@ type CalendarEvent = {
   type?: 'GENERAL' | 'MEDICAL_APPOINTMENT' | 'VACCINE' | 'MEDICINE';
   child: Child;
   notification?: boolean;
+  intervalHours?: number | null;
 };
 
 const EVENT_COLORS = {
@@ -448,9 +449,28 @@ export default function CalendarioScreen() {
           body: `Programado para ${event.child?.name || 'tu hijo/a'}`,
           targetDate: eventDate,
           advanceMinutes: event.type === 'MEDICINE' || itemType === 'MEDICINE' ? 0 : 15,
+          intervalHours: event.intervalHours,
+          endDate: event.endDate,
         });
 
         if (userId) {
+          let backendScheduledDate = new Date(
+            eventDate.getTime() - (event.type === 'MEDICINE' || itemType === 'MEDICINE' ? 0 : 15) * 60 * 1000,
+          );
+          if (
+            (event.type === 'MEDICINE' || itemType === 'MEDICINE') &&
+            event.intervalHours &&
+            event.intervalHours > 0
+          ) {
+            const intervalMs = event.intervalHours * 3600 * 1000;
+            const nowMs = Date.now();
+            let nextMs = backendScheduledDate.getTime();
+            while (nextMs <= nowMs) {
+              nextMs += intervalMs;
+            }
+            backendScheduledDate = new Date(nextMs);
+          }
+
           await registerBackendNotification({
             userId,
             eventId: itemType === 'EVENT' ? numericId : undefined,
@@ -459,9 +479,7 @@ export default function CalendarioScreen() {
             type: itemType,
             title: `${prefix}: ${event.title}`,
             body: `Programado para ${event.child?.name || 'tu hijo/a'}`,
-            scheduledAt: new Date(
-              eventDate.getTime() - (event.type === 'MEDICINE' || itemType === 'MEDICINE' ? 0 : 15) * 60 * 1000,
-            ).toISOString(),
+            scheduledAt: backendScheduledDate.toISOString(),
           });
         }
       } else {

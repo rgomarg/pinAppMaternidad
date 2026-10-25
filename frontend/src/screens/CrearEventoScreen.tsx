@@ -308,6 +308,7 @@ export default function CrearEventoScreen() {
       if (notificationAllowed && createdId && scheduledNotifTime) {
         try {
           const uniqueId = notifType === 'EVENT' ? createdId : `${notifType.toLowerCase()}-${createdId}`;
+          const parsedInterval = parseInt(intervalHours, 10);
           await scheduleLocalEventNotification({
             eventId: uniqueId,
             itemType: notifType,
@@ -315,6 +316,8 @@ export default function CrearEventoScreen() {
             body: notifBody,
             targetDate: scheduledNotifTime,
             advanceMinutes: 0,
+            intervalHours: notifType === 'MEDICINE' && !isNaN(parsedInterval) ? parsedInterval : undefined,
+            endDate: notifType === 'MEDICINE' ? endDate : undefined,
           });
 
           // Registrar también en el backend
