@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDate, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateMedicineDto {
   @IsString()
@@ -31,4 +31,8 @@ export class CreateMedicineDto {
 
   @IsInt()
   childId!: number;
+
+  @IsOptional()
+  @IsBoolean()
+  notification?: boolean;
 }

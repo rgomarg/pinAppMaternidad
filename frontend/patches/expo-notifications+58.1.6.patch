@@ -1,0 +1,23 @@
+diff --git a/node_modules/expo-notifications/build/TopicSubscriptionModule.android.js b/node_modules/expo-notifications/build/TopicSubscriptionModule.android.js
+index 4ad9aff..367b68a 100644
+--- a/node_modules/expo-notifications/build/TopicSubscriptionModule.android.js
++++ b/node_modules/expo-notifications/build/TopicSubscriptionModule.android.js
+@@ -1,4 +1,16 @@
+-import { requireNativeModule } from 'expo';
+-export default requireNativeModule('ExpoTopicSubscriptionModule');
++// PATCHED: ExpoTopicSubscriptionModule no está disponible en Expo Go.
++// En un development build o build de producción, este archivo será reemplazado
++// por el módulo nativo real. Este stub evita el crash en Expo Go.
++const module = {
++    addListener: ()=>{},
++    removeListeners: ()=>{},
++    subscribeToTopicAsync: ()=>{
++        return Promise.resolve(null);
++    },
++    unsubscribeFromTopicAsync: ()=>{
++        return Promise.resolve(null);
++    }
++};
++export default module;
+ 
+ //# sourceMappingURL=TopicSubscriptionModule.android.js.map
