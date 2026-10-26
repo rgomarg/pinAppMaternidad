@@ -1,12 +1,14 @@
-import React, { useCallback, useState } from 'react';
+import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  type ScrollViewInstance,
   Text,
   TextInput,
+  type TextInputInstance,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -17,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { API_URL } from '../api/config';
 import { useFamilySelection } from '../context/FamilySelectionContext';
-import { Directory, File, Paths } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
 type Child = {
@@ -197,28 +199,29 @@ function ChildCard({ child, onPress }: { child: ChildPreview; onPress: () => voi
 
   async function exportData(childId: number) {
     setExporting(true);
-  try{
-  const destination = new Directory(Paths.cache, 'pdfs');
-  destination.create({idempotent:true});
-  const url = `${API_URL}/child/${childId}/export`;
-  const file =  await File.downloadFileAsync(url, destination, { idempotent: true });  
+    try {
+      if (!FileSystem.cacheDirectory) {
+        throw new Error('No hay un directorio de caché disponible.');
+      }
+      const destination = `${FileSystem.cacheDirectory}pdfs/`;
+      await FileSystem.makeDirectoryAsync(destination, { intermediates: true });
+      const url = `${API_URL}/child/${childId}/export`;
+      const file = await FileSystem.downloadAsync(url, `${destination}child-${childId}.pdf`);
 
-  if(!await Sharing.isAvailableAsync()) {
-    Alert.alert('Error', 'No se puede compartir el PDF en este dispositivo.');
-    return;
-  }
-  await Sharing.shareAsync(file.uri, {
-    mimeType: 'application/pdf',
-    UTI: 'com.adobe.pdf'
-  });
-}
-catch (error) {
-  console.error('Error exportando PDF:', error);
-  Alert.alert('Error', 'No se pudo exportar el PDF.');
-}
-finally {
-  setExporting(false);
-}
+      if (!await Sharing.isAvailableAsync()) {
+        Alert.alert('Error', 'No se puede compartir el PDF en este dispositivo.');
+        return;
+      }
+      await Sharing.shareAsync(file.uri, {
+        mimeType: 'application/pdf',
+        UTI: 'com.adobe.pdf',
+      });
+    } catch (error) {
+      console.error('Error exportando PDF:', error);
+      Alert.alert('Error', 'No se pudo exportar el PDF.');
+    } finally {
+      setExporting(false);
+    }
   }
 
 
@@ -514,28 +517,40 @@ function ChildBanner({ child }: { child: Child }) {
   );
 }
 
+const FormScrollContext = createContext<((input: TextInputInstance) => void) | null>(null);
+
 function Field({
   label,
   placeholder,
   value,
   onChangeText,
   multiline = false,
+  scrollIntoViewOnFocus = false,
 }: {
   label: string;
   placeholder: string;
   value: string;
   onChangeText: (value: string) => void;
   multiline?: boolean;
+  scrollIntoViewOnFocus?: boolean;
 }) {
+  const scrollToInput = useContext(FormScrollContext);
+  const inputRef = useRef<TextInputInstance | null>(null);
   return (
     <View className="mb-6">
       <Text style={{ color: palette.muted }} className="mb-2 text-base">{label}</Text>
       <TextInput
+        ref={inputRef}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor="#9a928b"
         multiline={multiline}
+        onFocus={() => {
+          if (scrollIntoViewOnFocus && scrollToInput && inputRef.current) {
+            setTimeout(() => scrollToInput(inputRef.current!), 300);
+          }
+        }}
         style={{ color: palette.text, minHeight: multiline ? 140 : undefined, textAlignVertical: multiline ? 'top' : 'center' }}
         className="rounded-3xl border border-[#ddd2c4] bg-[#eee5d6] px-6 py-4 text-lg"
       />
@@ -578,6 +593,7 @@ function FormLayout({
   saving: boolean;
 }) {
   const navigation = useNavigation<any>();
+  const scrollViewRef = useRef<ScrollViewInstance | null>(null);
   return (
     <Shell>
       <Header
@@ -590,14 +606,19 @@ function FormLayout({
         keyboardVerticalOffset={0}
         style={{ flex: 1 }}
       >
-        <ScrollView
-          contentContainerStyle={{ paddingTop: 38, paddingBottom: 48 }}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-        >
-          <ChildBanner child={child} />
-          <View className="px-6">{children}</View>
-        </ScrollView>
+        <FormScrollContext.Provider value={(input) => {
+          scrollViewRef.current?.scrollResponderScrollNativeHandleToKeyboard(input, 180, true);
+        }}>
+          <ScrollView
+            ref={scrollViewRef}
+            contentContainerStyle={{ paddingTop: 38, paddingBottom: 260 }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          >
+            <ChildBanner child={child} />
+            <View className="px-6">{children}</View>
+          </ScrollView>
+        </FormScrollContext.Provider>
       </KeyboardAvoidingView>
     </Shell>
   );
@@ -719,7 +740,7 @@ function AddAllergyScreen() {
           );
         })}
       </View>
-      <Field label="Reacción o indicaciones" placeholder="Describe la reacción y qué hacer en caso de exposición" value={notes} onChangeText={setNotes} multiline />
+      <Field label="Reacción o indicaciones" placeholder="Describe la reacción y qué hacer en caso de exposición" value={notes} onChangeText={setNotes} multiline scrollIntoViewOnFocus />
     </FormLayout>
   );
 }
@@ -761,7 +782,7 @@ function AddConditionScreen() {
     <FormLayout title="Nueva condición" child={child} onSave={save} saving={saving}>
       <Field label="Nombre *" placeholder="Ej. Asma leve" value={name} onChangeText={setName} />
       <DateField label="Fecha de diagnóstico *" value={date} onChange={setDate} />
-      <Field label="Notas y seguimiento" placeholder="Tratamiento, especialista o indicaciones relevantes" value={notes} onChangeText={setNotes} multiline />
+      <Field label="Notas y seguimiento" placeholder="Tratamiento, especialista o indicaciones relevantes" value={notes} onChangeText={setNotes} multiline scrollIntoViewOnFocus />
     </FormLayout>
   );
 }
