@@ -17,6 +17,7 @@ const COLORS = {
 const CHART_HEIGHT = 220;
 const PAD = { top: 10, right: 30, bottom: 24, left: 34 };
 const DAYS_PER_MONTH = 30.4375;
+const MONTHS_LONG = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const MONTHS_SHORT = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 const INSIGHT_STYLE = {
@@ -357,6 +358,12 @@ function dateAtAge(birthDate: string, ageMonths: number) {
 export function formatMonthYear(date: Date | string) {
   const d = new Date(date);
   return `${MONTHS_SHORT[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
+}
+
+// Para textos fuera del gráfico: "abril 2027" no se confunde con un día del mes
+export function formatMonthYearLong(date: Date | string) {
+  const d = new Date(date);
+  return `${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function formatDate(date: string) {
