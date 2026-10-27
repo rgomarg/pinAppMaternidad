@@ -7,7 +7,7 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 
 import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
 import ActualizarPesoModal from '../components/MeasuramentWeightForm';
-import GrowthChart, { formatMonthYear } from '../components/GrowthChart';
+import GrowthChart, { formatMonthYearLong } from '../components/GrowthChart';
 import { useFamilySelection } from '../context/FamilySelectionContext';
 import { useGrowth } from '../hooks/useGrowth';
 import * as Notifications from 'expo-notifications';
@@ -66,7 +66,8 @@ export default function HomeScreen() {
     }
   };
 
-  const fetchChildren = async (userId: number) => {
+  // keepChildId: tras guardar una medición se mantiene el hijo que estaba seleccionado
+  const fetchChildren = async (userId: number, keepChildId: number | null = null) => {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/user/${userId}`);
@@ -74,8 +75,9 @@ export default function HomeScreen() {
       if (data && data.children) {
         setChildren(data.children);
         if (data.children.length > 0) {
-          setActiveChildId(data.children[0].id);
-          updateFamiliaChild(data.children[0].id, userId);
+          const nextChildId = data.children.some((c: any) => c.id === keepChildId) ? keepChildId : data.children[0].id;
+          setActiveChildId(nextChildId);
+          updateFamiliaChild(nextChildId, userId);
         } else {
           setActiveChildId(null);
           updateFamiliaChild(null, userId);
@@ -274,7 +276,7 @@ export default function HomeScreen() {
 
                   {proyeccionPeso && (
                     <Text className="text-nanny-red text-xs font-medium mb-1">
-                      ↗ {proyeccionPeso.value} kg en {formatMonthYear(proyeccionPeso.date)}
+                      Previsión {formatMonthYearLong(proyeccionPeso.date)}: {proyeccionPeso.value} kg
                     </Text>
                   )}
                 </View>
@@ -301,7 +303,7 @@ export default function HomeScreen() {
 
                   {proyeccionAltura && (
                     <Text className="text-nanny-red text-xs font-medium mb-1">
-                      ↗ {proyeccionAltura.value} cm en {formatMonthYear(proyeccionAltura.date)}
+                      Previsión {formatMonthYearLong(proyeccionAltura.date)}: {proyeccionAltura.value} cm
                     </Text>
                   )}
                 </View>
@@ -317,14 +319,6 @@ export default function HomeScreen() {
               onAddMeasurement={(metric) => metric === 'weight' ? setModalPesoVisible(true) : setModalAlturaVisible(true)}
             />
 
-            {/* Frecuencia de enfermedades (Placeholder) */}
-            <View className="bg-nanny-card p-4 rounded-2xl min-h-[250px] flex-col">
-              <Text className="font-semibold text-lg text-nanny-text">Frecuencia de enfermedades</Text>
-              <Text className="text-nanny-muted text-sm mb-4">Episodios registrados por mes</Text>
-              <View className="flex-1 border-2 border-dashed border-nanny-muted/30 rounded-xl items-center justify-center">
-                <Text className="text-nanny-muted text-center">[Gráfico de {activeChild?.name || '...'}]</Text>
-              </View>
-            </View>
           </>
         )}
       </ScrollView>
@@ -376,7 +370,7 @@ export default function HomeScreen() {
         onClose={() => setModalAlturaVisible(false)} 
         onSuccess={() => {
           if(activeUserId){
-            fetchChildren(activeUserId);
+            fetchChildren(activeUserId, activeChildId);
           }
         }}
       />
@@ -389,7 +383,7 @@ export default function HomeScreen() {
         onClose={() => setModalPesoVisible(false)} 
         onSuccess={() => { 
           if (activeUserId){
-            fetchChildren(activeUserId); 
+            fetchChildren(activeUserId, activeChildId); 
           }
         }} 
       />

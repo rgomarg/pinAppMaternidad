@@ -45,13 +45,13 @@ async function main() {
   // 2. CREACIÓN DE USUARIOS CON SUS HIJOS Y REGISTROS
   // ------------------------------------------------------
 
-  // Usuario 1: Laura (PRO) - Madre de un bebé de 6 meses
+  // Usuario 1: Laura (USER) - Madre de un bebé de 6 meses
   const laura = await prisma.user.create({
     data: {
       email: 'laura.pro@example.com',
       name: 'Laura Pérez',
       password: 'hashed_password_123',
-      role: Role.PRO,
+      role: Role.USER,
       children: {
         create: [
           {
@@ -142,13 +142,13 @@ async function main() {
     include: { children: true },
   });
 
-  // Usuario 3: Elena (ADMIN) - Madre de un niño mayor con historial médico
+  // Usuario 3: Elena (PRO) - Pediatra y madre de un niño mayor con historial médico
   const elena = await prisma.user.create({
     data: {
       email: 'elena.admin@example.com',
       name: 'Elena Gómez (Pediatra)',
       password: 'hashed_password_789',
-      role: Role.ADMIN,
+      role: Role.PRO,
       children: {
         create: [
           {
