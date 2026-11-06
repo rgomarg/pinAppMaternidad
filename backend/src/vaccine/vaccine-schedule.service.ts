@@ -9,7 +9,8 @@ export class VaccineScheduleService {
     private calculateDate(birth: Date, monthsToAdd: number): Date {    
         const date = new Date(birth);        
         date.setMonth(date.getMonth() + monthsToAdd);
-        return date;
+        date.setHours(9, 0, 0, 0); //Poner la notificacion a las 9.00 am
+        return date; 
     }
     
     async generateScheduleForChild(childId: number, birthDate: Date) {
@@ -63,11 +64,10 @@ export class VaccineScheduleService {
 
         //Calculas las nuevas fechas
         const newVaccinesToCreate = pendingRules.map((rule) => {
-            const scheduledDate = this.calculateDate(newBirthDate, rule.mesesOffset);
-            let newDate= scheduledDate.setHours(9);
+            const scheduledDate = this.calculateDate(newBirthDate, rule.mesesOffset);            
             return {
                 name: `${rule.vacuna} (Dosis ${rule.dosis})`,
-                scheduledFor: newDate,
+                scheduledFor: scheduledDate,
                 appliedAt: null,
                 childId: childId,
                 notification: true,

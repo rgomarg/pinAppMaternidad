@@ -150,7 +150,8 @@ export default function ChildRegistrationScreen() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    name: `${name.trim()} ${surname.trim()}`.trim(),
+                    name: name.trim(),
+                    surname:  surname.trim() || undefined,
                     birthDate: birthDate!.toISOString(),
                     sex,
                     bloodGroup: bloodGroup ?? undefined,

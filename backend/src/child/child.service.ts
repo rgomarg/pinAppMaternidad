@@ -16,6 +16,7 @@ export class ChildService {
     const child = await this.prisma.child.create({
       data: {
         name: createChildDto.name,
+        surname: createChildDto.surname,
         birthDate: createChildDto.birthDate,
         bloodGroup: createChildDto.bloodGroup,
         allergies: createChildDto.allergies,
