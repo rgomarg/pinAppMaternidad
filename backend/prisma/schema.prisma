@@ -119,6 +119,7 @@ model User {
 model Child {
   id            Int       @id @default(autoincrement())
   name          String
+  surname       String?
   birthDate     DateTime
   bloodGroup    String?
   allergies     String?
