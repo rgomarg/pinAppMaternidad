@@ -558,7 +558,17 @@ function Field({
   );
 }
 
-function DateField({ label, value, onChange }: { label: string; value: Date | null; onChange: (value: Date) => void }) {
+function DateField({
+  label,
+  value,
+  onChange,
+  maximumDate,
+}: {
+  label: string;
+  value: Date | null;
+  onChange: (value: Date) => void;
+  maximumDate?: Date;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <View className="mb-6">
@@ -571,7 +581,18 @@ function DateField({ label, value, onChange }: { label: string; value: Date | nu
         <DateTimePicker
           value={value || new Date()}
           mode="date"
-          onValueChange={(_, selected) => { if (selected) onChange(selected); }}
+          maximumDate={maximumDate}
+          onValueChange={(_, selected) => {
+            if (selected) {
+              const max = maximumDate ? new Date(maximumDate) : null;
+              if (max && selected.getTime() > max.getTime()) {
+                Alert.alert('Fecha no válida', 'La fecha de una vacuna aplicada no puede ser posterior a la actual.');
+                onChange(new Date());
+              } else {
+                onChange(selected);
+              }
+            }
+          }}
           onDismiss={() => setOpen(false)}
         />
       )}
@@ -635,8 +656,24 @@ function AddVaccineScreen() {
   const [lot, setLot] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const handleSetApplied = (value: boolean) => {
+    setApplied(value);
+    if (value) {
+      const now = new Date();
+      if (appliedAt && appliedAt.getTime() > now.getTime()) {
+        setAppliedAt(now);
+      }
+    }
+  };
+
   const save = async () => {
     if (!name.trim()) return Alert.alert('Falta información', 'Introduce el nombre de la vacuna.');
+    if (applied && appliedAt) {
+      const now = new Date();
+      if (appliedAt.getTime() > now.getTime()) {
+        return Alert.alert('Fecha no válida', 'La fecha de una vacuna aplicada no puede ser posterior a la actual.');
+      }
+    }
     setSaving(true);
     try {
       const response = await fetch(`${API_URL}/vaccine`, {
@@ -666,7 +703,7 @@ function AddVaccineScreen() {
         {[true, false].map((value) => (
           <TouchableOpacity
             key={String(value)}
-            onPress={() => setApplied(value)}
+            onPress={() => handleSetApplied(value)}
             style={{ borderColor: applied === value ? palette.blue : '#ddd2c4', backgroundColor: applied === value ? '#dce7f1' : palette.card }}
             className="flex-1 items-center rounded-3xl border p-4"
           >
@@ -674,7 +711,14 @@ function AddVaccineScreen() {
           </TouchableOpacity>
         ))}
       </View>
-      {applied && <DateField label="Fecha de aplicación *" value={appliedAt} onChange={setAppliedAt} />}
+      {applied && (
+        <DateField
+          label="Fecha de aplicación *"
+          value={appliedAt}
+          onChange={setAppliedAt}
+          maximumDate={new Date()}
+        />
+      )}
       <Field label="Número de lote" placeholder="Ej. A4821X" value={lot} onChangeText={setLot} />
       {!applied && <DateField label="Próxima dosis" value={scheduledFor} onChange={setScheduledFor} />}
     </FormLayout>
