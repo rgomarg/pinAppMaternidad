@@ -14,6 +14,8 @@ import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/nativ
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { forumApi, type MessageNode, type ThreadDetail } from '../../api/forum';
+import { adminApi } from '../../api/admin';
+import { useIsAdmin } from '../../hooks/useIsAdmin';
 import { useFamilySelection } from '../../context/FamilySelectionContext';
 import AuthorAvatar, { ProBadge, timeAgo } from '../../components/foro/AuthorAvatar';
 import MessageItem from '../../components/foro/MessageItem';
@@ -25,6 +27,7 @@ export default function ThreadDetailScreen() {
   const route = useRoute<any>();
   const threadId: number = route.params.threadId;
   const { selectedUserId } = useFamilySelection();
+  const isAdmin = useIsAdmin(selectedUserId);
 
   const [thread, setThread] = useState<ThreadDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,10 +68,21 @@ export default function ThreadDetailScreen() {
     ]);
 
   const deleteThread = () =>
-    confirmDelete('Eliminar hilo', 'Se borrarán también todas sus respuestas.', async () => {
+    confirmDelete('Eliminar hilo', 'El hilo y sus respuestas dejarán de estar visibles en el foro.', async () => {
       await forumApi.deleteThread(threadId, selectedUserId!);
       navigation.goBack();
     });
+
+  // Moderación: un admin puede eliminar cualquier hilo (borrado lógico, restaurable desde el panel)
+  const moderateThread = () =>
+    confirmDelete(
+      'Eliminar hilo (moderación)',
+      'El hilo desaparecerá del foro de inmediato. Podrás restaurarlo desde el panel de moderación.',
+      async () => {
+        await adminApi.deleteThread(selectedUserId!, threadId);
+        navigation.goBack();
+      },
+    );
 
   // Las respuestas al mensaje no se pierden: pasan al primer nivel del hilo
   const deleteMessage = (message: MessageNode) =>
@@ -113,10 +127,23 @@ export default function ThreadDetailScreen() {
           <Ionicons name="chevron-back" size={18} color="#6d83a1" />
           <Text className="ml-1 text-sm text-nanny-blue">Foro</Text>
         </TouchableOpacity>
-        {thread && thread.owner.id === selectedUserId && (
+        {thread && thread.owner.id === selectedUserId ? (
           <TouchableOpacity onPress={deleteThread} accessibilityRole="button" accessibilityLabel="Eliminar hilo">
             <Ionicons name="trash-outline" size={20} color="#cc7a66" />
           </TouchableOpacity>
+        ) : (
+          thread &&
+          isAdmin && (
+            <TouchableOpacity
+              onPress={moderateThread}
+              className="flex-row items-center"
+              accessibilityRole="button"
+              accessibilityLabel="Eliminar hilo como administrador"
+            >
+              <Ionicons name="shield-outline" size={18} color="#cc7a66" />
+              <Text className="ml-1 text-sm font-semibold text-nanny-red">Eliminar</Text>
+            </TouchableOpacity>
+          )
         )}
       </View>
 

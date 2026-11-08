@@ -7,6 +7,7 @@ import { forumApi, type Tag, type ThreadSummary } from '../../api/forum';
 import { useFamilySelection } from '../../context/FamilySelectionContext';
 import TagChips from '../../components/foro/TagChips';
 import ThreadCard from '../../components/foro/ThreadCard';
+import { useIsAdmin } from '../../hooks/useIsAdmin';
 
 const PAGE_SIZE = 20;
 
@@ -14,6 +15,7 @@ export default function ThreadListScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { selectedUserId } = useFamilySelection();
+  const isAdmin = useIsAdmin(selectedUserId);
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagId, setTagId] = useState<number | null>(null);
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
@@ -81,8 +83,23 @@ export default function ThreadListScreen() {
   return (
     <View style={{ flex: 1, paddingTop: insets.top }} className="bg-nanny-bg">
       <View className="px-6 pb-4 pt-2">
-        <Text className="mb-1 text-sm font-medium text-nanny-muted">Comunidad</Text>
-        <Text className="mb-4 text-3xl font-semibold text-nanny-text">Foro</Text>
+        <View className="mb-4 flex-row items-end justify-between">
+          <View>
+            <Text className="mb-1 text-sm font-medium text-nanny-muted">Comunidad</Text>
+            <Text className="text-3xl font-semibold text-nanny-text">Foro</Text>
+          </View>
+          {isAdmin && (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('AdminPanel')}
+              className="flex-row items-center rounded-full bg-nanny-blue/15 px-4 py-2"
+              accessibilityRole="button"
+              accessibilityLabel="Abrir panel de moderación"
+            >
+              <Ionicons name="shield-checkmark-outline" size={16} color="#6d83a1" />
+              <Text className="ml-1 text-sm font-semibold text-nanny-blue">Moderación</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <TagChips
           tags={tags}
           selected={tagId ? [tagId] : []}
