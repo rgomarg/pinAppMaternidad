@@ -14,9 +14,11 @@ import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/nativ
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { forumApi, type MessageNode, type ThreadDetail } from '../../api/forum';
+import { adminApi } from '../../api/admin';
 import { useFamilySelection } from '../../context/FamilySelectionContext';
 import AuthorAvatar, { ProBadge, timeAgo } from '../../components/foro/AuthorAvatar';
 import MessageItem from '../../components/foro/MessageItem';
+import ModeratableAuthor from '../../components/foro/ModeratableAuthor';
 import ReplyComposer from '../../components/foro/ReplyComposer';
 
 export default function ThreadDetailScreen() {
@@ -24,7 +26,7 @@ export default function ThreadDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const threadId: number = route.params.threadId;
-  const { selectedUserId } = useFamilySelection();
+  const { selectedUserId, isAdmin } = useFamilySelection();
 
   const [thread, setThread] = useState<ThreadDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,10 +67,21 @@ export default function ThreadDetailScreen() {
     ]);
 
   const deleteThread = () =>
-    confirmDelete('Eliminar hilo', 'Se borrarán también todas sus respuestas.', async () => {
+    confirmDelete('Eliminar hilo', 'El hilo y sus respuestas dejarán de estar visibles en el foro.', async () => {
       await forumApi.deleteThread(threadId, selectedUserId!);
       navigation.goBack();
     });
+
+  // Moderación: un admin puede eliminar cualquier hilo (borrado lógico, restaurable desde el panel)
+  const moderateThread = () =>
+    confirmDelete(
+      'Eliminar hilo (moderación)',
+      'El hilo desaparecerá del foro de inmediato. Podrás restaurarlo desde el panel de moderación.',
+      async () => {
+        await adminApi.deleteThread(selectedUserId!, threadId);
+        navigation.goBack();
+      },
+    );
 
   // Las respuestas al mensaje no se pierden: pasan al primer nivel del hilo
   const deleteMessage = (message: MessageNode) =>
@@ -113,10 +126,23 @@ export default function ThreadDetailScreen() {
           <Ionicons name="chevron-back" size={18} color="#6d83a1" />
           <Text className="ml-1 text-sm text-nanny-blue">Foro</Text>
         </TouchableOpacity>
-        {thread && thread.owner.id === selectedUserId && (
+        {thread && thread.owner.id === selectedUserId ? (
           <TouchableOpacity onPress={deleteThread} accessibilityRole="button" accessibilityLabel="Eliminar hilo">
             <Ionicons name="trash-outline" size={20} color="#cc7a66" />
           </TouchableOpacity>
+        ) : (
+          thread &&
+          isAdmin && (
+            <TouchableOpacity
+              onPress={moderateThread}
+              className="flex-row items-center"
+              accessibilityRole="button"
+              accessibilityLabel="Eliminar hilo como administrador"
+            >
+              <Ionicons name="shield-outline" size={18} color="#cc7a66" />
+              <Text className="ml-1 text-sm font-semibold text-nanny-red">Eliminar</Text>
+            </TouchableOpacity>
+          )
         )}
       </View>
 
@@ -138,7 +164,12 @@ export default function ThreadDetailScreen() {
           }
         >
           <View className="mb-6">
-            <View className="mb-3 flex-row items-center">
+            {/* Al bloquear al autor el hilo deja de ser público, así que se vuelve al listado */}
+            <ModeratableAuthor
+              author={thread.owner}
+              onBlocked={() => navigation.goBack()}
+              className="mb-3 flex-row items-center self-start"
+            >
               <AuthorAvatar author={thread.owner} />
               <View className="ml-3">
                 <View className="flex-row items-center">
@@ -147,7 +178,7 @@ export default function ThreadDetailScreen() {
                 </View>
                 <Text className="text-xs text-nanny-muted">{timeAgo(thread.createdAt)}</Text>
               </View>
-            </View>
+            </ModeratableAuthor>
             <Text className="mb-2 text-2xl font-semibold text-nanny-text">{thread.title}</Text>
             <Text className="text-base leading-6 text-nanny-text">{thread.content}</Text>
             <View className="mt-3 flex-row flex-wrap gap-2">
@@ -172,6 +203,7 @@ export default function ThreadDetailScreen() {
                 userId={selectedUserId}
                 onReply={setReplyingTo}
                 onDelete={deleteMessage}
+                onAuthorBlocked={loadThread}
               />
             ))
           )}

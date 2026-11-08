@@ -54,7 +54,7 @@ export interface LikeState {
 }
 
 // Lanza un Error con el mensaje del backend (NestJS devuelve { message } o { message: [] })
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: { 'Content-Type': 'application/json', ...init?.headers },

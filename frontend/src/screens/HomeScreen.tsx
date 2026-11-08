@@ -9,6 +9,8 @@ import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
 import ActualizarPesoModal from '../components/MeasuramentWeightForm';
 import GrowthChart, { formatMonthYearLong } from '../components/GrowthChart';
 import { useFamilySelection } from '../context/FamilySelectionContext';
+import AdminHome from '../components/admin/AdminHome';
+import type { Role } from '../api/forum';
 import { useGrowth } from '../hooks/useGrowth';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
@@ -17,7 +19,7 @@ import Constants from 'expo-constants';
 
 
 export default function HomeScreen() {
-  const { setSelectedUserId } = useFamilySelection();
+  const { setSelectedUserId, setSelectedUserRole, isAdmin } = useFamilySelection();
   const [activeChildId, setActiveChildId] = useState<number | null>(null);
   const [activeUserId, setActiveUserId] = useState<number | null>(null);
   
@@ -149,9 +151,10 @@ export default function HomeScreen() {
     }
   };
 
-  const handleSelectUser = (userId: number) => {
+  const handleSelectUser = (userId: number, role: Role) => {
     setActiveUserId(userId);
     setSelectedUserId(userId);
+    setSelectedUserRole(role);
     setIsUserModalVisible(false);
     updateFamiliaChild(null, userId);
     fetchChildren(userId);
@@ -174,6 +177,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const activeChild = children.find(c => c.id === activeChildId);
+  const activeUser = users.find(u => u.id === activeUserId);
   const growth = useGrowth(activeChild);
   const proyeccionPeso = growth.data?.weight?.projection.at(-1);
   const proyeccionAltura = growth.data?.height?.projection.at(-1);
@@ -200,8 +204,12 @@ export default function HomeScreen() {
         {/* Header */}
         <View className="flex-row justify-between items-start mb-6">
           <View>
-            <Text className="text-sm font-medium text-nanny-muted mb-1">Predicciones e insights</Text>
-            {activeChild ? (
+            <Text className="text-sm font-medium text-nanny-muted mb-1">
+              {isAdmin ? 'Panel de administración' : 'Predicciones e insights'}
+            </Text>
+            {isAdmin ? (
+              <Text className="text-3xl font-semibold text-nanny-text">{activeUser?.name ?? 'Administración'}</Text>
+            ) : activeChild ? (
               <Text className="text-3xl font-semibold text-nanny-text">{activeChild.name}</Text>
             ) : (
               <Text className="text-xl font-semibold text-nanny-text italic">Selecciona un usuario</Text>
@@ -223,7 +231,10 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
         
-        {loading ? (
+        {/* El administrador no tiene hijos: ve el resumen de moderación en su lugar */}
+        {isAdmin && activeUserId ? (
+          <AdminHome adminId={activeUserId} />
+        ) : loading ? (
           <ActivityIndicator size="large" color="#6d83a1" />
         ) : (
           <>
@@ -350,10 +361,17 @@ export default function HomeScreen() {
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => (
                   <TouchableOpacity
-                    onPress={() => handleSelectUser(item.id)}
+                    onPress={() => handleSelectUser(item.id, item.role)}
                     className="flex-row items-center justify-between border-b border-gray-100 p-4"
                   >
-                    <Text className="text-lg">{item.name}</Text>
+                    <View className="flex-row items-center">
+                      <Text className="text-lg">{item.name}</Text>
+                      {item.role === 'ADMIN' && (
+                        <Text className="ml-2 rounded-full bg-nanny-blue/15 px-2 py-0.5 text-xs font-semibold text-nanny-blue">
+                          Admin
+                        </Text>
+                      )}
+                    </View>
                     <Ionicons name="chevron-forward" size={20} color="gray" />
                   </TouchableOpacity>
                 )}

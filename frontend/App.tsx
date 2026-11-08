@@ -13,7 +13,7 @@ import ForoScreen from './src/screens/ForoScreen';
 import ChildRegistrationScreen from './src/screens/ChildRegistrationScreen';
 import CrearEventoScreen from './src/screens/CrearEventoScreen';
 import * as Notifications from 'expo-notifications';
-import { FamilySelectionProvider } from './src/context/FamilySelectionContext';
+import { FamilySelectionProvider, useFamilySelection } from './src/context/FamilySelectionContext';
 
 
 const Tab = createBottomTabNavigator();
@@ -33,6 +33,16 @@ Notifications.setNotificationHandler({
 function TabNavigator() {
   return (
     <FamilySelectionProvider>
+      <MainTabs />
+    </FamilySelectionProvider>
+  );
+}
+
+// El administrador no gestiona hijos: se le ocultan Calendario y Familia y solo ve
+// su inicio (resumen de moderación) y el foro con las funciones de moderación
+function MainTabs() {
+  const { isAdmin } = useFamilySelection();
+  return (
         <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false, // We hide the default header to use our custom one in HomeScreen
@@ -67,14 +77,21 @@ function TabNavigator() {
           }
         })}
         >
-          <Tab.Screen name="Datos" component={HomeScreen} />
-          <Tab.Screen name="Calendario" component={CalendarioScreen} />
-          <Tab.Screen name="Familia" component={FamiliaScreen} />
+          <Tab.Screen
+            name="Datos"
+            component={HomeScreen}
+            options={isAdmin ? { title: 'Inicio', tabBarIcon: adminHomeIcon } : undefined}
+          />
+          {!isAdmin && <Tab.Screen name="Calendario" component={CalendarioScreen} />}
+          {!isAdmin && <Tab.Screen name="Familia" component={FamiliaScreen} />}
           <Tab.Screen name="Foro" component={ForoScreen} />
         </Tab.Navigator>
-    </FamilySelectionProvider>
   );
 }
+
+const adminHomeIcon = ({ focused, color, size }: { focused: boolean; color: string; size: number }) => (
+  <Ionicons name={focused ? 'shield-checkmark' : 'shield-checkmark-outline'} size={size} color={color} />
+);
 
 export default function App() {
   useEffect(() => {

@@ -102,6 +102,7 @@ model User {
   role          Role      @default(USER)
   createdAt     DateTime  @default(now())
   pushToken     String?   //Guarda el ExponentPushToken del movil que sea el user  
+  blockedAt     DateTime? // Moderación: si tiene fecha, el usuario está bloqueado y su contenido se oculta del público
 
   // Relaciones
   children      Child[]
@@ -283,6 +284,7 @@ model Thread {
   content       String    @db.Text
   createdAt     DateTime  @default(now())
   isHidden      Boolean   @default(false) // Pa moderación 
+  deletedAt     DateTime? // Borrado lógico: el hilo nunca se borra de la BD (auditoría)
 
   ownerId       Int
   owner         User      @relation(fields: [ownerId], references: [id])
@@ -292,6 +294,7 @@ model Thread {
 
   @@index([createdAt])
   @@index([ownerId])
+  @@index([deletedAt])
 }
 
 model Message { 
