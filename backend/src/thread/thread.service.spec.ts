@@ -95,7 +95,7 @@ describe('ThreadService', () => {
 
     it('lanza Forbidden si el usuario está bloqueado', async () => {
       prisma.user.findUnique.mockResolvedValue({ id: 1, blockedAt: new Date() });
-      await expect(service.create({ title: 't', content: 'c', ownerId: 1 })).rejects.toThrow(ForbiddenException);
+      await expect(service.create({ title: 't', content: 'c', ownerId: 1, tagIds: [1] })).rejects.toThrow(ForbiddenException);
       expect(prisma.thread.create).not.toHaveBeenCalled();
     });
 
