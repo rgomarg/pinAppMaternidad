@@ -18,6 +18,7 @@ import { adminApi } from '../../api/admin';
 import { useFamilySelection } from '../../context/FamilySelectionContext';
 import AuthorAvatar, { ProBadge, timeAgo } from '../../components/foro/AuthorAvatar';
 import MessageItem from '../../components/foro/MessageItem';
+import ModeratableAuthor from '../../components/foro/ModeratableAuthor';
 import ReplyComposer from '../../components/foro/ReplyComposer';
 
 export default function ThreadDetailScreen() {
@@ -163,7 +164,12 @@ export default function ThreadDetailScreen() {
           }
         >
           <View className="mb-6">
-            <View className="mb-3 flex-row items-center">
+            {/* Al bloquear al autor el hilo deja de ser público, así que se vuelve al listado */}
+            <ModeratableAuthor
+              author={thread.owner}
+              onBlocked={() => navigation.goBack()}
+              className="mb-3 flex-row items-center self-start"
+            >
               <AuthorAvatar author={thread.owner} />
               <View className="ml-3">
                 <View className="flex-row items-center">
@@ -172,7 +178,7 @@ export default function ThreadDetailScreen() {
                 </View>
                 <Text className="text-xs text-nanny-muted">{timeAgo(thread.createdAt)}</Text>
               </View>
-            </View>
+            </ModeratableAuthor>
             <Text className="mb-2 text-2xl font-semibold text-nanny-text">{thread.title}</Text>
             <Text className="text-base leading-6 text-nanny-text">{thread.content}</Text>
             <View className="mt-3 flex-row flex-wrap gap-2">
@@ -197,6 +203,7 @@ export default function ThreadDetailScreen() {
                 userId={selectedUserId}
                 onReply={setReplyingTo}
                 onDelete={deleteMessage}
+                onAuthorBlocked={loadThread}
               />
             ))
           )}

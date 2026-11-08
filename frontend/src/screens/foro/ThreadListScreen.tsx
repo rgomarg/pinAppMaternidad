@@ -113,7 +113,11 @@ export default function ThreadListScreen() {
           data={threads}
           keyExtractor={(thread) => String(thread.id)}
           renderItem={({ item }) => (
-            <ThreadCard thread={item} onPress={() => navigation.navigate('ThreadDetail', { threadId: item.id })} />
+            <ThreadCard
+              thread={item}
+              onPress={() => navigation.navigate('ThreadDetail', { threadId: item.id })}
+              onAuthorBlocked={loadFirstPage}
+            />
           )}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 112 }}
           refreshControl={

@@ -3,14 +3,24 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { ThreadSummary } from '../../api/forum';
 import AuthorAvatar, { ProBadge, timeAgo } from './AuthorAvatar';
+import ModeratableAuthor from './ModeratableAuthor';
 
-export default function ThreadCard({ thread, onPress }: { thread: ThreadSummary; onPress: () => void }) {
+type Props = {
+  thread: ThreadSummary;
+  onPress: () => void;
+  // Solo para admins: tras bloquear al autor desde su nombre
+  onAuthorBlocked: () => void;
+};
+
+export default function ThreadCard({ thread, onPress, onAuthorBlocked }: Props) {
   return (
     <TouchableOpacity onPress={onPress} className="mb-3 rounded-3xl bg-white p-5" accessibilityRole="button">
       <View className="mb-3 flex-row items-center">
-        <AuthorAvatar author={thread.owner} size={32} />
-        <Text className="ml-2 text-sm font-semibold text-nanny-text">{thread.owner.name}</Text>
-        <ProBadge author={thread.owner} />
+        <ModeratableAuthor author={thread.owner} onBlocked={onAuthorBlocked} className="flex-row items-center">
+          <AuthorAvatar author={thread.owner} size={32} />
+          <Text className="ml-2 text-sm font-semibold text-nanny-text">{thread.owner.name}</Text>
+          <ProBadge author={thread.owner} />
+        </ModeratableAuthor>
         <Text className="ml-auto text-xs text-nanny-muted">{timeAgo(thread.createdAt)}</Text>
       </View>
 
