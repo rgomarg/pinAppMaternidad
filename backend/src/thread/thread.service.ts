@@ -5,6 +5,7 @@ import { CreateThreadDto } from './dto/create-thread.dto';
 import { UpdateThreadDto } from './dto/update-thread.dto';
 import { ListThreadsQueryDto } from './dto/list-threads-query.dto';
 import { buildMessageTree } from './message-tree';
+import { assertNotBlocked, visibleMessageWhere, visibleThreadWhere } from './visibility';
 
 // Datos públicos del autor (nunca email ni password)
 export const authorSelect = { id: true, name: true, avatarUrl: true, role: true } satisfies Prisma.UserSelect;
@@ -23,10 +24,11 @@ export class ThreadService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create({ title, content, ownerId, tagIds }: CreateThreadDto) {
-    const owner = await this.prisma.user.findUnique({ where: { id: ownerId }, select: { id: true } });
+    const owner = await this.prisma.user.findUnique({ where: { id: ownerId }, select: { id: true, blockedAt: true } });
     if (!owner) {
       throw new NotFoundException(`No user with id ${ownerId} found`);
     }
+    assertNotBlocked(owner);
     await this.assertTagsExist(tagIds);
 
     return this.prisma.thread.create({
@@ -42,7 +44,7 @@ export class ThreadService {
 
   async findAll({ tagId, page, limit }: ListThreadsQueryDto) {
     const where: Prisma.ThreadWhereInput = {
-      isHidden: false,
+      ...visibleThreadWhere,
       ...(tagId && { tags: { some: { id: tagId } } }),
     };
 
@@ -54,7 +56,7 @@ export class ThreadService {
         take: limit,
         select: {
           ...threadSummarySelect,
-          _count: { select: { messages: { where: { isHidden: false } } } },
+          _count: { select: { messages: { where: visibleMessageWhere } } },
         },
       }),
       this.prisma.thread.count({ where }),
@@ -71,11 +73,11 @@ export class ThreadService {
   // userId (opcional) sirve para marcar los mensajes a los que ese usuario dio like
   async findOne(id: number, userId?: number) {
     const thread = await this.prisma.thread.findFirst({
-      where: { id, isHidden: false },
+      where: { id, ...visibleThreadWhere },
       select: {
         ...threadSummarySelect,
         messages: {
-          where: { isHidden: false },
+          where: visibleMessageWhere,
           orderBy: { createdAt: 'asc' },
           select: {
             id: true,
@@ -115,15 +117,15 @@ export class ThreadService {
     });
   }
 
-  // Los mensajes y sus likes se borran en cascada
+  // Borrado lógico: el hilo deja de ser público pero se conserva en la BD para auditoría
   async remove(id: number, userId: number) {
     await this.assertOwner(id, userId);
-    await this.prisma.thread.delete({ where: { id } });
+    await this.prisma.thread.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 
   private async assertOwner(threadId: number, userId: number) {
     const thread = await this.prisma.thread.findFirst({
-      where: { id: threadId, isHidden: false },
+      where: { id: threadId, ...visibleThreadWhere },
       select: { ownerId: true },
     });
     if (!thread) {

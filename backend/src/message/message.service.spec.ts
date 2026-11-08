@@ -40,6 +40,20 @@ describe('MessageService', () => {
       await expect(service.create({ content: 'hola', authorId: 2, threadId: 1 })).rejects.toThrow(NotFoundException);
     });
 
+    it('lanza Forbidden si el autor está bloqueado', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 2, blockedAt: new Date() });
+      await expect(service.create({ content: 'hola', authorId: 2, threadId: 1 })).rejects.toThrow(ForbiddenException);
+      expect(prisma.message.create).not.toHaveBeenCalled();
+    });
+
+    it('no permite responder en hilos eliminados o de autores bloqueados', async () => {
+      prisma.thread.findFirst.mockResolvedValue(null);
+      await expect(service.create({ content: 'hola', authorId: 2, threadId: 1 })).rejects.toThrow(NotFoundException);
+      expect(prisma.thread.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 1, isHidden: false, deletedAt: null, owner: { blockedAt: null } } }),
+      );
+    });
+
     it('lanza BadRequest si el mensaje padre es de otro hilo', async () => {
       prisma.message.findFirst.mockResolvedValue({ threadId: 99 });
       await expect(service.create({ content: 'hola', authorId: 2, threadId: 1, parentId: 5 })).rejects.toThrow(
