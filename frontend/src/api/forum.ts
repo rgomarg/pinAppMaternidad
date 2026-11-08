@@ -39,12 +39,14 @@ export interface MessageNode {
   createdAt: string;
   likesCount: number;
   likedByMe: boolean;
+  reportedByMe: boolean;
   parentId: number | null;
   author: Author;
   replies: MessageNode[];
 }
 
 export interface ThreadDetail extends ThreadSummary {
+  reportedByMe: boolean;
   messages: MessageNode[];
 }
 
@@ -101,4 +103,12 @@ export const forumApi = {
 
   unlikeMessage: (id: number, userId: number) =>
     request<LikeState>(`/message/${id}/like${query({ userId })}`, { method: 'DELETE' }),
+    
+  createReport: (data: {
+    targetType: 'THREAD' | 'MESSAGE';
+    targetId: number;
+    reporterId: number;
+    comment: string;
+  }) => request<{ id: number }>('/report', { method: 'POST', body: JSON.stringify(data) }),
+
 };

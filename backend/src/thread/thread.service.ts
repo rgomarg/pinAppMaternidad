@@ -97,8 +97,28 @@ export class ThreadService {
       throw new NotFoundException(`No thread with id ${id} found`);
     }
 
-    const messages = thread.messages.map(({ likes, ...message }) => ({ ...message, likedByMe: likes.length > 0 }));
-    return { ...thread, messageCount: messages.length, messages: buildMessageTree(messages) };
+    // Reportes ya enviados por este usuario (hilo y mensajes) para pintar la bandera
+    const reports = userId
+      ? await this.prisma.report.findMany({
+          where: {
+            reporterId: userId,
+            OR: [
+              { targetType: 'THREAD', targetId: thread.id },
+              { targetType: 'MESSAGE', targetId: { in: thread.messages.map((m) => m.id) } },
+            ],
+          },
+          select: { targetType: true, targetId: true },
+        })
+      : [];
+    const reportedMessages = new Set(reports.filter((r) => r.targetType === 'MESSAGE').map((r) => r.targetId));
+    const reportedThread = reports.some((r) => r.targetType === 'THREAD');
+
+    const messages = thread.messages.map(({ likes, ...message }) => ({
+      ...message,
+      likedByMe: likes.length > 0,
+      reportedByMe: reportedMessages.has(message.id),
+    }));
+    return { ...thread, reportedByMe: reportedThread, messageCount: messages.length, messages: buildMessageTree(messages) };
   }
 
   async update(id: number, { ownerId, title, content, tagIds }: UpdateThreadDto) {

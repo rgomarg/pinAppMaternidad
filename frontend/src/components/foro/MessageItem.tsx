@@ -15,11 +15,12 @@ type Props = {
   userId: number | null;
   onReply: (message: MessageNode) => void;
   onDelete: (message: MessageNode) => void;
+  onReport: (message: MessageNode) => void;
   // Solo para admins: tras bloquear al autor desde su nombre
   onAuthorBlocked: () => void;
 };
 
-export default function MessageItem({ message, depth = 0, userId, onReply, onDelete, onAuthorBlocked }: Props) {
+export default function MessageItem({ message, depth = 0, userId, onReply, onDelete, onAuthorBlocked, onReport }: Props) {
   return (
     <View>
       <View className="mb-3 rounded-3xl bg-white p-4">
@@ -38,6 +39,21 @@ export default function MessageItem({ message, depth = 0, userId, onReply, onDel
             <Ionicons name="return-down-forward" size={16} color="#6d83a1" />
             <Text className="ml-1 text-sm text-nanny-blue">Responder</Text>
           </TouchableOpacity>
+          {message.author.id !== userId && (
+            <TouchableOpacity
+              onPress={() => onReport(message)}
+              disabled={message.reportedByMe}
+              className="ml-auto"
+              accessibilityRole="button"
+              accessibilityLabel={message.reportedByMe ? "Mensaje ya reportado" : "Reportar mensaje"}
+            >
+              <Ionicons
+                name={message.reportedByMe ? "flag" : "flag-outline"}
+                size={16}
+                color={message.reportedByMe ? "#cc7a66" : "#808080"}
+              />
+            </TouchableOpacity>
+          )}
           {message.author.id === userId && (
             <TouchableOpacity
               onPress={() => onDelete(message)}
@@ -65,6 +81,7 @@ export default function MessageItem({ message, depth = 0, userId, onReply, onDel
               onReply={onReply}
               onDelete={onDelete}
               onAuthorBlocked={onAuthorBlocked}
+              onReport={onReport}
             />
           ))}
         </View>
