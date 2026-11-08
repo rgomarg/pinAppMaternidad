@@ -7,15 +7,13 @@ import { forumApi, type Tag, type ThreadSummary } from '../../api/forum';
 import { useFamilySelection } from '../../context/FamilySelectionContext';
 import TagChips from '../../components/foro/TagChips';
 import ThreadCard from '../../components/foro/ThreadCard';
-import { useIsAdmin } from '../../hooks/useIsAdmin';
 
 const PAGE_SIZE = 20;
 
 export default function ThreadListScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const { selectedUserId } = useFamilySelection();
-  const isAdmin = useIsAdmin(selectedUserId);
+  const { selectedUserId, isAdmin } = useFamilySelection();
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagId, setTagId] = useState<number | null>(null);
   const [threads, setThreads] = useState<ThreadSummary[]>([]);

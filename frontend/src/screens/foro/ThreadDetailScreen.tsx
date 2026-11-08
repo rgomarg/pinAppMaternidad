@@ -15,7 +15,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { forumApi, type MessageNode, type ThreadDetail } from '../../api/forum';
 import { adminApi } from '../../api/admin';
-import { useIsAdmin } from '../../hooks/useIsAdmin';
 import { useFamilySelection } from '../../context/FamilySelectionContext';
 import AuthorAvatar, { ProBadge, timeAgo } from '../../components/foro/AuthorAvatar';
 import MessageItem from '../../components/foro/MessageItem';
@@ -26,8 +25,7 @@ export default function ThreadDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const threadId: number = route.params.threadId;
-  const { selectedUserId } = useFamilySelection();
-  const isAdmin = useIsAdmin(selectedUserId);
+  const { selectedUserId, isAdmin } = useFamilySelection();
 
   const [thread, setThread] = useState<ThreadDetail | null>(null);
   const [loading, setLoading] = useState(true);

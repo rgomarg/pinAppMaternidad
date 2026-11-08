@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { adminApi, type AdminThread, type AdminUser, type ThreadStatus, type UserStatus } from '../../api/admin';
@@ -59,8 +59,10 @@ function formatDate(date: string) {
 export default function AdminPanelScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const initialTab: Tab | undefined = route.params?.tab;
   const { selectedUserId } = useFamilySelection();
-  const [tab, setTab] = useState<Tab>('threads');
+  const [tab, setTab] = useState<Tab>(initialTab ?? 'threads');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [threadStatus, setThreadStatus] = useState<ThreadStatus | null>(null);
@@ -71,6 +73,11 @@ export default function AdminPanelScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+
+  // Accesos directos desde el inicio del admin (abren el panel en una pestaña concreta)
+  useEffect(() => {
+    if (initialTab) setTab(initialTab);
+  }, [initialTab]);
 
   // Espera a que el admin deje de escribir para no lanzar una búsqueda por tecla
   useEffect(() => {
