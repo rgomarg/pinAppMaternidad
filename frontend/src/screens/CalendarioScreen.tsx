@@ -57,7 +57,7 @@ type CalendarEvent = {
   date: string;
   startDate?: string;
   endDate?: string | null;
-  type?: 'GENERAL' | 'MEDICAL_APPOINTMENT' | 'VACCINE' | 'MEDICINE';
+  type?: 'GENERAL' | 'MEDICAL_APPOINTMENT' | 'VACCINE' | 'MEDICINE' | 'CONDITION';
   child: Child;
   notification?: boolean;
   intervalHours?: number | null;
@@ -68,6 +68,7 @@ const EVENT_COLORS = {
   MEDICAL_APPOINTMENT: '#C0705A',
   GENERAL: '#7C5BB0',
   VACCINE: '#C4831D',
+  CONDITION: '#B84D8B',
 } as const;
 
 const getMonthRange = (monthDate: string) => {
@@ -125,6 +126,14 @@ const getEventVisuals = (type?: string) => {
         color: '#C4831D',
         badge: 'Vacuna',
       };
+    case 'CONDITION':
+      return {
+        icon: 'bandage-outline' as const,
+        bg: 'bg-[#FCEAF5]',
+        border: 'border-[#F3C9E0]',
+        color: '#B84D8B',
+        badge: 'Síntoma',
+      };
     default:
       return {
         icon: 'calendar-outline' as const,
@@ -143,8 +152,6 @@ export default function CalendarioScreen() {
   //Para probar un usuario cambia su Id y si se pasa entre navegacion quitar comentarios
   const userId = route.params?.userId; 
 
-  const [isUserModalVisible, setIsUserModalVisible] = useState(false);
-  const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
   const [selectedDate, setSelectedDate] = useState(getToday);
   const [visibleMonth, setVisibleMonth] = useState(getToday);
   const [children, setChildren] = useState<Child[]>([]);
@@ -171,16 +178,6 @@ export default function CalendarioScreen() {
       setLoadingEvents(false);
       return;
     }
-
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch(`${API_URL}/user`);
-        const data = await response.json();
-        setUsers(data);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    };
 
     const loadGuardian = async () => {
       setLoadingChildren(true);
@@ -229,15 +226,17 @@ export default function CalendarioScreen() {
 
       try {
         // Cargamos los eventos de todo el mes en paralelo por categoría.
-        const [responseEvents, responseMedicine, responseVaccine] = await Promise.all([
+        const [responseEvents, responseMedicine, responseVaccine, responseCondition] = await Promise.all([
           fetch(`${API_URL}/event/guardian/${userId}?${rangeQuery}`),
           fetch(`${API_URL}/medicine/guardian/${userId}?${rangeQuery}`),
           fetch(`${API_URL}/vaccine/guardian/${userId}?${rangeQuery}`),
+          fetch(`${API_URL}/condition/guardian/${userId}?${rangeQuery}`),
         ]);
 
         const dataEvents: CalendarEvent[] = responseEvents.ok ? await responseEvents.json() : [];
         const dataMedicines: CalendarEvent[] = responseMedicine.ok ? await responseMedicine.json() : [];
         const dataVaccines: CalendarEvent[] = responseVaccine.ok ? await responseVaccine.json() : [];
+        const dataConditions: CalendarEvent[] = responseCondition.ok ? await responseCondition.json() : [];
 
         const medicineKeys = new Set(
           dataMedicines.map((medicine) =>
@@ -255,7 +254,7 @@ export default function CalendarioScreen() {
 
         // Unificamos los resultados y usamos IDs con prefijo por tipo de origen para
         // evitar colisiones entre eventos, medicamentos y vacunas.
-        const combined = [...uniqueEvents, ...dataMedicines, ...dataVaccines]
+        const combined = [...uniqueEvents, ...dataMedicines, ...dataVaccines, ...dataConditions]
         // Ordenamos cronológicamente por hora
         combined.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -579,6 +578,7 @@ export default function CalendarioScreen() {
             { type: 'MEDICAL_APPOINTMENT', label: 'Cita médica' },
             { type: 'GENERAL', label: 'General' },
             { type: 'VACCINE', label: 'Vacuna' },
+            { type: 'CONDITION', label: 'Síntoma' },
           ].map(({ type, label }) => (
             <View key={type} className="mx-2 my-1 flex-row items-center">
               <View className="mr-1.5 h-2.5 w-2.5 rounded-full" style={{ backgroundColor: EVENT_COLORS[type as keyof typeof EVENT_COLORS] }} />
@@ -672,7 +672,7 @@ export default function CalendarioScreen() {
                   </View>
 
                   {/* Botón de campanica a la derecha de la tarjeta */}
-                  <TouchableOpacity
+                  {event.type !== 'CONDITION' && <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => handleToggleNotification(event)}
                     disabled={isToggling}
@@ -708,7 +708,7 @@ export default function CalendarioScreen() {
                         color={hasNotification ? '#4a678f' : '#8A7F75'}
                       />
                     )}
-                  </TouchableOpacity>
+                  </TouchableOpacity>}
                 </View>
               );
             })
