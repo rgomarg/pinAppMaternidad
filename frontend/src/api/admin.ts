@@ -31,6 +31,20 @@ export interface AdminThread {
   messageCount: number;
 }
 
+export type ReportStatus = 'PENDING' | 'RESOLVED' | 'DISMISSED';
+
+export interface AdminReport {
+  id: number;
+  reason: string;
+  status: ReportStatus;
+  createdAt: string;
+  targetType: 'THREAD' | 'MESSAGE';
+  targetId: number;
+  reporter: { id: number; name: string; email: string };
+  // null si el contenido reportado ya no existe
+  target: { title: string | null; content: string; isHidden: boolean; author: { id: number; name: string } } | null;
+}
+
 type Params = Record<string, string | number | null | undefined>;
 
 // Todas las rutas de /admin exigen ?adminId= (sustituto temporal de la auth)
@@ -62,4 +76,13 @@ export const adminApi = {
 
   restoreThread: (adminId: number, threadId: number) =>
     request<AdminThread>(`/admin/threads/${threadId}/restore${adminQuery(adminId)}`, { method: 'PATCH' }),
+
+  getReports: (adminId: number, params: { search?: string; status?: ReportStatus | null } = {}) =>
+    request<AdminReport[]>(`/admin/reports${adminQuery(adminId, params)}`),
+
+  resolveReport: (adminId: number, reportId: number) =>
+    request<AdminReport>(`/admin/reports/${reportId}/resolve${adminQuery(adminId)}`, { method: 'PATCH' }),
+
+  dismissReport: (adminId: number, reportId: number) =>
+    request<AdminReport>(`/admin/reports/${reportId}/dismiss${adminQuery(adminId)}`, { method: 'PATCH' }),
 };

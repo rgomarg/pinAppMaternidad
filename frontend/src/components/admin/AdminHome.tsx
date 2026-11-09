@@ -2,9 +2,9 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { adminApi, type AdminThread, type AdminUser } from '../../api/admin';
+import { adminApi, type AdminReport, type AdminThread, type AdminUser } from '../../api/admin';
 
-type Summary = { users: AdminUser[]; threads: AdminThread[] };
+type Summary = { users: AdminUser[]; threads: AdminThread[]; reports: AdminReport[] };
 
 // Pantalla de inicio del administrador: no tiene hijos, así que en lugar de los datos
 // de crecimiento ve un resumen de la moderación del foro y accesos directos al panel.
@@ -17,8 +17,8 @@ export default function AdminHome({ adminId }: { adminId: number }) {
     useCallback(() => {
       let cancelled = false;
       setError(null);
-      Promise.all([adminApi.getUsers(adminId), adminApi.getThreads(adminId)])
-        .then(([users, threads]) => !cancelled && setSummary({ users, threads }))
+      Promise.all([adminApi.getUsers(adminId), adminApi.getThreads(adminId), adminApi.getReports(adminId)])
+        .then(([users, threads, reports]) => !cancelled && setSummary({ users, threads, reports }))
         .catch((e) => !cancelled && setError(e instanceof Error ? e.message : 'No se pudo cargar el resumen.'));
       return () => {
         cancelled = true;
@@ -26,7 +26,7 @@ export default function AdminHome({ adminId }: { adminId: number }) {
     }, [adminId]),
   );
 
-  const openPanel = (tab: 'threads' | 'users') =>
+  const openPanel = (tab: 'threads' | 'users' | 'reports') =>
     navigation.navigate('Foro', { screen: 'AdminPanel', params: { tab }, initial: false });
 
   if (error) return <Text className="mt-12 text-center text-nanny-muted">{error}</Text>;
@@ -48,6 +48,7 @@ export default function AdminHome({ adminId }: { adminId: number }) {
           alert
         />
         <StatTile label="Ocultos por reporte" value={count(summary.threads, 'HIDDEN')} icon="flag-outline" />
+        <StatTile label="Reportes pendientes" value={count(summary.reports, 'PENDING')} icon="alert-circle-outline" alert />
       </View>
 
       <Text className="mb-3 text-base font-bold uppercase tracking-wider text-nanny-muted">Usuarios</Text>
@@ -62,6 +63,12 @@ export default function AdminHome({ adminId }: { adminId: number }) {
         title="Moderar hilos"
         subtitle="Buscar, eliminar o restaurar hilos del foro"
         onPress={() => openPanel('threads')}
+      />
+      <ShortcutButton
+        icon="flag-outline"
+        title="Revisar reportes"
+        subtitle="Aceptar o rechazar los reportes de hilos y mensajes"
+        onPress={() => openPanel('reports')}
       />
       <ShortcutButton
         icon="person-remove-outline"
