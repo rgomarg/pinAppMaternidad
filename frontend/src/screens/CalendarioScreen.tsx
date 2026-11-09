@@ -570,20 +570,6 @@ export default function CalendarioScreen() {
                 <Text className="mt-3 text-sm text-[#8A7F75]">Elige un usuario para cargar sus hijos y eventos.</Text>
               )}
           </View>
-          {/* Botón para abrir el modal de selección de usuario*/}
-          {/*<TouchableOpacity 
-            onPress={() => { fetchUsers(); setIsUserModalVisible(true); }}
-            className="w-12 h-12 bg-nanny-blue rounded-full items-center justify-center relative"
-          >
-            <Text className="text-white font-semibold text-lg">
-              {userId ? userId.toString() : "?"}
-            </Text>
-            <View className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
-              <View className="bg-nanny-blue rounded-full w-4 h-4 items-center justify-center">
-                <Ionicons name="person" size={10} color="white" />
-              </View>
-            </View>
-          </TouchableOpacity>*/}
           
         </View>
 

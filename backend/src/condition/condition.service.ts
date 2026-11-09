@@ -10,11 +10,19 @@ export class ConditionService {
   create(createConditionDto: CreateConditionDto) {
     return this.prisma.condition.create({
       data: {
-        tag: [],
-        desciption: createConditionDto.desciption,
+        tag: createConditionDto.tag,
+        desciption: null,
         notes: createConditionDto.notes,
         timestamp: createConditionDto.timestamp,
         childId: createConditionDto.childId,
+      },
+      include: {
+        child: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
   }

@@ -1,20 +1,32 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsDate,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { TagCondition } from '@prisma/client';
 
 export class CreateConditionDto {
-  @IsOptional()
-  @IsString()
-  desciption?: string;
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsEnum(TagCondition, { each: true })
+  tag!: TagCondition[];
+
+  @Type(() => Date)
+  @IsDate()
+  @IsNotEmpty()
+  timestamp!: Date;
 
   @IsOptional()
   @IsString()
   notes?: string;
 
-  @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  timestamp?: Date;
-
   @IsInt()
+  @IsNotEmpty()
   childId!: number;
 }
