@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, Role } from '@prisma/client';
+import { EntityType, Prisma, ReportStatus, Role } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
-import { ListAdminThreadsQueryDto, ListAdminUsersQueryDto, ThreadStatus, UserStatus } from './dto/admin-query.dto';
+import { ListAdminReportsQueryDto, ListAdminThreadsQueryDto, ListAdminUsersQueryDto, ThreadStatus, UserStatus } from './dto/admin-query.dto';
 
 // El panel ve los registros originales intactos (también los ocultos), nunca la contraseña
 const adminUserSelect = {
@@ -27,6 +27,17 @@ const adminThreadSelect = {
   _count: { select: { messages: true } },
 } satisfies Prisma.ThreadSelect;
 
+const adminReportSelect = {
+  id: true,
+  reason: true,
+  status: true,
+  createdAt: true,
+  targetType: true,
+  targetId: true,
+  reporter: { select: { id: true, name: true, email: true } },
+} satisfies Prisma.ReportSelect;
+
+type AdminReportRow = Prisma.ReportGetPayload<{ select: typeof adminReportSelect }>;
 type AdminUserRow = Prisma.UserGetPayload<{ select: typeof adminUserSelect }>;
 type AdminThreadRow = Prisma.ThreadGetPayload<{ select: typeof adminThreadSelect }>;
 
@@ -140,6 +151,81 @@ export class AdminService {
       select: adminThreadSelect,
     });
     return toAdminThread(updated);
+  }
+
+  async findReports({ search, status }: ListAdminReportsQueryDto) {
+    const reports = await this.prisma.report.findMany({
+      where: {
+        targetType: { in: [EntityType.THREAD, EntityType.MESSAGE] },
+        ...(status && { status }),
+        ...(search && { reason: { contains: search, mode: 'insensitive' } }),
+      },
+      orderBy: { createdAt: 'desc' },
+      select: adminReportSelect,
+    });
+    return this.withTargets(reports);
+  }
+
+  async resolveReport(id: number) {
+    return this.reviewReport(id, ReportStatus.RESOLVED);
+  }
+
+  async dismissReport(id: number) {
+    return this.reviewReport(id, ReportStatus.DISMISSED);
+  }
+
+  // El contenido queda oculto mientras tenga al menos un reporte aceptado
+  private async reviewReport(id: number, status: ReportStatus) {
+    const report = await this.prisma.report.findUnique({ where: { id }, select: adminReportSelect });
+    if (!report) {
+      throw new NotFoundException(`No report with id ${id} found`);
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const saved = await tx.report.update({ where: { id }, data: { status }, select: adminReportSelect });
+      const accepted = await tx.report.count({
+        where: { targetType: report.targetType, targetId: report.targetId, status: ReportStatus.RESOLVED },
+      });
+      const isHidden = accepted > 0;
+      if (report.targetType === EntityType.THREAD) {
+        await tx.thread.updateMany({ where: { id: report.targetId }, data: { isHidden } });
+      } else if (report.targetType === EntityType.MESSAGE) {
+        await tx.message.updateMany({ where: { id: report.targetId }, data: { isHidden } });
+      }
+      return saved;
+    });
+    const [row] = await this.withTargets([updated]);
+    return row;
+  }
+
+  // Adjunta a cada reporte un resumen del hilo o mensaje reportado (el reporte es polimórfico)
+  private async withTargets(reports: AdminReportRow[]) {
+    const threadIds = reports.filter((r) => r.targetType === EntityType.THREAD).map((r) => r.targetId);
+    const messageIds = reports.filter((r) => r.targetType === EntityType.MESSAGE).map((r) => r.targetId);
+    const [threads, messages] = await Promise.all([
+      this.prisma.thread.findMany({
+        where: { id: { in: threadIds } },
+        select: { id: true, title: true, content: true, isHidden: true, deletedAt: true, owner: { select: { id: true, name: true } } },
+      }),
+      this.prisma.message.findMany({
+        where: { id: { in: messageIds } },
+        select: { id: true, content: true, isHidden: true, threadId: true, author: { select: { id: true, name: true } } },
+      }),
+    ]);
+    const threadById = new Map(threads.map((t) => [t.id, t]));
+    const messageById = new Map(messages.map((m) => [m.id, m]));
+
+    return reports.map((report) => {
+      let target: { title: string | null; content: string; isHidden: boolean; author: { id: number; name: string } } | null = null;
+      if (report.targetType === EntityType.THREAD) {
+        const t = threadById.get(report.targetId);
+        if (t) target = { title: t.title, content: t.content, isHidden: t.isHidden, author: t.owner };
+      } else {
+        const m = messageById.get(report.targetId);
+        if (m) target = { title: null, content: m.content, isHidden: m.isHidden, author: m.author };
+      }
+      return { ...report, target };
+    });
   }
 
   private async findUserOrFail(id: number) {

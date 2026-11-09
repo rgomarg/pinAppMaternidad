@@ -13,11 +13,26 @@ import {
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { adminApi, type AdminThread, type AdminUser, type ThreadStatus, type UserStatus } from '../../api/admin';
+import {
+  adminApi,
+  type AdminReport,
+  type AdminThread,
+  type AdminUser,
+  type ReportStatus,
+  type ThreadStatus,
+  type UserStatus,
+} from '../../api/admin';
 import { useFamilySelection } from '../../context/FamilySelectionContext';
 import { timeAgo } from '../../components/foro/AuthorAvatar';
 
-type Tab = 'threads' | 'users';
+type Tab = 'threads' | 'users' | 'reports';
+
+const REPORT_FILTERS: { value: ReportStatus | null; label: string }[] = [
+  { value: null, label: 'Todos' },
+  { value: 'PENDING', label: 'Pendientes' },
+  { value: 'RESOLVED', label: 'Aceptados' },
+  { value: 'DISMISSED', label: 'Rechazados' },
+];
 
 const THREAD_FILTERS: { value: ThreadStatus | null; label: string }[] = [
   { value: null, label: 'Todos' },
@@ -67,6 +82,8 @@ export default function AdminPanelScreen() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [threadStatus, setThreadStatus] = useState<ThreadStatus | null>(null);
   const [userStatus, setUserStatus] = useState<UserStatus | null>(null);
+  const [reportStatus, setReportStatus] = useState<ReportStatus | null>('PENDING');
+  const [reports, setReports] = useState<AdminReport[]>([]);
   const [threads, setThreads] = useState<AdminThread[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,6 +108,8 @@ export default function AdminPanelScreen() {
     try {
       if (tab === 'threads') {
         setThreads(await adminApi.getThreads(selectedUserId, { search: debouncedSearch, status: threadStatus }));
+      } else if (tab === 'reports') {
+        setReports(await adminApi.getReports(selectedUserId, { search: debouncedSearch, status: reportStatus }));
       } else {
         setUsers(await adminApi.getUsers(selectedUserId, { search: debouncedSearch, status: userStatus }));
       }
@@ -100,7 +119,7 @@ export default function AdminPanelScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedUserId, tab, debouncedSearch, threadStatus, userStatus]);
+  }, [selectedUserId, tab, debouncedSearch, threadStatus, userStatus, reportStatus]);
 
   useFocusEffect(
     useCallback(() => {
@@ -190,11 +209,35 @@ export default function AdminPanelScreen() {
     );
   };
 
-  const filters = tab === 'threads' ? THREAD_FILTERS : USER_FILTERS;
-  const activeFilter = tab === 'threads' ? threadStatus : userStatus;
+  const reviewReport = (report: AdminReport, accept: boolean) => {
+    if (!selectedUserId) return;
+    const what = report.targetType === 'THREAD' ? 'hilo' : 'mensaje';
+    runAction(
+      report,
+      accept
+        ? {
+            title: 'Aceptar reporte',
+            message: `El ${what} reportado se ocultará del foro de inmediato.`,
+            button: 'Ocultar contenido',
+            destructive: true,
+          }
+        : {
+            title: 'Rechazar reporte',
+            message: `El ${what} reportado seguirá visible en el foro.`,
+            button: 'Rechazar',
+            destructive: false,
+          },
+      () => (accept ? adminApi.resolveReport(selectedUserId, report.id) : adminApi.dismissReport(selectedUserId, report.id)),
+      setReports,
+    );
+  };
+
+  const filters = tab === 'threads' ? THREAD_FILTERS : tab === 'reports' ? REPORT_FILTERS : USER_FILTERS;
+  const activeFilter = tab === 'threads' ? threadStatus : tab === 'reports' ? reportStatus : userStatus;
   const selectFilter = (value: string | null) => {
     setLoading(true);
     if (tab === 'threads') setThreadStatus(value as ThreadStatus | null);
+    else if (tab === 'reports') setReportStatus(value as ReportStatus | null);
     else setUserStatus(value as UserStatus | null);
   };
 
@@ -207,7 +250,11 @@ export default function AdminPanelScreen() {
       }}
     />
   );
-  const emptyText = error ?? (tab === 'threads' ? 'No hay hilos con estos filtros.' : 'No hay usuarios con estos filtros.');
+  const emptyText = error ?? (tab === 'threads'
+      ? 'No hay hilos con estos filtros.'
+      : tab === 'reports'
+        ? 'No hay reportes con estos filtros.'
+        : 'No hay usuarios con estos filtros.');
 
   return (
     <View style={{ flex: 1, paddingTop: insets.top }} className="bg-nanny-bg">
@@ -228,6 +275,7 @@ export default function AdminPanelScreen() {
           {(
             [
               { value: 'threads', label: 'Hilos' },
+              { value: 'reports', label: 'Reportes' },
               { value: 'users', label: 'Usuarios' },
             ] as const
           ).map((option) => (
@@ -250,7 +298,13 @@ export default function AdminPanelScreen() {
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder={tab === 'threads' ? 'Buscar por título, contenido o autor' : 'Buscar por nombre o email'}
+            placeholder={
+              tab === 'threads'
+                ? 'Buscar por título, contenido o autor'
+                : tab === 'reports'
+                  ? 'Buscar en el motivo del reporte'
+                  : 'Buscar por nombre o email'
+            }
             placeholderTextColor="#808080"
             className="ml-2 flex-1 py-3 text-sm text-nanny-text"
             autoCapitalize="none"
@@ -290,6 +344,23 @@ export default function AdminPanelScreen() {
           keyExtractor={(thread) => String(thread.id)}
           renderItem={({ item }) => (
             <ThreadRow thread={item} busy={busyId === item.id} onToggle={() => toggleThread(item)} />
+          )}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}
+          refreshControl={refreshControl}
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={<Text className="mt-12 text-center text-nanny-muted">{emptyText}</Text>}
+        />
+      ) : tab === 'reports' ? (
+        <FlatList
+          data={reports}
+          keyExtractor={(report) => String(report.id)}
+          renderItem={({ item }) => (
+            <ReportRow
+              report={item}
+              busy={busyId === item.id}
+              onAccept={() => reviewReport(item, true)}
+              onDismiss={() => reviewReport(item, false)}
+            />
           )}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}
           refreshControl={refreshControl}
@@ -422,6 +493,67 @@ function UserRow({
             busy={busy}
             onPress={onToggle}
           />
+        </View>
+      )}
+    </View>
+  );
+}
+
+const REPORT_BADGE: Record<ReportStatus, { label: string; className: string; textClassName: string }> = {
+  PENDING: { label: 'Pendiente', className: 'bg-nanny-blue/15', textClassName: 'text-nanny-blue' },
+  RESOLVED: { label: 'Aceptado', className: 'bg-nanny-red/15', textClassName: 'text-nanny-red' },
+  DISMISSED: { label: 'Rechazado', className: 'bg-nanny-card', textClassName: 'text-nanny-muted' },
+};
+
+function ReportRow({
+  report,
+  busy,
+  onAccept,
+  onDismiss,
+}: {
+  report: AdminReport;
+  busy: boolean;
+  onAccept: () => void;
+  onDismiss: () => void;
+}) {
+  const badge = REPORT_BADGE[report.status];
+  const { target } = report;
+  return (
+    <View className="mb-3 rounded-3xl bg-white p-5">
+      <View className="mb-2 flex-row flex-wrap items-center gap-2">
+        <Text className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className} ${badge.textClassName}`}>
+          {badge.label}
+        </Text>
+        <Text className="rounded-full bg-nanny-bg px-2 py-0.5 text-xs font-semibold text-nanny-blue">
+          {report.targetType === 'THREAD' ? 'Hilo' : 'Mensaje'}
+        </Text>
+        {target?.isHidden && (
+          <Text className="rounded-full bg-nanny-card px-2 py-0.5 text-xs font-semibold text-nanny-muted">Oculto</Text>
+        )}
+        <Text className="ml-auto text-xs text-nanny-muted">{timeAgo(report.createdAt)}</Text>
+      </View>
+
+      <Text className="mb-1 text-xs font-semibold uppercase text-nanny-muted">Motivo</Text>
+      <Text className="mb-3 text-sm text-nanny-text">{report.reason}</Text>
+
+      <Text className="mb-1 text-xs font-semibold uppercase text-nanny-muted">Contenido reportado</Text>
+      {target ? (
+        <>
+          {target.title && <Text className="text-base font-semibold text-nanny-text">{target.title}</Text>}
+          <Text className="text-sm text-nanny-muted">{target.content}</Text>
+          <Text className="mt-1 text-xs text-nanny-muted">
+            Autor: <Text className="font-semibold text-nanny-text">{target.author.name}</Text>
+          </Text>
+        </>
+      ) : (
+        <Text className="text-sm text-nanny-muted">El contenido ya no existe.</Text>
+      )}
+      <Text className="mt-1 text-xs text-nanny-muted">Reportado por {report.reporter.name}</Text>
+
+      {report.status === 'PENDING' && target && (
+        <View className="mt-4 flex-row justify-end gap-2">
+          <ActionButton label="Rechazar" icon="close" destructive={false} busy={busy} onPress={onDismiss} />
+          <ActionButton label="Ocultar" icon="eye-off-outline" destructive busy={busy} onPress={onAccept} />
         </View>
       )}
     </View>

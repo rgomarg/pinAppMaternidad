@@ -36,3 +36,13 @@ export class ListAdminThreadsQueryDto extends AdminSearchQueryDto {
   @IsIn(THREAD_STATUSES)
   status?: ThreadStatus;
 }
+
+export const REPORT_STATUSES = ['PENDING', 'RESOLVED', 'DISMISSED'] as const;
+export type ReportStatusFilter = (typeof REPORT_STATUSES)[number];
+
+// Query params de GET /admin/reports
+export class ListAdminReportsQueryDto extends AdminSearchQueryDto {
+  @IsOptional()
+  @IsIn(REPORT_STATUSES)
+  status?: ReportStatusFilter;
+}
