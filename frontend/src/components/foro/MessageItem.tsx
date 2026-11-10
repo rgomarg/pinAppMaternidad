@@ -18,9 +18,20 @@ type Props = {
   onReport: (message: MessageNode) => void;
   // Solo para admins: tras bloquear al autor desde su nombre
   onAuthorBlocked: () => void;
+  // Solo para admins: eliminar el comentario de otro usuario (borrado lógico)
+  onModerate?: (message: MessageNode) => void;
 };
 
-export default function MessageItem({ message, depth = 0, userId, onReply, onDelete, onAuthorBlocked, onReport }: Props) {
+export default function MessageItem({
+  message,
+  depth = 0,
+  userId,
+  onReply,
+  onDelete,
+  onAuthorBlocked,
+  onReport,
+  onModerate,
+}: Props) {
   return (
     <View>
       <View className="mb-3 rounded-3xl bg-white p-4">
@@ -54,6 +65,16 @@ export default function MessageItem({ message, depth = 0, userId, onReply, onDel
               />
             </TouchableOpacity>
           )}
+          {message.author.id !== userId && onModerate && (
+            <TouchableOpacity
+              onPress={() => onModerate(message)}
+              className="ml-4"
+              accessibilityRole="button"
+              accessibilityLabel="Eliminar mensaje como administrador"
+            >
+              <Ionicons name="trash-outline" size={16} color="#cc7a66" />
+            </TouchableOpacity>
+          )}
           {message.author.id === userId && (
             <TouchableOpacity
               onPress={() => onDelete(message)}
@@ -82,6 +103,7 @@ export default function MessageItem({ message, depth = 0, userId, onReply, onDel
               onDelete={onDelete}
               onAuthorBlocked={onAuthorBlocked}
               onReport={onReport}
+              onModerate={onModerate}
             />
           ))}
         </View>

@@ -37,6 +37,9 @@ export class ListAdminThreadsQueryDto extends AdminSearchQueryDto {
   status?: ThreadStatus;
 }
 
+// Los comentarios usan los mismos estados que los hilos
+export type MessageStatus = ThreadStatus;
+
 export const REPORT_STATUSES = ['PENDING', 'RESOLVED', 'DISMISSED'] as const;
 export type ReportStatusFilter = (typeof REPORT_STATUSES)[number];
 

@@ -49,7 +49,7 @@ describe('ThreadService', () => {
         expect.objectContaining({
           where: { id: 1, isHidden: false, deletedAt: null, owner: { blockedAt: null } },
           select: expect.objectContaining({
-            messages: expect.objectContaining({ where: { isHidden: false, author: { blockedAt: null } } }),
+            messages: expect.objectContaining({ where: { isHidden: false, deletedAt: null, author: { blockedAt: null } } }),
           }),
         }),
       );

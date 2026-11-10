@@ -303,6 +303,7 @@ model Message {
   likesCount    Int       @default(0) // UT-21: Sistema de votos MVP
   createdAt     DateTime  @default(now())
   isHidden      Boolean   @default(false) // Para moderación
+  deletedAt     DateTime? // Borrado lógico por un admin: el mensaje se conserva en la BD (auditoría)
 
   authorId      Int
   author        User      @relation(fields: [authorId], references: [id])
