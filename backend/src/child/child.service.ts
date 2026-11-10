@@ -2,14 +2,21 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateChildDto } from './dto/create-child.dto';
 import { UpdateChildDto } from './dto/update-child.dto';
 import { PrismaService } from 'prisma/prisma.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ChildCreatedEvent } from './entities/child-created.events';
+
 
 @Injectable()
 export class ChildService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter2: EventEmitter2,
+  ) { }
   async create(createChildDto: CreateChildDto) {
-    return await this.prisma.child.create({
+    const child = await this.prisma.child.create({
       data: {
         name: createChildDto.name,
+        surname: createChildDto.surname,
         birthDate: createChildDto.birthDate,
         bloodGroup: createChildDto.bloodGroup,
         allergies: createChildDto.allergies,
@@ -36,7 +43,12 @@ export class ChildService {
 
 
       }
-    })
+    });
+    this.eventEmitter2.emit(
+      'child.created',
+      new ChildCreatedEvent(child.id, child.birthDate)
+    )
+    return child;
   }
 
   findAll() {
@@ -100,6 +112,9 @@ export class ChildService {
     if(!child) {
       throw new NotFoundException(`No child with id ${id} found`);
     }
+
+    
+
     return child;
   }
 }

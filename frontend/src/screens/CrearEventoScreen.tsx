@@ -132,12 +132,14 @@ export default function CrearEventoScreen() {
     mode: 'date' | 'time',
     onSelect: (selected: Date) => void,
     fallbackIosSetter: (v: boolean) => void,
+    maximumDate?: Date,
   ) => {
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
         value: currentValue,
         mode,
         is24Hour: true,
+        maximumDate,
         onChange: (event, selected) => {
           if (event.type === 'set' && selected) {
             onSelect(selected);
@@ -152,12 +154,29 @@ export default function CrearEventoScreen() {
   const handleDateChange = (newDate: Date) => {
     const updated = new Date(date);
     updated.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
+    const now = new Date();
+    if (eventType === 'VACCINE' && vaccineApplied && updated.getTime() > now.getTime()) {
+      const isFutureDay = new Date(newDate).setHours(0, 0, 0, 0) > new Date().setHours(0, 0, 0, 0);
+      if (isFutureDay) {
+        Alert.alert('Fecha no válida', 'La fecha de una vacuna ya aplicada no puede ser posterior a hoy.');
+      } else {
+        Alert.alert('Hora no válida', 'La hora no puede ser posterior a la actual para una vacuna ya aplicada.');
+      }
+      setDate(now);
+      return;
+    }
     setDate(updated);
   };
 
   const handleTimeChange = (newTime: Date) => {
     const updated = new Date(date);
     updated.setHours(newTime.getHours(), newTime.getMinutes(), 0, 0);
+    const now = new Date();
+    if (eventType === 'VACCINE' && vaccineApplied && updated.getTime() > now.getTime()) {
+      Alert.alert('Hora no válida', 'No puedes seleccionar una hora posterior a la actual para una vacuna ya aplicada.');
+      setDate(now);
+      return;
+    }
     setDate(updated);
   };
 
@@ -209,6 +228,13 @@ export default function CrearEventoScreen() {
       }
       if (endDate && endDate <= date) {
         return Alert.alert('Fecha de fin inválida', 'La fecha y hora de fin deben ser posteriores a las de inicio.');
+      }
+    }
+
+    if (eventType === 'VACCINE' && vaccineApplied) {
+      const now = new Date();
+      if (date.getTime() > now.getTime()) {
+        return Alert.alert('Fecha u hora no válida', 'No puedes registrar una vacuna ya aplicada con una fecha u hora posterior a la actual.');
       }
     }
 
@@ -494,7 +520,15 @@ export default function CrearEventoScreen() {
                 return (
                   <TouchableOpacity
                     key={String(applied)}
-                    onPress={() => setVaccineApplied(applied)}
+                    onPress={() => {
+                      setVaccineApplied(applied);
+                      if (applied) {
+                        const now = new Date();
+                        if (date.getTime() > now.getTime()) {
+                          setDate(now);
+                        }
+                      }
+                    }}
                     className={`flex-1 items-center rounded-2xl border py-3 ${
                       selected
                         ? 'border-[#6d83a1] bg-[#dce7f1]'
@@ -576,7 +610,10 @@ export default function CrearEventoScreen() {
                 : 'Fecha *'}
             </Text>
             <TouchableOpacity
-              onPress={() => openDateModal(date, 'date', handleDateChange, setShowDatePicker)}
+              onPress={() => {
+                const maxDate = eventType === 'VACCINE' && vaccineApplied ? new Date() : undefined;
+                openDateModal(date, 'date', handleDateChange, setShowDatePicker, maxDate);
+              }}
               className="flex-row items-center justify-between rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5"
             >
               <Text className="text-base text-[#2B2B2B]">{formatDateStr(date)}</Text>
@@ -587,7 +624,10 @@ export default function CrearEventoScreen() {
           <View className="flex-1">
             <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">Hora</Text>
             <TouchableOpacity
-              onPress={() => openDateModal(date, 'time', handleTimeChange, setShowTimePicker)}
+              onPress={() => {
+                const maxDate = eventType === 'VACCINE' && vaccineApplied ? new Date() : undefined;
+                openDateModal(date, 'time', handleTimeChange, setShowTimePicker, maxDate);
+              }}
               className="flex-row items-center justify-between rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5"
             >
               <Text className="text-base text-[#2B2B2B]">{formatTimeStr(date)}</Text>
@@ -602,6 +642,7 @@ export default function CrearEventoScreen() {
             value={date}
             mode="date"
             display="default"
+            maximumDate={eventType === 'VACCINE' && vaccineApplied ? new Date() : undefined}
             onChange={(_, sel) => {
               setShowDatePicker(false);
               if (sel) handleDateChange(sel);
@@ -613,6 +654,7 @@ export default function CrearEventoScreen() {
             value={date}
             mode="time"
             display="default"
+            maximumDate={eventType === 'VACCINE' && vaccineApplied ? new Date() : undefined}
             onChange={(_, sel) => {
               setShowTimePicker(false);
               if (sel) handleTimeChange(sel);

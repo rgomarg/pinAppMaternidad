@@ -32,7 +32,7 @@ describe('ThreadService', () => {
 
       expect(prisma.thread.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { isHidden: false, tags: { some: { id: 2 } } },
+          where: { isHidden: false, deletedAt: null, owner: { blockedAt: null }, tags: { some: { id: 2 } } },
           skip: 10,
           take: 10,
         }),
@@ -42,6 +42,19 @@ describe('ThreadService', () => {
   });
 
   describe('findOne', () => {
+    it('solo busca hilos visibles: no eliminados ni de autores bloqueados', async () => {
+      prisma.thread.findFirst.mockResolvedValue({ id: 1, messages: [] });
+      await service.findOne(1);
+      expect(prisma.thread.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 1, isHidden: false, deletedAt: null, owner: { blockedAt: null } },
+          select: expect.objectContaining({
+            messages: expect.objectContaining({ where: { isHidden: false, author: { blockedAt: null } } }),
+          }),
+        }),
+      );
+    });
+
     it('lanza NotFound si el hilo no existe o está oculto', async () => {
       prisma.thread.findFirst.mockResolvedValue(null);
       await expect(service.findOne(1)).rejects.toThrow(NotFoundException);
@@ -78,6 +91,12 @@ describe('ThreadService', () => {
       await expect(service.create({ title: 't', content: 'c', ownerId: 1, tagIds: [1, 2] })).rejects.toThrow(
         BadRequestException,
       );
+    });
+
+    it('lanza Forbidden si el usuario está bloqueado', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 1, blockedAt: new Date() });
+      await expect(service.create({ title: 't', content: 'c', ownerId: 1, tagIds: [1] })).rejects.toThrow(ForbiddenException);
+      expect(prisma.thread.create).not.toHaveBeenCalled();
     });
 
     it('conecta los tags al crear el hilo', async () => {
@@ -118,10 +137,11 @@ describe('ThreadService', () => {
       expect(prisma.thread.delete).not.toHaveBeenCalled();
     });
 
-    it('borra el hilo si es el dueño', async () => {
+    it('hace borrado lógico del hilo si es el dueño (nunca borrado físico)', async () => {
       prisma.thread.findFirst.mockResolvedValue({ ownerId: 1 });
       await service.remove(5, 1);
-      expect(prisma.thread.delete).toHaveBeenCalledWith({ where: { id: 5 } });
+      expect(prisma.thread.update).toHaveBeenCalledWith({ where: { id: 5 }, data: { deletedAt: expect.any(Date) } });
+      expect(prisma.thread.delete).not.toHaveBeenCalled();
     });
   });
 });

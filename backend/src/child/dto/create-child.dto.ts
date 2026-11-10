@@ -8,6 +8,10 @@ export class CreateChildDto {
     @IsNotEmpty()
     name!: string;
 
+    @IsOptional()
+    @IsString()
+    surname?: string;
+
     @Type(() => Date)
     @IsDate()
     birthDate!: Date;
