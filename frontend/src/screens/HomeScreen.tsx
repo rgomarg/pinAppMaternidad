@@ -469,7 +469,9 @@ export default function HomeScreen() {
                 <TouchableOpacity
                   onPress={addChecklistItem}
                   disabled={!newTaskTitle.trim() || !activeChildId}
-                  className="h-12 w-12 items-center justify-center rounded-2xl bg-[#ded6ca]"
+                  className={`h-12 w-12 items-center justify-center rounded-2xl ${
+                    newTaskTitle.trim() && activeChildId ? 'bg-[#c4baac]' : 'bg-[#e2ddd5]'
+                  }`}
                 >
                   <Ionicons name="add" size={30} color="white" />
                 </TouchableOpacity>
