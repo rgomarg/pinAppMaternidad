@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import {
   adminApi,
+  type AdminMessage,
   type AdminReport,
   type AdminThread,
   type AdminUser,
@@ -343,7 +344,12 @@ export default function AdminPanelScreen() {
           data={threads}
           keyExtractor={(thread) => String(thread.id)}
           renderItem={({ item }) => (
-            <ThreadRow thread={item} busy={busyId === item.id} onToggle={() => toggleThread(item)} />
+            <ThreadRow
+              thread={item}
+              adminId={selectedUserId}
+              busy={busyId === item.id}
+              onToggle={() => toggleThread(item)}
+            />
           )}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}
           refreshControl={refreshControl}
@@ -417,8 +423,19 @@ function ActionButton({
   );
 }
 
-function ThreadRow({ thread, busy, onToggle }: { thread: AdminThread; busy: boolean; onToggle: () => void }) {
+function ThreadRow({
+  thread,
+  adminId,
+  busy,
+  onToggle,
+}: {
+  thread: AdminThread;
+  adminId: number | null;
+  busy: boolean;
+  onToggle: () => void;
+}) {
   const deleted = thread.status === 'DELETED';
+  const [showMessages, setShowMessages] = useState(false);
   return (
     <View className="mb-3 rounded-3xl bg-white p-5">
       <View className="mb-2 flex-row flex-wrap items-center gap-2">
@@ -439,7 +456,20 @@ function ThreadRow({ thread, busy, onToggle }: { thread: AdminThread; busy: bool
       </Text>
       {thread.deletedAt && <Text className="text-xs text-nanny-red">Eliminado el {formatDate(thread.deletedAt)}</Text>}
 
-      <View className="mt-4 flex-row justify-end">
+      <View className="mt-4 flex-row items-center justify-end">
+        {thread.messageCount > 0 && (
+          <TouchableOpacity
+            onPress={() => setShowMessages((v) => !v)}
+            className="mr-auto flex-row items-center"
+            accessibilityRole="button"
+            accessibilityLabel={showMessages ? 'Ocultar comentarios' : 'Ver comentarios'}
+          >
+            <Ionicons name={showMessages ? 'chevron-up' : 'chatbubbles-outline'} size={16} color="#6d83a1" />
+            <Text className="ml-1 text-sm font-semibold text-nanny-blue">
+              {showMessages ? 'Ocultar comentarios' : 'Comentarios'}
+            </Text>
+          </TouchableOpacity>
+        )}
         <ActionButton
           label={deleted ? 'Restaurar' : 'Eliminar'}
           icon={deleted ? 'refresh' : 'trash-outline'}
@@ -448,6 +478,88 @@ function ThreadRow({ thread, busy, onToggle }: { thread: AdminThread; busy: bool
           onPress={onToggle}
         />
       </View>
+
+      {showMessages && adminId && <ThreadMessages threadId={thread.id} adminId={adminId} />}
+    </View>
+  );
+}
+
+// Comentarios de un hilo (también los ocultos) para eliminarlos o restaurarlos uno a uno
+function ThreadMessages({ threadId, adminId }: { threadId: number; adminId: number }) {
+  const [messages, setMessages] = useState<AdminMessage[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
+
+  useEffect(() => {
+    adminApi
+      .getThreadMessages(adminId, threadId)
+      .then(setMessages)
+      .catch((e) => setError(e instanceof Error ? e.message : 'No se pudieron cargar los comentarios.'));
+  }, [adminId, threadId]);
+
+  const toggleMessage = (message: AdminMessage) => {
+    const deleted = message.status === 'DELETED';
+    Alert.alert(
+      deleted ? 'Restaurar comentario' : 'Eliminar comentario',
+      deleted
+        ? 'El comentario volverá a ser visible en el foro.'
+        : 'El comentario desaparecerá del foro de inmediato. Se conserva en el sistema y puedes restaurarlo.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: deleted ? 'Restaurar' : 'Eliminar',
+          style: deleted ? 'default' : 'destructive',
+          onPress: async () => {
+            setBusyId(message.id);
+            try {
+              const updated = deleted
+                ? await adminApi.restoreMessage(adminId, message.id)
+                : await adminApi.deleteMessage(adminId, message.id);
+              setMessages((current) => current?.map((m) => (m.id === updated.id ? updated : m)) ?? null);
+            } catch (e) {
+              Alert.alert('No se pudo completar la acción', e instanceof Error ? e.message : 'Inténtalo de nuevo.');
+            } finally {
+              setBusyId(null);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  if (error) return <Text className="mt-3 text-sm text-nanny-red">{error}</Text>;
+  if (!messages) return <ActivityIndicator size="small" color="#6d83a1" style={{ marginTop: 12 }} />;
+
+  return (
+    <View className="mt-3 border-t border-nanny-card pt-3">
+      {messages.map((message) => {
+        const deleted = message.status === 'DELETED';
+        return (
+          <View key={message.id} className="mb-2 rounded-2xl bg-nanny-bg p-3">
+            <View className="mb-1 flex-row flex-wrap items-center gap-2">
+              <StatusBadge status={message.status} />
+              {deleted && message.author.blockedAt && <StatusBadge status="AUTHOR_BLOCKED" />}
+              <Text className="ml-auto text-xs text-nanny-muted">{timeAgo(message.createdAt)}</Text>
+            </View>
+            <Text className="mb-1 text-sm text-nanny-text">{message.content}</Text>
+            <Text className="text-xs text-nanny-muted">
+              Autor: <Text className="font-semibold text-nanny-text">{message.author.name}</Text>
+            </Text>
+            {message.deletedAt && (
+              <Text className="text-xs text-nanny-red">Eliminado el {formatDate(message.deletedAt)}</Text>
+            )}
+            <View className="mt-2 flex-row justify-end">
+              <ActionButton
+                label={deleted ? 'Restaurar' : 'Eliminar'}
+                icon={deleted ? 'refresh' : 'trash-outline'}
+                destructive={!deleted}
+                busy={busyId === message.id}
+                onPress={() => toggleMessage(message)}
+              />
+            </View>
+          </View>
+        );
+      })}
     </View>
   );
 }
