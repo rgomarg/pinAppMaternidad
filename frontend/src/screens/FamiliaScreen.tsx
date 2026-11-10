@@ -526,6 +526,7 @@ function Field({
   onChangeText,
   multiline = false,
   scrollIntoViewOnFocus = false,
+  tooltip,
 }: {
   label: string;
   placeholder: string;
@@ -533,16 +534,32 @@ function Field({
   onChangeText: (value: string) => void;
   multiline?: boolean;
   scrollIntoViewOnFocus?: boolean;
+  tooltip?: string;
 }) {
   const scrollToInput = useContext(FormScrollContext);
   const inputRef = useRef<TextInputInstance | null>(null);
+  const [showTip, setShowTip] = useState(false);
   return (
     <View className="mb-6">
-      <Text style={{ color: palette.muted }} className="mb-2 text-base">{label}</Text>
+      <View className="mb-2 flex-row items-center">
+        <Text style={{ color: palette.muted }} className="text-base">{label}</Text>
+        {tooltip && (
+          <TouchableOpacity
+            onPress={() => setShowTip((v) => !v)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            className="ml-1.5"
+          >
+            <Ionicons name="information-circle-outline" size={20} color={palette.muted} />
+          </TouchableOpacity>
+        )}
+      </View>
       <TextInput
         ref={inputRef}
         value={value}
-        onChangeText={onChangeText}
+        onChangeText={(text) => {
+          onChangeText(text);
+          setShowTip(false);
+        }}
         placeholder={placeholder}
         placeholderTextColor="#9a928b"
         multiline={multiline}
@@ -554,6 +571,11 @@ function Field({
         style={{ color: palette.text, minHeight: multiline ? 140 : undefined, textAlignVertical: multiline ? 'top' : 'center' }}
         className="rounded-3xl border border-[#ddd2c4] bg-[#eee5d6] px-6 py-4 text-lg"
       />
+      {tooltip && showTip && (
+        <View className="mt-2 rounded-xl bg-[#2B2B2B] px-3 py-2">
+          <Text className="text-xs text-white">{tooltip}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -880,7 +902,7 @@ function AddMedicineScreen() {
     <FormLayout title="Nuevo medicamento" child={child} onSave={save} saving={saving}>
       <Field label="Nombre del medicamento *" placeholder="Ej. Loratadina 5 mg" value={name} onChangeText={setName} />
       <View className="flex-row gap-3">
-        <View className="flex-1"><Field label="Dosis *" placeholder="Ej. 5 ml" value={dosage} onChangeText={setDosage} /></View>
+        <View className="flex-1"><Field label="Dosis *" placeholder="Ej. 5 ml" value={dosage} onChangeText={setDosage} tooltip="Indica la cantidad por toma, con su unidad. Ej: 2.5 ml, 1 comprimido, 5 gotas." /></View>
         <View className="flex-1"><Field label="Frecuencia *" placeholder="Ej. cada 8 h" value={frequency} onChangeText={setFrequency} /></View>
       </View>
       <DateField label="Fecha de inicio *" value={startDate} onChange={setStartDate} />
