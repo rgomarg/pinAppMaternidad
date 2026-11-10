@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndicator, TextInput, KeyboardAvoidingView, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
 import { API_URL } from '../api/config';
@@ -32,6 +32,12 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState<string | null>(null);
+  const [checklist, setChecklist] = useState<any[]>([]);
+  const [checklistTab, setChecklistTab] = useState<'pending' | 'completed'>('pending');
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editingTaskTitle, setEditingTaskTitle] = useState('');
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
 
   const updateFamiliaChild = (childId: number | null, userId: number | null = activeUserId) => {
     const navigationState = navigation.getState();
@@ -197,9 +203,112 @@ export default function HomeScreen() {
       navigation.navigate('Calendario', { userId: activeUserId });
     }
 
+  const fetchChecklist = async () => {
+    if (!activeChildId || !activeUserId) {
+      setChecklist([]);
+      return;
+    }
+    try {
+      const response = await fetch(
+        `${API_URL}/check-list-item?childId=${activeChildId}&userId=${activeUserId}`,
+      );
+      if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
+      setChecklist(await response.json());
+    } catch (error) {
+      console.error('Error fetching checklist:', error);
+      setChecklist([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchChecklist();
+  }, [activeChildId, activeUserId]);
+
+  const addChecklistItem = async () => {
+    const title = newTaskTitle.trim();
+    if (!title || !activeChildId || !activeUserId) return;
+    try {
+      const response = await fetch(`${API_URL}/check-list-item`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, childId: activeChildId, userId: activeUserId }),
+      });
+      if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
+      const item = await response.json();
+      setChecklist((current) => [...current, item]);
+      setNewTaskTitle('');
+    } catch (error) {
+      console.error('Error creating checklist item:', error);
+    }
+  };
+
+  const toggleChecklistItem = async (item: any) => {
+    if (!activeUserId) return;
+    try {
+      const response = await fetch(`${API_URL}/check-list-item/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isCompleted: !item.isCompleted, userId: activeUserId }),
+      });
+      if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
+      const updated = await response.json();
+      setChecklist((current) => current.map((entry) => entry.id === updated.id ? updated : entry));
+    } catch (error) {
+      console.error('Error updating checklist item:', error);
+    }
+  };
+
+  const saveChecklistEdit = async (item: any) => {
+    const title = editingTaskTitle.trim();
+    if (!title || !activeUserId) return;
+    try {
+      const response = await fetch(`${API_URL}/check-list-item/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, userId: activeUserId }),
+      });
+      if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
+      const updated = await response.json();
+      setChecklist((current) => current.map((entry) => entry.id === updated.id ? updated : entry));
+      setEditingTaskId(null);
+    } catch (error) {
+      console.error('Error editing checklist item:', error);
+    }
+  };
+
+  const deleteChecklistItem = async (itemId: number) => {
+    if (!activeUserId) return;
+    try {
+      const response = await fetch(`${API_URL}/check-list-item/${itemId}?userId=${activeUserId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
+      setChecklist((current) => current.filter((item) => item.id !== itemId));
+    } catch (error) {
+      console.error('Error deleting checklist item:', error);
+    }
+  };
+
+  const visibleChecklist = checklist.filter((item) =>
+    checklistTab === 'completed' ? item.isCompleted : !item.isCompleted,
+  );
+
+  const focusChecklistInput = () => {
+    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f3ec', paddingTop: insets.top }}>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }} style={{ flex: 1 }}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1, backgroundColor: '#f7f3ec', paddingTop: insets.top }}
+    >
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={{ padding: 24, paddingBottom: 260 }}
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+      >
         
         {/* Header */}
         <View className="flex-row justify-between items-start mb-6">
@@ -330,6 +439,82 @@ export default function HomeScreen() {
               onAddMeasurement={(metric) => metric === 'weight' ? setModalPesoVisible(true) : setModalAlturaVisible(true)}
             />
 
+            <View className="bg-nanny-card rounded-2xl mb-6 overflow-hidden">
+              <Text className="font-semibold text-lg text-nanny-text px-4 pt-4 pb-3">ToDoList</Text>
+              <View className="mx-4 mb-3 flex-row rounded-2xl bg-[#ded6ca] p-1">
+                <TouchableOpacity
+                  onPress={() => setChecklistTab('pending')}
+                  className={`flex-1 items-center rounded-xl py-2 ${checklistTab === 'pending' ? 'bg-[#f7f3ec]' : ''}`}
+                >
+                  <Ionicons name="time-outline" size={22} color={checklistTab === 'pending' ? '#b87427' : '#968e84'} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setChecklistTab('completed')}
+                  className={`flex-1 items-center rounded-xl py-2 ${checklistTab === 'completed' ? 'bg-[#f7f3ec]' : ''}`}
+                >
+                  <Ionicons name="checkmark-circle-outline" size={22} color={checklistTab === 'completed' ? '#4e8c67' : '#968e84'} />
+                </TouchableOpacity>
+              </View>
+               <View className="mx-4 mb-3 flex-row items-center gap-3">
+                <TextInput
+                  value={newTaskTitle}
+                  onChangeText={setNewTaskTitle}
+                  placeholder="Añadir una tarea..."
+                  placeholderTextColor="#a49d95"
+                  className="flex-1 rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] px-4 py-2 text-base text-nanny-text"
+                  onSubmitEditing={addChecklistItem}
+                  onFocus={focusChecklistInput}
+                  returnKeyType="done"
+                />
+                <TouchableOpacity
+                  onPress={addChecklistItem}
+                  disabled={!newTaskTitle.trim() || !activeChildId}
+                  className={`h-12 w-12 items-center justify-center rounded-2xl ${
+                    newTaskTitle.trim() && activeChildId ? 'bg-[#c4baac]' : 'bg-[#e2ddd5]'
+                  }`}
+                >
+                  <Ionicons name="add" size={30} color="white" />
+                </TouchableOpacity>
+              </View>
+              {visibleChecklist.map((item) => (
+                <View key={item.id} className="flex-row items-center border-t border-[#ded6ca] px-4 py-4">
+                  <TouchableOpacity onPress={() => toggleChecklistItem(item)} className={`mr-4 h-10 w-10 items-center justify-center rounded-xl border-2 ${item.isCompleted ? 'border-[#6d83a1] bg-[#6d83a1]' : 'border-[#bdb5ab] bg-[#f7f3ec]'}`}>
+                    {item.isCompleted && <Ionicons name="checkmark" size={24} color="white" />}
+                  </TouchableOpacity>
+                  {editingTaskId === item.id ? (
+                    <TextInput
+                      value={editingTaskTitle}
+                      onChangeText={setEditingTaskTitle}
+                      autoFocus
+                      onFocus={focusChecklistInput}
+                      className="flex-1 rounded-lg border border-[#bdb5ab] bg-[#f7f3ec] px-2 py-2 text-base text-nanny-text"
+                    />
+                  ) : (
+                    <Text className={`flex-1 text-base text-nanny-text ${item.isCompleted ? 'line-through text-nanny-muted' : ''}`}>{item.title}</Text>
+                  )}
+                  {editingTaskId === item.id ? (
+                    <>
+                      <TouchableOpacity onPress={() => saveChecklistEdit(item)} className="ml-3">
+                        <Ionicons name="checkmark" size={24} color="#4e8c67" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setEditingTaskId(null)} className="ml-3">
+                        <Ionicons name="close" size={24} color="#968e84" />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <TouchableOpacity onPress={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); }} className="ml-3">
+                        <Ionicons name="pencil-outline" size={23} color="#6d83a1" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => deleteChecklistItem(item.id)} className="ml-4">
+                        <Ionicons name="trash-outline" size={23} color="#c65342" />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              ))}
+            </View>
+
           </>
         )}
       </ScrollView>
@@ -407,7 +592,7 @@ export default function HomeScreen() {
       />
       
      
-    </View>
+    </KeyboardAvoidingView>
 
     
   );
