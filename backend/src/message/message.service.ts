@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { authorSelect } from '../thread/thread.service';
+import { assertNotBlocked, visibleMessageWhere, visibleThreadWhere } from '../thread/visibility';
 import { CreateMessageDto } from './dto/create-message.dto';
 
 @Injectable()
@@ -9,8 +10,8 @@ export class MessageService {
 
   async create({ content, authorId, threadId, parentId }: CreateMessageDto) {
     const [thread, author] = await Promise.all([
-      this.prisma.thread.findFirst({ where: { id: threadId, isHidden: false }, select: { id: true } }),
-      this.prisma.user.findUnique({ where: { id: authorId }, select: { id: true } }),
+      this.prisma.thread.findFirst({ where: { id: threadId, ...visibleThreadWhere }, select: { id: true } }),
+      this.prisma.user.findUnique({ where: { id: authorId }, select: { id: true, blockedAt: true } }),
     ]);
     if (!thread) {
       throw new NotFoundException(`No thread with id ${threadId} found`);
@@ -18,10 +19,11 @@ export class MessageService {
     if (!author) {
       throw new NotFoundException(`No user with id ${authorId} found`);
     }
+    assertNotBlocked(author);
 
     if (parentId !== undefined) {
       const parent = await this.prisma.message.findFirst({
-        where: { id: parentId, isHidden: false },
+        where: { id: parentId, ...visibleMessageWhere },
         select: { threadId: true },
       });
       if (!parent || parent.threadId !== threadId) {
@@ -47,10 +49,11 @@ export class MessageService {
   // Idempotente: si el usuario ya dio like no se duplica ni suma al contador
   async like(id: number, userId: number) {
     await this.assertVisible(id);
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, blockedAt: true } });
     if (!user) {
       throw new NotFoundException(`No user with id ${userId} found`);
     }
+    assertNotBlocked(user);
     return this.prisma.$transaction(async (tx) => {
       const { count } = await tx.messageLike.createMany({
         data: { userId, messageId: id },
@@ -92,7 +95,7 @@ export class MessageService {
 
   private async assertVisible(id: number) {
     const message = await this.prisma.message.findFirst({
-      where: { id, isHidden: false, thread: { isHidden: false } },
+      where: { id, ...visibleMessageWhere, thread: visibleThreadWhere },
       select: { id: true },
     });
     if (!message) {

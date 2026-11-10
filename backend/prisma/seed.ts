@@ -170,6 +170,27 @@ async function main() {
     include: { children: { include: { conditions: true } } },
   });
 
+  // Usuario 4: Administrador de la plataforma (modera el foro desde el panel de administración)
+  await prisma.user.create({
+    data: {
+      email: 'admin@example.com',
+      name: 'Administración',
+      password: 'hashed_password_admin',
+      role: Role.ADMIN,
+    },
+  });
+
+  // Usuario 5: Usuario ya bloqueado por el administrador (para probar el panel de moderación)
+  const usuarioBloqueado = await prisma.user.create({
+    data: {
+      email: 'spam.user@example.com',
+      name: 'Marcos Spam',
+      password: 'hashed_password_spam',
+      role: Role.USER,
+      blockedAt: new Date('2026-11-01T12:00:00Z'),
+    },
+  });
+
   // Segundo hijo de Laura para probar el filtro por hijo en el calendario
   const ines = await prisma.child.create({
     data: {
@@ -478,6 +499,26 @@ async function main() {
       likesCount: 0,
       authorId: carlos.id,
       threadId: hiloPolemico.id,
+    },
+  });
+
+  // Hilo eliminado por el administrador (borrado lógico: sigue en la BD para auditoría)
+  await prisma.thread.create({
+    data: {
+      title: 'Vendo leche de fórmula sin abrir, escribidme por privado',
+      content: 'Tengo varios botes que no he usado, los vendo baratos.',
+      ownerId: laura.id,
+      deletedAt: new Date('2026-11-03T10:00:00Z'),
+      tags: { connect: [{ id: tagNutricion.id }] },
+    },
+  });
+
+  // Hilo de un usuario bloqueado: se oculta del público aunque el hilo en sí no esté eliminado
+  await prisma.thread.create({
+    data: {
+      title: '¡Gana dinero desde casa mientras cuidas a tu bebé!',
+      content: 'Entra en mi web y descubre cómo ganar 3000€ al mes sin salir de casa.',
+      ownerId: usuarioBloqueado.id,
     },
   });
 

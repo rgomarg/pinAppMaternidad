@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { MessageNode } from '../../api/forum';
 import AuthorAvatar, { ProBadge, timeAgo } from './AuthorAvatar';
 import LikeButton from './LikeButton';
+import ModeratableAuthor from './ModeratableAuthor';
 
 // A partir de este nivel las respuestas ya no se sangran más (pantallas estrechas)
 const MAX_INDENT_DEPTH = 3;
@@ -14,16 +15,21 @@ type Props = {
   userId: number | null;
   onReply: (message: MessageNode) => void;
   onDelete: (message: MessageNode) => void;
+  onReport: (message: MessageNode) => void;
+  // Solo para admins: tras bloquear al autor desde su nombre
+  onAuthorBlocked: () => void;
 };
 
-export default function MessageItem({ message, depth = 0, userId, onReply, onDelete }: Props) {
+export default function MessageItem({ message, depth = 0, userId, onReply, onDelete, onAuthorBlocked, onReport }: Props) {
   return (
     <View>
       <View className="mb-3 rounded-3xl bg-white p-4">
         <View className="mb-2 flex-row items-center">
-          <AuthorAvatar author={message.author} size={28} />
-          <Text className="ml-2 text-sm font-semibold text-nanny-text">{message.author.name}</Text>
-          <ProBadge author={message.author} />
+          <ModeratableAuthor author={message.author} onBlocked={onAuthorBlocked} className="flex-row items-center">
+            <AuthorAvatar author={message.author} size={28} />
+            <Text className="ml-2 text-sm font-semibold text-nanny-text">{message.author.name}</Text>
+            <ProBadge author={message.author} />
+          </ModeratableAuthor>
           <Text className="ml-auto text-xs text-nanny-muted">{timeAgo(message.createdAt)}</Text>
         </View>
         <Text className="text-base leading-6 text-nanny-text">{message.content}</Text>
@@ -33,6 +39,21 @@ export default function MessageItem({ message, depth = 0, userId, onReply, onDel
             <Ionicons name="return-down-forward" size={16} color="#6d83a1" />
             <Text className="ml-1 text-sm text-nanny-blue">Responder</Text>
           </TouchableOpacity>
+          {message.author.id !== userId && (
+            <TouchableOpacity
+              onPress={() => onReport(message)}
+              disabled={message.reportedByMe}
+              className="ml-auto"
+              accessibilityRole="button"
+              accessibilityLabel={message.reportedByMe ? "Mensaje ya reportado" : "Reportar mensaje"}
+            >
+              <Ionicons
+                name={message.reportedByMe ? "flag" : "flag-outline"}
+                size={16}
+                color={message.reportedByMe ? "#cc7a66" : "#808080"}
+              />
+            </TouchableOpacity>
+          )}
           {message.author.id === userId && (
             <TouchableOpacity
               onPress={() => onDelete(message)}
@@ -52,7 +73,16 @@ export default function MessageItem({ message, depth = 0, userId, onReply, onDel
           className="border-nanny-card"
         >
           {message.replies.map((reply) => (
-            <MessageItem key={reply.id} message={reply} depth={depth + 1} userId={userId} onReply={onReply} onDelete={onDelete} />
+            <MessageItem
+              key={reply.id}
+              message={reply}
+              depth={depth + 1}
+              userId={userId}
+              onReply={onReply}
+              onDelete={onDelete}
+              onAuthorBlocked={onAuthorBlocked}
+              onReport={onReport}
+            />
           ))}
         </View>
       )}
