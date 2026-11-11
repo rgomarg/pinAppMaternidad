@@ -132,6 +132,12 @@ export default function CrearEventoScreen() {
     setEventType(type);
     if (type === 'CONDITION') {
       setEnableNotification(false);
+      const today = new Date();
+      const selectedDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      if (selectedDay > todayDay) {
+        setDate(today);
+      }
     }
   };
 
@@ -212,6 +218,14 @@ export default function CrearEventoScreen() {
     const updated = new Date(date);
     updated.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
     const now = new Date();
+    if (eventType === 'CONDITION') {
+      const selectedDay = new Date(updated.getFullYear(), updated.getMonth(), updated.getDate());
+      const todayDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (selectedDay > todayDay) {
+        setDate(now);
+        return;
+      }
+    }
     if (eventType === 'VACCINE' && vaccineApplied && updated.getTime() > now.getTime()) {
       const isFutureDay = new Date(newDate).setHours(0, 0, 0, 0) > new Date().setHours(0, 0, 0, 0);
       if (isFutureDay) {
