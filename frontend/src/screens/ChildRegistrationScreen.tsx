@@ -218,7 +218,12 @@ export default function ChildRegistrationScreen() {
     const isValid = name.trim().length > 0 && birthDate !== null && sex !== null;
 
     const handleSave = async () => {
-        if (!isValid || saving) return;
+        if (saving) return;
+        if (!name.trim()) {
+            Alert.alert("Campo obligatorio", "El nombre es obligatorio.");
+            return;
+        }
+        if (!isValid) return;
         if (!isEditing && !userId) {
             Alert.alert(
                 "Falta el usuario",
@@ -287,11 +292,11 @@ export default function ChildRegistrationScreen() {
                     <Text className="text-base text-nanny-muted">Cancelar</Text>
                 </TouchableOpacity>
                 <Text className="text-lg font-bold text-nanny-text">{isEditing ? "Editar niño/a" : "Añadir niño/a"}</Text>
-                <TouchableOpacity onPress={handleSave} disabled={!isValid || saving}>
+                <TouchableOpacity onPress={handleSave} disabled={saving}>
                     <Text
                         className={`text-base font-semibold ${isValid ? "text-nanny-blue" : "text-[#c4c0b6]"}`}
                     >
-                        Guardar
+                        {isEditing ? "Guardar cambios" : "Guardar"}
                     </Text>
                 </TouchableOpacity>
             </View>
