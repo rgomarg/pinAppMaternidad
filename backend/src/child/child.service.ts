@@ -86,18 +86,36 @@ export class ChildService {
     return child;
   }
 
-  update(id: number, updateChildDto: UpdateChildDto) {
+  async update(id: number, updateChildDto: UpdateChildDto) {
+    await this.findExistingOrFail(id);
     return this.prisma.child.update({
       where: { id },
       data: {
+        name: updateChildDto.name?.trim(),
+        surname: updateChildDto.surname,
+        birthDate: updateChildDto.birthDate,
+        bloodGroup: updateChildDto.bloodGroup,
         allergies: updateChildDto.allergies,
+        sex: updateChildDto.sex,
       },
     });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} child`;
+  // Las vacunas, medicamentos, condiciones, mediciones y notificaciones asociadas
+  // se eliminan en cascada (onDelete: Cascade en el esquema de Prisma).
+  async remove(id: number) {
+    await this.findExistingOrFail(id);
+    return this.prisma.child.delete({ where: { id } });
   }
+
+  private async findExistingOrFail(id: number) {
+    const child = await this.prisma.child.findUnique({ where: { id } });
+    if (!child) {
+      throw new NotFoundException(`No child with id ${id} found`);
+    }
+    return child;
+  }
+
   async exportData(id: number) {
     const child = await this.prisma.child.findUnique({
       where: { id },
