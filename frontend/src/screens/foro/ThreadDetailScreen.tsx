@@ -302,6 +302,7 @@ export default function ThreadDetailScreen() {
                   onDelete={deleteMessage}
                   onAuthorBlocked={loadThread}
                   onReport={(m) => setReportTarget({ type: "MESSAGE", id: m.id })}
+                  onModerate={isAdmin ? moderateMessage : undefined}
                 />
               </ConversationScroll>
             ))
