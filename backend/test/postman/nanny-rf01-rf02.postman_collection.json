@@ -1,0 +1,1307 @@
+{
+  "info": {
+    "name": "Nanny - RF-01 y RF-02 (Calendario)",
+    "description": "Pruebas de aceptación del registro de eventos médicos con recordatorio (RF-01) y del calendario multiperfil (RF-02). Requiere el backend en marcha y la base de datos cargada con el seed (npx prisma db seed).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Preparación (IDs dinámicos)",
+      "description": "Obtiene los IDs reales de los usuarios y menores del seed. Los IDs cambian cada vez que se ejecuta el seed, por eso no se escriben a mano.",
+      "item": [
+        {
+          "name": "SETUP-1 Buscar tutores (Laura y Carlos)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
+                  "const users = pm.response.json();",
+                  "const laura = users.find(u => u.email === 'laura.pro@example.com');",
+                  "const carlos = users.find(u => u.email === 'carlos.user@example.com');",
+                  "pm.test(\"Existen los tutores del seed\", () => {",
+                  "    pm.expect(laura, 'Laura').to.exist;",
+                  "    pm.expect(carlos, 'Carlos').to.exist;",
+                  "});",
+                  "pm.collectionVariables.set('lauraId', laura.id);",
+                  "pm.collectionVariables.set('carlosId', carlos.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SETUP-2 Menores de Laura (Leo e Inés)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/{{lauraId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "{{lauraId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
+                  "const kids = pm.response.json().children;",
+                  "const leo = kids.find(c => c.name === 'Leo');",
+                  "const ines = kids.find(c => c.name === 'Inés');",
+                  "pm.test(\"Laura tiene a Leo e Inés (multiperfil)\", () => {",
+                  "    pm.expect(leo).to.exist;",
+                  "    pm.expect(ines).to.exist;",
+                  "});",
+                  "pm.collectionVariables.set('leoId', leo.id);",
+                  "pm.collectionVariables.set('inesId', ines.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SETUP-3 Menores de Carlos (Sofía)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/{{carlosId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "{{carlosId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
+                  "const sofia = pm.response.json().children.find(c => c.name === 'Sofía');",
+                  "pm.test(\"Carlos tiene a Sofía\", () => pm.expect(sofia).to.exist);",
+                  "pm.collectionVariables.set('sofiaId', sofia.id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "RF-01 Registro de evento médico con recordatorio",
+      "item": [
+        {
+          "name": "PA-01 Crear evento válido con recordatorio (Leo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"  Cita pediatra Leo  \",\n  \"description\": \"Revisión de los 18 meses\",\n  \"date\": \"{{testDate}}T09:30:00.000Z\",\n  \"notification\": true,\n  \"type\": \"MEDICAL_APPOINTMENT\",\n  \"childId\": {{leoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 201 Created\", () => pm.response.to.have.status(201));",
+                  "const ev = pm.response.json();",
+                  "pm.test(\"Se asocia al menor correcto (Leo)\", () => pm.expect(ev.child.id).to.eql(Number(pm.collectionVariables.get('leoId'))));",
+                  "pm.test(\"Guarda el recordatorio activado\", () => pm.expect(ev.notification).to.eql(true));",
+                  "pm.test(\"Guarda el tipo de evento\", () => pm.expect(ev.type).to.eql('MEDICAL_APPOINTMENT'));",
+                  "pm.test(\"Elimina espacios sobrantes del título\", () => pm.expect(ev.title).to.eql('Cita pediatra Leo'));",
+                  "pm.test(\"Guarda la fecha exacta\", () => pm.expect(ev.date).to.eql(pm.collectionVariables.get('testDate') + 'T09:30:00.000Z'));",
+                  "pm.collectionVariables.set('eventLeoId', ev.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-01b Crear evento con valores por defecto (Inés)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Vacuna Inés\",\n  \"date\": \"{{testDate}}T08:00:00.000Z\",\n  \"childId\": {{inesId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 201 Created\", () => pm.response.to.have.status(201));",
+                  "const ev = pm.response.json();",
+                  "pm.test(\"Se asocia al menor correcto (Inés)\", () => pm.expect(ev.child.id).to.eql(Number(pm.collectionVariables.get('inesId'))));",
+                  "pm.test(\"Por defecto: sin recordatorio\", () => pm.expect(ev.notification).to.eql(false));",
+                  "pm.test(\"Por defecto: tipo GENERAL\", () => pm.expect(ev.type).to.eql('GENERAL'));",
+                  "pm.test(\"Sin descripción se guarda como null\", () => pm.expect(ev.description).to.eql(null));",
+                  "pm.collectionVariables.set('eventInesId', ev.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-01c Crear evento de otro tutor el mismo día (Sofía)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Revisión Sofía\",\n  \"date\": \"{{testDate}}T11:00:00.000Z\",\n  \"notification\": true,\n  \"childId\": {{sofiaId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('eventSofiaId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-02 Error: evento sin título",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"{{testDate}}T09:30:00.000Z\",\n  \"childId\": {{leoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje de error menciona 'title'\", () => {",
+                  "    const msg = [].concat(pm.response.json().message).join(' | ');",
+                  "    pm.expect(msg).to.include('title');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-02b Error: título vacío",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"\",\n  \"date\": \"{{testDate}}T09:30:00.000Z\",\n  \"childId\": {{leoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje de error menciona 'title'\", () => {",
+                  "    const msg = [].concat(pm.response.json().message).join(' | ');",
+                  "    pm.expect(msg).to.include('title');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-03 Error: campo no permitido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cita\",\n  \"date\": \"{{testDate}}T09:30:00.000Z\",\n  \"childId\": {{leoId}},\n  \"hacker\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje de error menciona 'hacker'\", () => {",
+                  "    const msg = [].concat(pm.response.json().message).join(' | ');",
+                  "    pm.expect(msg).to.include('hacker');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-04 Error: fecha con formato incorrecto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cita\",\n  \"date\": \"no-es-una-fecha\",\n  \"childId\": {{leoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje de error menciona 'date'\", () => {",
+                  "    const msg = [].concat(pm.response.json().message).join(' | ');",
+                  "    pm.expect(msg).to.include('date');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-04b Error: tipo de evento inválido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cita\",\n  \"date\": \"{{testDate}}T09:30:00.000Z\",\n  \"type\": \"FIESTA\",\n  \"childId\": {{leoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje de error menciona 'type'\", () => {",
+                  "    const msg = [].concat(pm.response.json().message).join(' | ');",
+                  "    pm.expect(msg).to.include('type');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-05 Error: recordatorio en una fecha pasada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event"
+              ]
+            },
+            "description": "Requisito: no se debe poder programar una alerta médica en el pasado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cita en el pasado\",\n  \"date\": \"2020-01-01T10:00:00.000Z\",\n  \"notification\": true,\n  \"childId\": {{leoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set('pastEventId', pm.response.json().id);",
+                  "pm.test(\"Rechaza fechas pasadas con 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-06 Error: menor inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cita\",\n  \"date\": \"{{testDate}}T09:30:00.000Z\",\n  \"childId\": 999999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde con error controlado (400 o 404), no 500\", () => pm.expect(pm.response.code).to.be.oneOf([400, 404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-07 Registrar el recordatorio en el servidor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            },
+            "description": "Petición equivalente a la que envía la app (registerBackendNotification).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cita médica: Cita pediatra Leo\",\n  \"body\": \"Evento para Leo\",\n  \"scheduledAt\": \"{{testDate}}T09:00:00.000Z\",\n  \"userId\": {{lauraId}},\n  \"type\": \"EVENT\",\n  \"eventId\": {{eventLeoId}},\n  \"data\": { \"screen\": \"Calendario\", \"id\": {{eventLeoId}}, \"type\": \"EVENT\" }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 201 Created\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const n = pm.response.json();",
+                  "    pm.test(\"Queda PENDING\", () => pm.expect(n.status).to.eql('PENDING'));",
+                  "    pm.test(\"Vinculada al evento\", () => pm.expect(n.eventId).to.eql(Number(pm.collectionVariables.get('eventLeoId'))));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-08 Desactivar el recordatorio de un evento",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/event/{{eventLeoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "{{eventLeoId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notification\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"El evento queda sin recordatorio\", () => pm.expect(pm.response.json().notification).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-08b No quedan notificaciones pendientes del evento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/user/{{lauraId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "user",
+                "{{lauraId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
+                  "const id = Number(pm.collectionVariables.get('eventLeoId'));",
+                  "const pendientes = pm.response.json().filter(n => n.eventId === id && n.status === 'PENDING');",
+                  "pm.test(\"Ninguna notificación PENDING para el evento\", () => pm.expect(pendientes).to.have.lengthOf(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-13 Consultar evento existente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/{{eventInesId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "{{eventInesId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Incluye el menor asociado\", () => pm.expect(pm.response.json().child.name).to.eql('Inés'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-13b Error: evento inexistente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "999999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "RF-02 Calendario multiperfil por tutor",
+      "item": [
+        {
+          "name": "PA-09 Calendario diario de Laura",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/guardian/{{lauraId}}?date={{testDate}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "guardian",
+                "{{lauraId}}"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{testDate}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
+                  "const evs = pm.response.json();",
+                  "const v = k => Number(pm.collectionVariables.get(k));",
+                  "const propios = [v('leoId'), v('inesId')];",
+                  "const ajenos = [v('sofiaId')];",
+                  "pm.test(\"Todos los eventos pertenecen a menores de Laura\", () => {",
+                  "    evs.forEach(e => pm.expect(propios).to.include(e.child.id));",
+                  "});",
+                  "pm.test(\"No aparece ningún menor de otro tutor\", () => {",
+                  "    evs.forEach(e => pm.expect(ajenos).to.not.include(e.child.id));",
+                  "});",
+                  "pm.test(\"Eventos ordenados por fecha ascendente\", () => {",
+                  "    const fechas = evs.map(e => e.date);",
+                  "    pm.expect(fechas).to.eql([...fechas].sort());",
+                  "});",
+                  "const ids = evs.map(e => e.id);",
+                  "pm.test(\"Incluye los eventos de Leo e Inés\", () => {",
+                  "    pm.expect(ids).to.include(v('eventLeoId'));",
+                  "    pm.expect(ids).to.include(v('eventInesId'));",
+                  "});",
+                  "pm.test(\"No incluye el evento de Sofía\", () => pm.expect(ids).to.not.include(v('eventSofiaId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-10 Calendario diario de Carlos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/guardian/{{carlosId}}?date={{testDate}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "guardian",
+                "{{carlosId}}"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{testDate}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
+                  "const evs = pm.response.json();",
+                  "const v = k => Number(pm.collectionVariables.get(k));",
+                  "const propios = [v('sofiaId')];",
+                  "const ajenos = [v('leoId'), v('inesId')];",
+                  "pm.test(\"Todos los eventos pertenecen a menores de Carlos\", () => {",
+                  "    evs.forEach(e => pm.expect(propios).to.include(e.child.id));",
+                  "});",
+                  "pm.test(\"No aparece ningún menor de otro tutor\", () => {",
+                  "    evs.forEach(e => pm.expect(ajenos).to.not.include(e.child.id));",
+                  "});",
+                  "pm.test(\"Eventos ordenados por fecha ascendente\", () => {",
+                  "    const fechas = evs.map(e => e.date);",
+                  "    pm.expect(fechas).to.eql([...fechas].sort());",
+                  "});",
+                  "pm.test(\"Incluye el evento de Sofía\", () => pm.expect(evs.map(e => e.id)).to.include(v('eventSofiaId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-10b Calendario mensual de Laura (rango)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/guardian/{{lauraId}}?from=2026-01-01&to=2028-01-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "guardian",
+                "{{lauraId}}"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2028-01-01"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
+                  "const evs = pm.response.json();",
+                  "const v = k => Number(pm.collectionVariables.get(k));",
+                  "const propios = [v('leoId'), v('inesId')];",
+                  "const ajenos = [v('sofiaId')];",
+                  "pm.test(\"Todos los eventos pertenecen a menores de Laura\", () => {",
+                  "    evs.forEach(e => pm.expect(propios).to.include(e.child.id));",
+                  "});",
+                  "pm.test(\"No aparece ningún menor de otro tutor\", () => {",
+                  "    evs.forEach(e => pm.expect(ajenos).to.not.include(e.child.id));",
+                  "});",
+                  "pm.test(\"Eventos ordenados por fecha ascendente\", () => {",
+                  "    const fechas = evs.map(e => e.date);",
+                  "    pm.expect(fechas).to.eql([...fechas].sort());",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-11 Error: fecha con formato incorrecto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/guardian/{{lauraId}}?date=15-03-2027",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "guardian",
+                "{{lauraId}}"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "15-03-2027"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje de error menciona 'YYYY-MM-DD'\", () => {",
+                  "    const msg = [].concat(pm.response.json().message).join(' | ');",
+                  "    pm.expect(msg).to.include('YYYY-MM-DD');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-11b Error: fecha que no existe (30 de febrero)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/guardian/{{lauraId}}?date=2027-02-30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "guardian",
+                "{{lauraId}}"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2027-02-30"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje de error menciona 'YYYY-MM-DD'\", () => {",
+                  "    const msg = [].concat(pm.response.json().message).join(' | ');",
+                  "    pm.expect(msg).to.include('YYYY-MM-DD');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-12 Error: rango invertido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/guardian/{{lauraId}}?from=2027-12-01&to=2027-11-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "guardian",
+                "{{lauraId}}"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2027-12-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2027-11-01"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje de error menciona 'rango'\", () => {",
+                  "    const msg = [].concat(pm.response.json().message).join(' | ');",
+                  "    pm.expect(msg).to.include('rango');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-12b Error: sin fecha ni rango",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/guardian/{{lauraId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "guardian",
+                "{{lauraId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje de error menciona 'YYYY-MM-DD'\", () => {",
+                  "    const msg = [].concat(pm.response.json().message).join(' | ');",
+                  "    pm.expect(msg).to.include('YYYY-MM-DD');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PA-12c Error: identificador de tutor no numérico",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/guardian/abc?date={{testDate}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "guardian",
+                "abc"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{testDate}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "9. Limpieza",
+      "description": "Borra los eventos creados para que la colección se pueda repetir sin acumular datos.",
+      "item": [
+        {
+          "name": "CLEAN-1 Borrar evento de Leo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/{{eventLeoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "{{eventLeoId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('eventLeoIdCopia', pm.collectionVariables.get('eventLeoId'));",
+                  "if (!pm.collectionVariables.get('eventLeoId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.unset('eventLeoId');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CLEAN-1b El evento borrado ya no existe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/{{eventLeoIdBorrado}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "{{eventLeoIdBorrado}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('eventLeoIdBorrado', pm.collectionVariables.get('eventLeoIdCopia'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CLEAN-2 Borrar evento de Inés",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/{{eventInesId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "{{eventInesId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('eventInesId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.unset('eventInesId');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CLEAN-3 Borrar evento de Sofía",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/{{eventSofiaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "{{eventSofiaId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('eventSofiaId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.unset('eventSofiaId');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CLEAN-4 Borrar evento pasado (si se creó por el fallo PA-05)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/event/{{pastEventId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "event",
+                "{{pastEventId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('pastEventId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.unset('pastEventId');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "testDate",
+      "value": "2027-03-15"
+    }
+  ]
+}
