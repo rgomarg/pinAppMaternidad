@@ -26,6 +26,8 @@ import { allergyRecords, type AllergySeverity } from '../utils/allergies';
 type Child = {
   id: number;
   name: string;
+  surname?: string | null;
+  sex?: 'MALE' | 'FEMALE' | null;
   birthDate: string;
   bloodGroup?: string | null;
   allergies?: string | null;
@@ -383,6 +385,31 @@ function ChildProfileScreen() {
   });
   const openForm = (screen: string) => navigation.navigate(screen, { child: data });
 
+  const editChild = () => navigation.navigate('RegistroHijo', { child: data });
+
+  const deleteChild = () => {
+    Alert.alert(
+      'Eliminar hijo/a',
+      `Se eliminará a ${data.name} y todos sus datos (vacunas, medicamentos, condiciones y mediciones). Esta acción no se puede deshacer.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await fetch(`${API_URL}/child/${data.id}`, { method: 'DELETE' });
+              if (!response.ok) throw new Error();
+              navigation.navigate('ChildPicker');
+            } catch {
+              Alert.alert('Error', 'No se pudo eliminar al niño/a.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <Shell>
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
@@ -409,6 +436,26 @@ function ChildProfileScreen() {
                 </Text>
               )}
             </View>
+          </View>
+          <View className="mt-5 flex-row gap-3">
+            <TouchableOpacity
+              onPress={editChild}
+              accessibilityRole="button"
+              accessibilityLabel={`Editar a ${data.name}`}
+              className="flex-1 flex-row items-center justify-center rounded-2xl border border-[#ddd2c4] bg-[#f7f3ec] py-3"
+            >
+              <Ionicons name="create-outline" size={18} color={palette.blue} />
+              <Text style={{ color: palette.blue }} className="ml-2 text-base font-semibold">Editar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={deleteChild}
+              accessibilityRole="button"
+              accessibilityLabel={`Eliminar a ${data.name}`}
+              className="flex-1 flex-row items-center justify-center rounded-2xl border border-[#ddd2c4] bg-[#f7f3ec] py-3"
+            >
+              <Ionicons name="trash-outline" size={18} color={palette.red} />
+              <Text style={{ color: palette.red }} className="ml-2 text-base font-semibold">Eliminar</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
