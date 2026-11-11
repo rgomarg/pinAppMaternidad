@@ -31,7 +31,7 @@ type Props = {
   onModerate?: (message: MessageNode) => void;
 };
 
-export default function MessageItem({ message, depth = 0, availableWidth, userId, onReply, onDelete, onAuthorBlocked, onReport }: Props) {
+export default function MessageItem({ message, depth = 0, availableWidth, userId, onReply, onDelete, onAuthorBlocked, onReport, onModerate }: Props) {
   // Se fija el ancho explícitamente: dentro de un ScrollView horizontal el ancho no está acotado
   const cardWidth = Math.max(availableWidth - depth * INDENT_STEP, MIN_CARD_WIDTH);
 
