@@ -39,6 +39,22 @@ export class AdminController {
     return this.adminService.restoreThread(id);
   }
 
+  // Todos los comentarios del hilo (también los ocultos) para moderarlos uno a uno
+  @Get('threads/:id/messages')
+  findThreadMessages(@Param('id', ParseIntPipe) id: number, @Query() _query: AdminIdQueryDto) {
+    return this.adminService.findThreadMessages(id);
+  }
+
+  @Patch('messages/:id/delete')
+  deleteMessage(@Param('id', ParseIntPipe) id: number, @Query() _query: AdminIdQueryDto) {
+    return this.adminService.deleteMessage(id);
+  }
+
+  @Patch('messages/:id/restore')
+  restoreMessage(@Param('id', ParseIntPipe) id: number, @Query() _query: AdminIdQueryDto) {
+    return this.adminService.restoreMessage(id);
+  }
+
   @Get('reports')
   findReports(@Query() query: ListAdminReportsQueryDto) {
     return this.adminService.findReports(query);

@@ -84,6 +84,7 @@ export default function CrearEventoScreen() {
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [instructions, setInstructions] = useState('');
+  const [showDoseTip, setShowDoseTip] = useState(false); 
 
   // Notificaciones
   const [enableNotification, setEnableNotification] = useState(false);
@@ -553,14 +554,33 @@ export default function CrearEventoScreen() {
           <>
             <View className="mb-6 flex-row gap-3">
               <View className="flex-1">
-                <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">Dosis *</Text>
+                <View className="mb-2 flex-row items-center">
+                  <Text className="text-sm font-semibold text-[#8A7F75]">Dosis *</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowDoseTip((v) => !v)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    className="ml-1.5"
+                  >
+                    <Ionicons name="information-circle-outline" size={18} color="#8A7F75" />
+                  </TouchableOpacity>
+                </View>
                 <TextInput
                   value={dosage}
-                  onChangeText={setDosage}
+                  onChangeText={(text) => {
+                    setDosage(text);
+                    setShowDoseTip(false);
+                  }}
                   placeholder="Ej. 2.5 ml"
                   placeholderTextColor="#9a928b"
                   className="rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5 text-base text-[#2B2B2B]"
                 />
+                {showDoseTip && (
+                  <View className="mt-2 rounded-xl bg-[#2B2B2B] px-3 py-2">
+                    <Text className="text-xs text-white">
+                      Indica la cantidad por toma, con su unidad. Ej: 2.5 ml, 1 comprimido, 5 gotas.
+                    </Text>
+                  </View>
+                )}
               </View>
               <View className="flex-1">
                 <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">Intervalo (horas)</Text>

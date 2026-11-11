@@ -125,6 +125,18 @@ export default function ThreadDetailScreen() {
       },
     );
 
+  // Moderación: un admin puede eliminar cualquier comentario (borrado lógico, restaurable desde el panel)
+  const moderateMessage = (message: MessageNode) =>
+    confirmDelete(
+      "Eliminar comentario (moderación)",
+      "El comentario desaparecerá del foro de inmediato. Podrás restaurarlo desde el panel de moderación.",
+      async () => {
+        await adminApi.deleteMessage(selectedUserId!, message.id);
+        if (replyingTo?.id === message.id) setReplyingTo(null);
+        await loadThread();
+      },
+    );
+
   const sendReply = async (content: string) => {
     if (!selectedUserId) return false;
     try {
