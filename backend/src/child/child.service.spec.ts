@@ -13,6 +13,7 @@ describe('ChildService', () => {
   let service: ChildService;
   const prisma = {
     child: {
+      create: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -34,6 +35,27 @@ describe('ChildService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('create', () => {
+    it('crea el hijo con sus vacunas y medicamentos iniciales', async () => {
+      prisma.child.create.mockResolvedValue({ id: 1, birthDate: new Date() });
+
+      await service.create({
+        name: 'Leo',
+        birthDate: new Date('2025-01-01'),
+        parentId: 1,
+        sex: 'MALE',
+        vaccines: [{ name: ' Triple vírica ' }],
+        medicines: [{ name: 'Apiretal', dosage: '2.5 ml', intervalHours: 8 }],
+      });
+
+      const data = prisma.child.create.mock.calls[0][0].data;
+      expect(data.vaccines.create).toEqual([expect.objectContaining({ name: 'Triple vírica' })]);
+      expect(data.medicine.create).toEqual([
+        expect.objectContaining({ name: 'Apiretal', dosage: '2.5 ml', intervalHours: 8 }),
+      ]);
+    });
   });
 
   describe('update', () => {

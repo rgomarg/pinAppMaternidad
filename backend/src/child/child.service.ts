@@ -41,7 +41,20 @@ export class ChildService {
           }
           : undefined,
 
+        vaccines: createChildDto.vaccines?.length
+          ? { create: createChildDto.vaccines.map((v) => ({ name: v.name.trim(), appliedAt: v.appliedAt, scheduledFor: v.scheduledFor })) }
+          : undefined,
 
+        medicine: createChildDto.medicines?.length
+          ? {
+            create: createChildDto.medicines.map((m) => ({
+              name: m.name.trim(),
+              dosage: m.dosage.trim(),
+              intervalHours: m.intervalHours,
+              startDate: m.startDate,
+            })),
+          }
+          : undefined,
       }
     });
     this.eventEmitter2.emit(
