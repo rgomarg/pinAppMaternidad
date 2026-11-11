@@ -8,6 +8,7 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import {
@@ -24,10 +25,13 @@ import AuthorAvatar, {
   ProBadge,
   timeAgo,
 } from "../../components/foro/AuthorAvatar";
+import ConversationScroll from "../../components/foro/ConversationScroll";
 import MessageItem from "../../components/foro/MessageItem";
 import ModeratableAuthor from "../../components/foro/ModeratableAuthor";
 import ReplyComposer from "../../components/foro/ReplyComposer";
 import ReportModal from "../../components/foro/ReportModal";
+
+const SCREEN_PADDING = 24;
 
 export default function ThreadDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -35,6 +39,9 @@ export default function ThreadDetailScreen() {
   const route = useRoute<any>();
   const threadId: number = route.params.threadId;
   const { selectedUserId, isAdmin } = useFamilySelection();
+  // Ancho de una conversación sin sangría: la pantalla menos el padding lateral del ScrollView
+  const { width: windowWidth } = useWindowDimensions();
+  const conversationWidth = windowWidth - SCREEN_PADDING * 2;
 
   const [thread, setThread] = useState<ThreadDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -192,7 +199,7 @@ export default function ThreadDetailScreen() {
         <Text className="mt-12 px-6 text-center text-nanny-muted">{error}</Text>
       ) : (
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}
+          contentContainerStyle={{ paddingHorizontal: SCREEN_PADDING, paddingBottom: 48 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -271,16 +278,20 @@ export default function ThreadDetailScreen() {
               Nadie ha respondido todavía.
             </Text>
           ) : (
+            // Cada conversación (mensaje de primer nivel + sus respuestas) tiene su propio
+            // scroll horizontal: si la sangría la saca de la pantalla se desplaza sin mover las demás
             thread.messages.map((message) => (
-              <MessageItem
-                key={message.id}
-                message={message}
-                userId={selectedUserId}
-                onReply={setReplyingTo}
-                onDelete={deleteMessage}
-                onAuthorBlocked={loadThread}
-                onReport={(m) => setReportTarget({ type: "MESSAGE", id: m.id })}
-              />
+              <ConversationScroll key={message.id}>
+                <MessageItem
+                  message={message}
+                  availableWidth={conversationWidth}
+                  userId={selectedUserId}
+                  onReply={setReplyingTo}
+                  onDelete={deleteMessage}
+                  onAuthorBlocked={loadThread}
+                  onReport={(m) => setReportTarget({ type: "MESSAGE", id: m.id })}
+                />
+              </ConversationScroll>
             ))
           )}
         </ScrollView>
