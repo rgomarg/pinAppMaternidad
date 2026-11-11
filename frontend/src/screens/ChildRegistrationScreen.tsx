@@ -13,9 +13,21 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { API_URL } from "../api/config";
+import { allergyRecords, type Allergy } from "../utils/allergies";
+
+// Datos del hijo que recibe el modo edición (los devuelve GET /child/:id).
+type EditableChild = {
+    id: number;
+    name: string;
+    surname?: string | null;
+    birthDate: string;
+    sex?: "MALE" | "FEMALE" | null;
+    bloodGroup?: string | null;
+    allergies?: string | null;
+};
 
 type RegistroHijoParams = {
-    RegistroHijo: { userId?: number };
+    RegistroHijo: { userId?: number; child?: EditableChild };
 };
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -96,22 +108,94 @@ function TagListInput({
     );
 }
 
+type MedicineDraft = { name: string; dosage: string };
+
+// Igual que TagListInput pero cada elemento lleva nombre y dosis (obligatorias en el backend)
+function MedicineListInput({
+    items,
+    onChange,
+}: {
+    items: MedicineDraft[];
+    onChange: (items: MedicineDraft[]) => void;
+}) {
+    const [name, setName] = useState("");
+    const [dosage, setDosage] = useState("");
+
+    const add = () => {
+        if (!name.trim() || !dosage.trim()) return;
+        onChange([...items, { name: name.trim(), dosage: dosage.trim() }]);
+        setName("");
+        setDosage("");
+    };
+
+    return (
+        <View>
+            <View className="flex-row gap-3">
+                <TextInput
+                    className={`flex-1 ${inputClass}`}
+                    placeholder="Medicamento"
+                    placeholderTextColor="#9a9a8e"
+                    value={name}
+                    onChangeText={setName}
+                />
+                <TextInput
+                    className={`w-28 ${inputClass}`}
+                    placeholder="Dosis"
+                    placeholderTextColor="#9a9a8e"
+                    value={dosage}
+                    onChangeText={setDosage}
+                    onSubmitEditing={add}
+                />
+                <TouchableOpacity
+                    onPress={add}
+                    className="w-14 bg-nanny-blue rounded-2xl items-center justify-center"
+                >
+                    <Text className="text-white text-xl">+</Text>
+                </TouchableOpacity>
+            </View>
+            {items.length > 0 && (
+                <View className="flex-row flex-wrap gap-2 mt-3">
+                    {items.map((item, i) => (
+                        <TouchableOpacity
+                            key={`${item.name}-${i}`}
+                            onPress={() => onChange(items.filter((_, idx) => idx !== i))}
+                            className="bg-nanny-card border border-[#e0d9c9] rounded-full px-3 py-1"
+                        >
+                            <Text className="text-nanny-text text-sm">
+                                {item.name} · {item.dosage} ✕
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            )}
+        </View>
+    );
+}
+
 export default function ChildRegistrationScreen() {
     const route = useRoute<RouteProp<RegistroHijoParams, "RegistroHijo">>();
     const navigation = useNavigation<any>();
     const insets = useSafeAreaInsets();
     const userId = route.params?.userId;
+    const editingChild = route.params?.child;
+    const isEditing = !!editingChild;
+    // Alergias ya guardadas (con su gravedad) para no perderla al editar
+    const existingAllergies: Allergy[] = allergyRecords(editingChild?.allergies);
 
-    const [name, setName] = useState("");
-    const [surname, setSurname] = useState("");
-    const [birthDate, setBirthDate] = useState<Date | null>(null);
+    const [name, setName] = useState(editingChild?.name ?? "");
+    const [surname, setSurname] = useState(editingChild?.surname ?? "");
+    const [birthDate, setBirthDate] = useState<Date | null>(
+        editingChild ? new Date(editingChild.birthDate) : null,
+    );
     const [showIosPicker, setShowIosPicker] = useState(false);
-    const [sex, setSex] = useState<Sex | null>(null);
-    const [bloodGroup, setBloodGroup] = useState<string | null>(null);
+    const [sex, setSex] = useState<Sex | null>(editingChild?.sex ?? null);
+    const [bloodGroup, setBloodGroup] = useState<string | null>(editingChild?.bloodGroup ?? null);
     const [weight, setWeight] = useState("");
     const [height, setHeight] = useState("");
-    const [allergies, setAllergies] = useState<string[]>([]);
+    const [allergies, setAllergies] = useState<string[]>(existingAllergies.map((a) => a.name));
     const [conditions, setConditions] = useState<string[]>([]);
+    const [vaccines, setVaccines] = useState<string[]>([]);
+    const [medicines, setMedicines] = useState<MedicineDraft[]>([]);
     const [saving, setSaving] = useState(false);
 
     const formatDate = (d: Date) =>
@@ -135,7 +219,7 @@ export default function ChildRegistrationScreen() {
 
     const handleSave = async () => {
         if (!isValid || saving) return;
-        if (!userId) {
+        if (!isEditing && !userId) {
             Alert.alert(
                 "Falta el usuario",
                 "No se ha indicado a qué usuario pertenece el niño/a.",
@@ -145,27 +229,50 @@ export default function ChildRegistrationScreen() {
 
         setSaving(true);
         try {
-            // El backend (CreateChildDto) por ahora solo admite estos campos.
-            const response = await fetch(`${API_URL}/child`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: name.trim(),
-                    surname:  surname.trim() || undefined,
-                    birthDate: birthDate!.toISOString(),
-                    sex,
-                    bloodGroup: bloodGroup ?? undefined,
-                    allergies: allergies.length ? allergies.join(", ") : undefined,
-                    parentId: userId, // el DTO del backend lo llama parentId
-                    weight: weight ? parseFloat(weight) : undefined,
-                    height: height ? parseFloat(height) : undefined,
-                    diseases: conditions.length ? conditions : undefined,
-                }),
-            });
+            const basicData = {
+                name: name.trim(),
+                surname: surname.trim() || undefined,
+                birthDate: birthDate!.toISOString(),
+                sex,
+                bloodGroup: bloodGroup ?? undefined,
+            };
+
+            const response = isEditing
+                ? await fetch(`${API_URL}/child/${editingChild!.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        ...basicData,
+                        // Se conserva la gravedad y las notas de las alergias que no se han tocado
+                        allergies: JSON.stringify(
+                            allergies.map(
+                                (allergyName) =>
+                                    existingAllergies.find((a) => a.name === allergyName) ?? {
+                                        name: allergyName,
+                                        severity: "moderada",
+                                    },
+                            ),
+                        ),
+                    }),
+                })
+                : await fetch(`${API_URL}/child`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        ...basicData,
+                        allergies: allergies.length ? allergies.join(", ") : undefined,
+                        parentId: userId, // el DTO del backend lo llama parentId
+                        weight: weight ? parseFloat(weight) : undefined,
+                        height: height ? parseFloat(height) : undefined,
+                        diseases: conditions.length ? conditions : undefined,
+                        vaccines: vaccines.length ? vaccines.map((v) => ({ name: v })) : undefined,
+                        medicines: medicines.length ? medicines : undefined,
+                    }),
+                });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             navigation.goBack();
         } catch (error) {
-            console.error("Error creando hijo:", error);
+            console.error("Error guardando hijo:", error);
             Alert.alert("Error", "No se pudo guardar. Inténtalo de nuevo.");
         } finally {
             setSaving(false);
@@ -179,7 +286,7 @@ export default function ChildRegistrationScreen() {
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Text className="text-base text-nanny-muted">Cancelar</Text>
                 </TouchableOpacity>
-                <Text className="text-lg font-bold text-nanny-text">Añadir niño/a</Text>
+                <Text className="text-lg font-bold text-nanny-text">{isEditing ? "Editar niño/a" : "Añadir niño/a"}</Text>
                 <TouchableOpacity onPress={handleSave} disabled={!isValid || saving}>
                     <Text
                         className={`text-base font-semibold ${isValid ? "text-nanny-blue" : "text-[#c4c0b6]"}`}
@@ -287,6 +394,8 @@ export default function ChildRegistrationScreen() {
                     })}
                 </View>
 
+                {!isEditing && (
+                    <>
                 <SectionTitle>Medidas actuales</SectionTitle>
                 <View className="flex-row gap-5">
                     <View className="flex-1">
@@ -312,6 +421,8 @@ export default function ChildRegistrationScreen() {
                         />
                     </View>
                 </View>
+                    </>
+                )}
 
                 <SectionTitle>Alergias</SectionTitle>
                 <TagListInput
@@ -320,12 +431,27 @@ export default function ChildRegistrationScreen() {
                     onChange={setAllergies}
                 />
 
-                <SectionTitle>Condiciones crónicas</SectionTitle>
-                <TagListInput
-                    placeholder="ej. Asma, Diabetes tipo 1"
-                    items={conditions}
-                    onChange={setConditions}
-                />
+                {/* Al editar, vacunas, condiciones y medicamentos se gestionan desde el perfil del hijo */}
+                {!isEditing && (
+                    <>
+                        <SectionTitle>Vacunas</SectionTitle>
+                        <TagListInput
+                            placeholder="ej. Triple vírica"
+                            items={vaccines}
+                            onChange={setVaccines}
+                        />
+
+                        <SectionTitle>Condiciones crónicas</SectionTitle>
+                        <TagListInput
+                            placeholder="ej. Asma, Diabetes tipo 1"
+                            items={conditions}
+                            onChange={setConditions}
+                        />
+
+                        <SectionTitle>Medicamentos</SectionTitle>
+                        <MedicineListInput items={medicines} onChange={setMedicines} />
+                    </>
+                )}
             </ScrollView>
         </View>
     );
