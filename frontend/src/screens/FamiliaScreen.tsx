@@ -164,7 +164,41 @@ function getAge(birthDate: string) {
 
 
 
-function ChildCard({ child, onPress }: { child: ChildPreview; onPress: () => void }) {
+// Confirma y elimina un hijo; onDeleted se llama cuando el backend ya lo ha borrado.
+function confirmDeleteChild(child: { id: number; name: string }, onDeleted: () => void) {
+  Alert.alert(
+    'Eliminar hijo/a',
+    `Se eliminará a ${child.name} y todos sus datos (vacunas, medicamentos, condiciones y mediciones). Esta acción no se puede deshacer.`,
+    [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const response = await fetch(`${API_URL}/child/${child.id}`, { method: 'DELETE' });
+            if (!response.ok) throw new Error();
+            onDeleted();
+          } catch {
+            Alert.alert('Error', 'No se pudo eliminar al niño/a.');
+          }
+        },
+      },
+    ],
+  );
+}
+
+function ChildCard({
+  child,
+  onPress,
+  onEdit,
+  onDeleted,
+}: {
+  child: ChildPreview;
+  onPress: () => void;
+  onEdit: () => void;
+  onDeleted: () => void;
+}) {
   const pendingVaccines = child.vaccines.filter((vaccine) => !vaccine.appliedAt).length;
   const activeMedicines = child.medicine.filter((medicine) => !medicine.endDate || new Date(medicine.endDate) >= new Date()).length;
   
@@ -199,8 +233,25 @@ function ChildCard({ child, onPress }: { child: ChildPreview; onPress: () => voi
   }
 
 
+  const openMenu = () => {
+    Alert.alert(child.name, undefined, [
+      { text: 'Editar hijo', onPress: onEdit },
+      { text: 'Eliminar hijo', style: 'destructive', onPress: () => confirmDeleteChild(child, onDeleted) },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  };
+
   return (
     <View className="mb-5 overflow-hidden rounded-3xl border border-[#ddd2c4] bg-[#eee5d6]">
+      <TouchableOpacity
+        onPress={openMenu}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel={`Más opciones de ${child.name}`}
+        className="absolute right-3 top-3 z-10 h-9 w-9 items-center justify-center rounded-full"
+      >
+        <Ionicons name="ellipsis-horizontal" size={22} color={palette.muted} />
+      </TouchableOpacity>
       <TouchableOpacity onPress={onPress} className="flex-row items-center px-5 pb-4 pt-5">
         <Avatar child={child} size={66} />
         <View className="ml-5 flex-1">
@@ -300,7 +351,13 @@ function ChildPickerScreen() {
           </Text>
         </View>
         {loading ? <ActivityIndicator size="large" color={palette.blue} /> : children.map((child) => (
-          <ChildCard key={child.id} child={child} onPress={() => navigation.navigate('ChildProfile', { childId: child.id })} />
+          <ChildCard
+            key={child.id}
+            child={child}
+            onPress={() => navigation.navigate('ChildProfile', { childId: child.id })}
+            onEdit={() => navigation.navigate('RegistroHijo', { child })}
+            onDeleted={loadChildren}
+          />
         ))}
         {userId !== null && (
           <TouchableOpacity
@@ -445,28 +502,7 @@ function ChildProfileScreen() {
 
   const editChild = () => navigation.navigate('RegistroHijo', { child: data });
 
-  const deleteChild = () => {
-    Alert.alert(
-      'Eliminar hijo/a',
-      `Se eliminará a ${data.name} y todos sus datos (vacunas, medicamentos, condiciones y mediciones). Esta acción no se puede deshacer.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const response = await fetch(`${API_URL}/child/${data.id}`, { method: 'DELETE' });
-              if (!response.ok) throw new Error();
-              navigation.navigate('ChildPicker');
-            } catch {
-              Alert.alert('Error', 'No se pudo eliminar al niño/a.');
-            }
-          },
-        },
-      ],
-    );
-  };
+  const deleteChild = () => confirmDeleteChild(data, () => navigation.navigate('ChildPicker'));
 
   return (
     <Shell>
