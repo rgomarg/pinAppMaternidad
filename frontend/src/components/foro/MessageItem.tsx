@@ -6,12 +6,21 @@ import AuthorAvatar, { ProBadge, timeAgo } from './AuthorAvatar';
 import LikeButton from './LikeButton';
 import ModeratableAuthor from './ModeratableAuthor';
 
-// A partir de este nivel las respuestas ya no se sangran más (pantallas estrechas)
-const MAX_INDENT_DEPTH = 3;
+// Sangría de cada nivel de respuestas: margen + padding + línea guía a la izquierda
+const INDENT_MARGIN = 16;
+const INDENT_PADDING = 12;
+const INDENT_BORDER = 2;
+const INDENT_STEP = INDENT_MARGIN + INDENT_PADDING + INDENT_BORDER;
+
+// Las tarjetas se estrechan con cada nivel hasta este ancho. A partir de ahí dejan de
+// encogerse y la conversación se desborda hacia la derecha (scroll horizontal en ThreadDetailScreen)
+const MIN_CARD_WIDTH = 260;
 
 type Props = {
   message: MessageNode;
   depth?: number;
+  // Ancho disponible para la conversación en el nivel 0 (ancho de la pantalla menos márgenes)
+  availableWidth: number;
   userId: number | null;
   onReply: (message: MessageNode) => void;
   onDelete: (message: MessageNode) => void;
@@ -22,19 +31,13 @@ type Props = {
   onModerate?: (message: MessageNode) => void;
 };
 
-export default function MessageItem({
-  message,
-  depth = 0,
-  userId,
-  onReply,
-  onDelete,
-  onAuthorBlocked,
-  onReport,
-  onModerate,
-}: Props) {
+export default function MessageItem({ message, depth = 0, availableWidth, userId, onReply, onDelete, onAuthorBlocked, onReport }: Props) {
+  // Se fija el ancho explícitamente: dentro de un ScrollView horizontal el ancho no está acotado
+  const cardWidth = Math.max(availableWidth - depth * INDENT_STEP, MIN_CARD_WIDTH);
+
   return (
     <View>
-      <View className="mb-3 rounded-3xl bg-white p-4">
+      <View style={{ width: cardWidth }} className="mb-3 rounded-3xl bg-white p-4">
         <View className="mb-2 flex-row items-center">
           <ModeratableAuthor author={message.author} onBlocked={onAuthorBlocked} className="flex-row items-center">
             <AuthorAvatar author={message.author} size={28} />
@@ -90,7 +93,7 @@ export default function MessageItem({
 
       {message.replies.length > 0 && (
         <View
-          style={depth < MAX_INDENT_DEPTH ? { marginLeft: 16, paddingLeft: 12, borderLeftWidth: 2 } : undefined}
+          style={{ marginLeft: INDENT_MARGIN, paddingLeft: INDENT_PADDING, borderLeftWidth: INDENT_BORDER }}
           className="border-nanny-card"
         >
           {message.replies.map((reply) => (
@@ -98,6 +101,7 @@ export default function MessageItem({
               key={reply.id}
               message={reply}
               depth={depth + 1}
+              availableWidth={availableWidth}
               userId={userId}
               onReply={onReply}
               onDelete={onDelete}
