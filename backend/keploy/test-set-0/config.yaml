@@ -1,0 +1,8 @@
+preScript: ""
+postScript: ""
+appCommand: ""
+template: {}
+metadata: {}
+mockRegistry:
+    mock: 345880bf90927f79c78a9855da6cacd6bd1d87a63023e46d735886ca7a95eecc
+    app: backend
