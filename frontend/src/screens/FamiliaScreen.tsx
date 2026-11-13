@@ -21,10 +21,13 @@ import { API_URL } from '../api/config';
 import { useFamilySelection } from '../context/FamilySelectionContext';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { allergyRecords, type Allergy, type AllergySeverity } from '../utils/allergies';
 
 type Child = {
   id: number;
   name: string;
+  surname?: string | null;
+  sex?: 'MALE' | 'FEMALE' | null;
   birthDate: string;
   bloodGroup?: string | null;
   allergies?: string | null;
@@ -48,6 +51,8 @@ type Dashboard = Child & {
     name: string;
     dosage: string;
     intervalHours: number | null;
+    startDate?: string | null;
+    instructions?: string | null;
     endDate: string | null;
   }[];
 };
@@ -59,13 +64,6 @@ type Vaccine = {
   scheduledFor: string | null;
 };
 
-type AllergySeverity = 'leve' | 'moderada' | 'severa';
-
-type Allergy = {
-  name: string;
-  severity: AllergySeverity;
-  notes?: string;
-};
 
 const palette = {
   background: '#f7f3ec',
@@ -162,35 +160,45 @@ function getAge(birthDate: string) {
   return age;
 }
 
-function hasAllergy(allergies: string | null | undefined) {
-  if (!allergies) return false;
-  return !['ninguna conocida', 'sin alergias registradas'].includes(allergies.trim().toLowerCase());
+
+
+
+
+// Confirma y elimina un hijo; onDeleted se llama cuando el backend ya lo ha borrado.
+function confirmDeleteChild(child: { id: number; name: string }, onDeleted: () => void) {
+  Alert.alert(
+    'Eliminar hijo/a',
+    `Se eliminará a ${child.name} y todos sus datos (vacunas, medicamentos, condiciones y mediciones). Esta acción no se puede deshacer.`,
+    [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const response = await fetch(`${API_URL}/child/${child.id}`, { method: 'DELETE' });
+            if (!response.ok) throw new Error();
+            onDeleted();
+          } catch {
+            Alert.alert('Error', 'No se pudo eliminar al niño/a.');
+          }
+        },
+      },
+    ],
+  );
 }
 
-function allergyRecords(allergies: string | null | undefined): Allergy[] {
-  if (!hasAllergy(allergies)) return [];
-  try {
-    const parsed = JSON.parse(allergies!);
-    if (Array.isArray(parsed) && parsed.every((item) => item && typeof item.name === 'string')) {
-      return parsed.map((item) => ({
-        name: item.name.trim(),
-        severity: ['leve', 'moderada', 'severa'].includes(item.severity) ? item.severity : 'moderada',
-        notes: typeof item.notes === 'string' ? item.notes : undefined,
-      })).filter((item) => item.name);
-    }
-  } catch {
-    // Older records use a comma-separated string.
-  }
-  return allergies!.split(',').map((name) => ({
-    name: name.trim(),
-    severity: 'moderada' as AllergySeverity,
-  })).filter((item) => item.name);
-}
-
-
-
-
-function ChildCard({ child, onPress }: { child: ChildPreview; onPress: () => void }) {
+function ChildCard({
+  child,
+  onPress,
+  onEdit,
+  onDeleted,
+}: {
+  child: ChildPreview;
+  onPress: () => void;
+  onEdit: () => void;
+  onDeleted: () => void;
+}) {
   const pendingVaccines = child.vaccines.filter((vaccine) => !vaccine.appliedAt).length;
   const activeMedicines = child.medicine.filter((medicine) => !medicine.endDate || new Date(medicine.endDate) >= new Date()).length;
   
@@ -225,8 +233,25 @@ function ChildCard({ child, onPress }: { child: ChildPreview; onPress: () => voi
   }
 
 
+  const openMenu = () => {
+    Alert.alert(child.name, undefined, [
+      { text: 'Editar hijo', onPress: onEdit },
+      { text: 'Eliminar hijo', style: 'destructive', onPress: () => confirmDeleteChild(child, onDeleted) },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  };
+
   return (
     <View className="mb-5 overflow-hidden rounded-3xl border border-[#ddd2c4] bg-[#eee5d6]">
+      <TouchableOpacity
+        onPress={openMenu}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel={`Más opciones de ${child.name}`}
+        className="absolute right-3 top-3 z-10 h-9 w-9 items-center justify-center rounded-full"
+      >
+        <Ionicons name="ellipsis-horizontal" size={22} color={palette.muted} />
+      </TouchableOpacity>
       <TouchableOpacity onPress={onPress} className="flex-row items-center px-5 pb-4 pt-5">
         <Avatar child={child} size={66} />
         <View className="ml-5 flex-1">
@@ -326,7 +351,13 @@ function ChildPickerScreen() {
           </Text>
         </View>
         {loading ? <ActivityIndicator size="large" color={palette.blue} /> : children.map((child) => (
-          <ChildCard key={child.id} child={child} onPress={() => navigation.navigate('ChildProfile', { childId: child.id })} />
+          <ChildCard
+            key={child.id}
+            child={child}
+            onPress={() => navigation.navigate('ChildProfile', { childId: child.id })}
+            onEdit={() => navigation.navigate('RegistroHijo', { child })}
+            onDeleted={loadChildren}
+          />
         ))}
         {userId !== null && (
           <TouchableOpacity
@@ -373,12 +404,22 @@ function Section({
   );
 }
 
-function SimpleCard({ title, subtitle }: { title: string; subtitle?: string }) {
+function SimpleCard({ title, subtitle, onPress }: { title: string; subtitle?: string; onPress?: () => void }) {
   return (
-    <View className="mb-3 rounded-3xl bg-[#eee5d6] p-5">
-      <Text style={{ color: palette.text }} className="text-lg">{title}</Text>
-      {subtitle && <Text style={{ color: palette.muted }} className="mt-1 text-base">{subtitle}</Text>}
-    </View>
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={!onPress}
+      activeOpacity={0.7}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={onPress ? `${title}. Toca para editar o eliminar` : undefined}
+      className="mb-3 flex-row items-center rounded-3xl bg-[#eee5d6] p-5"
+    >
+      <View className="flex-1">
+        <Text style={{ color: palette.text }} className="text-lg">{title}</Text>
+        {subtitle && <Text style={{ color: palette.muted }} className="mt-1 text-base">{subtitle}</Text>}
+      </View>
+      {onPress && <Ionicons name="ellipsis-horizontal" size={18} color={palette.muted} />}
+    </TouchableOpacity>
   );
 }
 
@@ -413,6 +454,56 @@ function ChildProfileScreen() {
   });
   const openForm = (screen: string) => navigation.navigate(screen, { child: data });
 
+  // Menú con las acciones de un elemento (alergia, vacuna, condición o medicamento)
+  const itemMenu = (title: string, onEdit: () => void, onDelete: () => Promise<void>) => {
+    Alert.alert(title, undefined, [
+      { text: 'Editar', onPress: onEdit },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: () => {
+          Alert.alert('Eliminar', `¿Seguro que quieres eliminar "${title}"?`, [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Eliminar',
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  await onDelete();
+                  await loadDashboard();
+                } catch {
+                  Alert.alert('Error', 'No se pudo eliminar.');
+                }
+              },
+            },
+          ]);
+        },
+      },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  };
+
+  const deleteRecord = (path: string, id: number) => async () => {
+    const response = await fetch(`${API_URL}/${path}/${id}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error();
+  };
+
+  const deleteAllergy = (name: string) => async () => {
+    const remaining = allergyRecords(data.allergies).filter((item) => item.name !== name);
+    const response = await fetch(`${API_URL}/child/${data.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ allergies: JSON.stringify(remaining) }),
+    });
+    if (!response.ok) throw new Error();
+  };
+
+  const editItem = (screen: string, item: unknown) => navigation.navigate(screen, { child: data, item });
+
+  const editChild = () => navigation.navigate('RegistroHijo', { child: data });
+
+  const deleteChild = () => confirmDeleteChild(data, () => navigation.navigate('ChildPicker'));
+
   return (
     <Shell>
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
@@ -440,6 +531,26 @@ function ChildProfileScreen() {
               )}
             </View>
           </View>
+          <View className="mt-5 flex-row gap-3">
+            <TouchableOpacity
+              onPress={editChild}
+              accessibilityRole="button"
+              accessibilityLabel={`Editar a ${data.name}`}
+              className="flex-1 flex-row items-center justify-center rounded-2xl border border-[#ddd2c4] bg-[#f7f3ec] py-3"
+            >
+              <Ionicons name="create-outline" size={18} color={palette.blue} />
+              <Text style={{ color: palette.blue }} className="ml-2 text-base font-semibold">Editar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={deleteChild}
+              accessibilityRole="button"
+              accessibilityLabel={`Eliminar a ${data.name}`}
+              className="flex-1 flex-row items-center justify-center rounded-2xl border border-[#ddd2c4] bg-[#f7f3ec] py-3"
+            >
+              <Ionicons name="trash-outline" size={18} color={palette.red} />
+              <Text style={{ color: palette.red }} className="ml-2 text-base font-semibold">Eliminar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View className="px-6 pt-7">
@@ -447,8 +558,10 @@ function ChildProfileScreen() {
             {allergyRecords(data.allergies).map((allergy) => {
               const isSevere = allergy.severity === 'severa';
               return (
-              <View
+              <TouchableOpacity
                 key={allergy.name}
+                activeOpacity={0.7}
+                onPress={() => itemMenu(allergy.name, () => editItem('AddAllergy', allergy), deleteAllergy(allergy.name))}
                 className={`mb-3 flex-row items-center rounded-3xl border p-5 ${isSevere ? 'border-[#c64b3b] bg-[#fff0ec]' : 'border-transparent bg-[#eee5d6]'}`}
                 accessibilityLabel={`${isSevere ? 'Alerta: ' : ''}Alergia ${allergy.name}, gravedad ${allergy.severity}`}
               >
@@ -461,15 +574,20 @@ function ChildProfileScreen() {
                     {isSevere ? 'ALERTA · Alergia severa' : `Gravedad: ${allergy.severity}`}
                   </Text>
                 </View>
-                <Ionicons name="chevron-down" size={18} color={palette.muted} />
-              </View>
+                <Ionicons name="ellipsis-horizontal" size={18} color={palette.muted} />
+              </TouchableOpacity>
               );
             })}
           </Section>
 
           <Section title={`Vacunas · ${applied}/${data.vaccines.length} aplicadas`} onAdd={() => openForm('AddVaccine')}>
             {vaccinesByRecent.map((vaccine) => (
-              <View key={vaccine.id} className="mb-3 flex-row items-center rounded-3xl bg-[#eee5d6] p-5">
+              <TouchableOpacity
+                key={vaccine.id}
+                activeOpacity={0.7}
+                onPress={() => itemMenu(vaccine.name, () => editItem('AddVaccine', vaccine), deleteRecord('vaccine', vaccine.id))}
+                className="mb-3 flex-row items-center rounded-3xl bg-[#eee5d6] p-5"
+              >
                 <View className={`mr-4 h-9 w-9 items-center justify-center rounded-full ${vaccine.appliedAt ? 'bg-[#e5f1e9]' : 'bg-[#fff0d8]'}`}>
                   <Ionicons name={vaccine.appliedAt ? 'checkmark' : 'time-outline'} size={18} color={vaccine.appliedAt ? palette.green : '#bd7110'} />
                 </View>
@@ -481,7 +599,8 @@ function ChildProfileScreen() {
                       : `Pendiente${vaccine.scheduledFor ? ` · ${new Date(vaccine.scheduledFor).toLocaleDateString('es-ES')}` : ''}`}
                   </Text>
                 </View>
-              </View>
+                <Ionicons name="ellipsis-horizontal" size={18} color={palette.muted} />
+              </TouchableOpacity>
             ))}
           </Section>
 
@@ -490,13 +609,23 @@ function ChildProfileScreen() {
               <SimpleCard key={condition.id} title={condition.description || condition.desciption || 'Condición registrada'} subtitle={`Registrada: ${new Date(condition.timestamp).toLocaleDateString('es-ES')}`} />
             ))}
             {data.diseases.map((disease) => (
-              <SimpleCard key={`disease-${disease.id}`} title={disease.name} subtitle={disease.description || undefined} />
+              <SimpleCard
+                key={`disease-${disease.id}`}
+                title={disease.name}
+                subtitle={disease.description || undefined}
+                onPress={() => itemMenu(disease.name, () => editItem('AddCondition', disease), deleteRecord('disease', disease.id))}
+              />
             ))}
           </Section>
 
           <Section title={`Medicamentos · ${data.medicine.length}`} onAdd={() => openForm('AddMedicine')}>
             {data.medicine.map((medicine) => (
-              <SimpleCard key={medicine.id} title={medicine.name} subtitle={`${medicine.dosage}${medicine.intervalHours ? ` · cada ${medicine.intervalHours} h` : ''}`} />
+              <SimpleCard
+                key={medicine.id}
+                title={medicine.name}
+                subtitle={`${medicine.dosage}${medicine.intervalHours ? ` · cada ${medicine.intervalHours} h` : ''}`}
+                onPress={() => itemMenu(medicine.name, () => editItem('AddMedicine', medicine), deleteRecord('medicine', medicine.id))}
+              />
             ))}
           </Section>
         </View>
@@ -526,6 +655,7 @@ function Field({
   onChangeText,
   multiline = false,
   scrollIntoViewOnFocus = false,
+  tooltip,
 }: {
   label: string;
   placeholder: string;
@@ -533,16 +663,32 @@ function Field({
   onChangeText: (value: string) => void;
   multiline?: boolean;
   scrollIntoViewOnFocus?: boolean;
+  tooltip?: string;
 }) {
   const scrollToInput = useContext(FormScrollContext);
   const inputRef = useRef<TextInputInstance | null>(null);
+  const [showTip, setShowTip] = useState(false);
   return (
     <View className="mb-6">
-      <Text style={{ color: palette.muted }} className="mb-2 text-base">{label}</Text>
+      <View className="mb-2 flex-row items-center">
+        <Text style={{ color: palette.muted }} className="text-base">{label}</Text>
+        {tooltip && (
+          <TouchableOpacity
+            onPress={() => setShowTip((v) => !v)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            className="ml-1.5"
+          >
+            <Ionicons name="information-circle-outline" size={20} color={palette.muted} />
+          </TouchableOpacity>
+        )}
+      </View>
       <TextInput
         ref={inputRef}
         value={value}
-        onChangeText={onChangeText}
+        onChangeText={(text) => {
+          onChangeText(text);
+          setShowTip(false);
+        }}
         placeholder={placeholder}
         placeholderTextColor="#9a928b"
         multiline={multiline}
@@ -554,6 +700,11 @@ function Field({
         style={{ color: palette.text, minHeight: multiline ? 140 : undefined, textAlignVertical: multiline ? 'top' : 'center' }}
         className="rounded-3xl border border-[#ddd2c4] bg-[#eee5d6] px-6 py-4 text-lg"
       />
+      {tooltip && showTip && (
+        <View className="mt-2 rounded-xl bg-[#2B2B2B] px-3 py-2">
+          <Text className="text-xs text-white">{tooltip}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -649,10 +800,11 @@ function AddVaccineScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const child = route.params.child as Child;
-  const [name, setName] = useState('');
-  const [applied, setApplied] = useState(true);
-  const [appliedAt, setAppliedAt] = useState<Date | null>(new Date());
-  const [scheduledFor, setScheduledFor] = useState<Date | null>(null);
+  const item = route.params.item as Vaccine | undefined; // si existe, se edita esa vacuna
+  const [name, setName] = useState(item?.name ?? '');
+  const [applied, setApplied] = useState(item ? !!item.appliedAt : true);
+  const [appliedAt, setAppliedAt] = useState<Date | null>(item ? (item.appliedAt ? new Date(item.appliedAt) : null) : new Date());
+  const [scheduledFor, setScheduledFor] = useState<Date | null>(item?.scheduledFor ? new Date(item.scheduledFor) : null);
   const [lot, setLot] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -676,14 +828,14 @@ function AddVaccineScreen() {
     }
     setSaving(true);
     try {
-      const response = await fetch(`${API_URL}/vaccine`, {
-        method: 'POST',
+      const response = await fetch(item ? `${API_URL}/vaccine/${item.id}` : `${API_URL}/vaccine`, {
+        method: item ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
           childId: child.id,
           appliedAt: applied ? appliedAt?.toISOString() : null,
-          scheduledFor: scheduledFor?.toISOString(),
+          scheduledFor: applied ? undefined : scheduledFor?.toISOString(),
         }),
       });
       if (!response.ok) throw new Error();
@@ -696,7 +848,7 @@ function AddVaccineScreen() {
   };
 
   return (
-    <FormLayout title="Nueva vacuna" child={child} onSave={save} saving={saving}>
+    <FormLayout title={item ? 'Editar vacuna' : 'Nueva vacuna'} child={child} onSave={save} saving={saving}>
       <Field label="Nombre *" placeholder="Ej. Triple vírica" value={name} onChangeText={setName} />
       <Text style={{ color: palette.muted }} className="mb-2 text-base">Estado *</Text>
       <View className="mb-6 flex-row gap-3">
@@ -729,9 +881,10 @@ function AddAllergyScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const child = route.params.child as Child;
-  const [name, setName] = useState('');
-  const [severity, setSeverity] = useState<AllergySeverity>('moderada');
-  const [notes, setNotes] = useState('');
+  const item = route.params.item as Allergy | undefined; // si existe, se edita esa alergia
+  const [name, setName] = useState(item?.name ?? '');
+  const [severity, setSeverity] = useState<AllergySeverity>(item?.severity ?? 'moderada');
+  const [notes, setNotes] = useState(item?.notes ?? '');
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
@@ -740,7 +893,10 @@ function AddAllergyScreen() {
     setSaving(true);
     try {
       const existing = allergyRecords(child.allergies);
-      const withoutDuplicate = existing.filter((item) => item.name.toLocaleLowerCase() !== allergy.toLocaleLowerCase());
+      const withoutDuplicate = existing.filter((record) => {
+        const lower = record.name.toLocaleLowerCase();
+        return lower !== allergy.toLocaleLowerCase() && lower !== item?.name.toLocaleLowerCase();
+      });
       const allergies = JSON.stringify([...withoutDuplicate, {
         name: allergy,
         severity,
@@ -761,7 +917,7 @@ function AddAllergyScreen() {
   };
 
   return (
-    <FormLayout title="Nueva alergia" child={child} onSave={save} saving={saving}>
+    <FormLayout title={item ? 'Editar alergia' : 'Nueva alergia'} child={child} onSave={save} saving={saving}>
       <Field label="Nombre *" placeholder="Ej. Frutos secos" value={name} onChangeText={setName} />
       <Text style={{ color: palette.muted }} className="mb-2 text-base">Gravedad *</Text>
       <View className="mb-6 flex-row gap-2">
@@ -793,9 +949,10 @@ function AddConditionScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const child = route.params.child as Child;
-  const [name, setName] = useState('');
-  const [date, setDate] = useState<Date | null>(null);
-  const [notes, setNotes] = useState('');
+  const item = route.params.item as Dashboard['diseases'][number] | undefined; // si existe, se edita esa condición
+  const [name, setName] = useState(item?.name ?? '');
+  const [date, setDate] = useState<Date | null>(item?.diagnosticatedAge ? new Date(item.diagnosticatedAge) : null);
+  const [notes, setNotes] = useState(item?.description ?? '');
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
@@ -803,8 +960,8 @@ function AddConditionScreen() {
     if (!date) return Alert.alert('Falta información', 'Selecciona la fecha de diagnóstico.');
     setSaving(true);
     try {
-      const response = await fetch(`${API_URL}/disease`, {
-        method: 'POST',
+      const response = await fetch(item ? `${API_URL}/disease/${item.id}` : `${API_URL}/disease`, {
+        method: item ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
@@ -823,7 +980,7 @@ function AddConditionScreen() {
   };
 
   return (
-    <FormLayout title="Nueva condición" child={child} onSave={save} saving={saving}>
+    <FormLayout title={item ? 'Editar condición' : 'Nueva condición'} child={child} onSave={save} saving={saving}>
       <Field label="Nombre *" placeholder="Ej. Asma leve" value={name} onChangeText={setName} />
       <DateField label="Fecha de diagnóstico *" value={date} onChange={setDate} />
       <Field label="Notas y seguimiento" placeholder="Tratamiento, especialista o indicaciones relevantes" value={notes} onChangeText={setNotes} multiline scrollIntoViewOnFocus />
@@ -835,11 +992,12 @@ function AddMedicineScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const child = route.params.child as Child;
-  const [name, setName] = useState('');
-  const [dosage, setDosage] = useState('');
-  const [frequency, setFrequency] = useState('');
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [times, setTimes] = useState('');
+  const item = route.params.item as Dashboard['medicine'][number] | undefined; // si existe, se edita ese medicamento
+  const [name, setName] = useState(item?.name ?? '');
+  const [dosage, setDosage] = useState(item?.dosage ?? '');
+  const [frequency, setFrequency] = useState(item?.intervalHours ? `cada ${item.intervalHours} h` : '');
+  const [startDate, setStartDate] = useState<Date | null>(item?.startDate ? new Date(item.startDate) : null);
+  const [times, setTimes] = useState(item?.instructions?.replace(/^Horarios:\s*/, '') ?? '');
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
@@ -855,8 +1013,8 @@ function AddMedicineScreen() {
     if (!startDate) return Alert.alert('Falta información', 'Selecciona la fecha de inicio.');
     setSaving(true);
     try {
-      const response = await fetch(`${API_URL}/medicine`, {
-        method: 'POST',
+      const response = await fetch(item ? `${API_URL}/medicine/${item.id}` : `${API_URL}/medicine`, {
+        method: item ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: trimmedName,
@@ -877,10 +1035,10 @@ function AddMedicineScreen() {
   };
 
   return (
-    <FormLayout title="Nuevo medicamento" child={child} onSave={save} saving={saving}>
+    <FormLayout title={item ? 'Editar medicamento' : 'Nuevo medicamento'} child={child} onSave={save} saving={saving}>
       <Field label="Nombre del medicamento *" placeholder="Ej. Loratadina 5 mg" value={name} onChangeText={setName} />
       <View className="flex-row gap-3">
-        <View className="flex-1"><Field label="Dosis *" placeholder="Ej. 5 ml" value={dosage} onChangeText={setDosage} /></View>
+        <View className="flex-1"><Field label="Dosis *" placeholder="Ej. 5 ml" value={dosage} onChangeText={setDosage} tooltip="Indica la cantidad por toma, con su unidad. Ej: 2.5 ml, 1 comprimido, 5 gotas." /></View>
         <View className="flex-1"><Field label="Frecuencia *" placeholder="Ej. cada 8 h" value={frequency} onChangeText={setFrequency} /></View>
       </View>
       <DateField label="Fecha de inicio *" value={startDate} onChange={setStartDate} />

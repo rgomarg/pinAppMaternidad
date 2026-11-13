@@ -1,5 +1,6 @@
 //CAMBIAR IP PARA PODER HACER LLAMADAS AL PORTATIL.
 const LOCAL_IP = '192.168.2.69'; // Cámbiala si tu IP cambia
+
 const PORT = 3000;
 
 export const API_URL = `http://${LOCAL_IP}:${PORT}`;
