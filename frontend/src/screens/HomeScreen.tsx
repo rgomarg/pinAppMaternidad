@@ -159,13 +159,14 @@ export default function HomeScreen() {
 
   const handleSelectUser = (userId: number, role: Role) => {
     setActiveUserId(userId);
+    setActiveChildId(null);
+    setChildren([]);
+    setChecklist([]);
     setSelectedUserId(userId);
     setSelectedUserRole(role);
     setIsUserModalVisible(false);
     updateFamiliaChild(null, userId);
     fetchChildren(userId);
-
-    registerForPushNotifications(userId);
 
     // Le pasamos el userId a la pestaña Familia sin cambiar de pestaña
     const familiaKey = navigation.getState().routes.find((r: any) => r.name === 'Familia')?.key;

@@ -29,13 +29,47 @@ type Child = {
   name: string;
 };
 
-type EventTypeOption = 'GENERAL' | 'MEDICAL_APPOINTMENT' | 'VACCINE' | 'MEDICINE';
+type EventTypeOption = 'GENERAL' | 'MEDICAL_APPOINTMENT' | 'VACCINE' | 'MEDICINE' | 'CONDITION';
 
 const EVENT_TYPES: { id: EventTypeOption; label: string; icon: string; emoji: string }[] = [
   { id: 'GENERAL', label: 'General', icon: 'document-text-outline', emoji: '📋' },
   { id: 'MEDICINE', label: 'Medicamento', icon: 'medkit-outline', emoji: '💊' },
   { id: 'MEDICAL_APPOINTMENT', label: 'Cita médica', icon: 'pulse-outline', emoji: '🩺' },
   { id: 'VACCINE', label: 'Vacuna', icon: 'shield-outline', emoji: '💉' },
+  { id: 'CONDITION', label: 'Síntoma', icon: 'bandage-outline', emoji: '🤒' },
+];
+
+export const SYMPTOMS_LIST: { id: string; label: string; emoji: string }[] = [
+  { id: 'FEVER', label: 'Fiebre', emoji: '🌡️' },
+  { id: 'COUGH', label: 'Tos', emoji: '🗣️' },
+  { id: 'HEADACHE', label: 'Dolor de cabeza', emoji: '🤕' },
+  { id: 'SORE_THROAT', label: 'Dolor de garganta', emoji: '🧣' },
+  { id: 'VOMITING', label: 'Vómitos', emoji: '🤮' },
+  { id: 'NAUSEA', label: 'Náuseas', emoji: '🤢' },
+  { id: 'DIARRHEA', label: 'Diarrea', emoji: '💩' },
+  { id: 'STOMACHACHE', label: 'Dolor de barriga', emoji: '😣' },
+  { id: 'RUNNY_NOSE', label: 'Mocos', emoji: '🤧' },
+  { id: 'NASAL_CONGESTION', label: 'Congestión nasal', emoji: '👃' },
+  { id: 'SNEEZING', label: 'Estornudos', emoji: '🤧' },
+  { id: 'EARACHE', label: 'Dolor de oído', emoji: '👂' },
+  { id: 'FATIGUE', label: 'Cansancio', emoji: '🥱' },
+  { id: 'IRRITABILITY', label: 'Irritabilidad', emoji: '😭' },
+  { id: 'LOSS_OF_APPETITE', label: 'Falta de apetito', emoji: '🥣' },
+  { id: 'TROUBLE_SLEEPING', label: 'Problemas para dormir', emoji: '😴' },
+  { id: 'RASH', label: 'Erupción cutánea', emoji: '🩹' },
+  { id: 'ITCHING', label: 'Picor', emoji: '🐜' },
+  { id: 'CHILLS', label: 'Escalofríos', emoji: '🥶' },
+  { id: 'DIZZINESS', label: 'Mareos', emoji: '💫' },
+  { id: 'SHORTNESS_OF_BREATH', label: 'Dificultad al respirar', emoji: '🫁' },
+  { id: 'WHEEZING', label: 'Pitidos al respirar', emoji: '🌬️' },
+  { id: 'MUSCLE_PAIN', label: 'Dolor muscular', emoji: '💪' },
+  { id: 'JOINT_PAIN', label: 'Dolor en articulaciones', emoji: '🦴' },
+  { id: 'SWOLLEN_GLANDS', label: 'Ganglios inflamados', emoji: '🫧' },
+  { id: 'RED_EYES', label: 'Ojos rojos', emoji: '👁️' },
+  { id: 'WATERY_EYES', label: 'Ojos llorosos', emoji: '💧' },
+  { id: 'CONSTIPATION', label: 'Estreñimiento', emoji: '🚽' },
+  { id: 'CRAMPS', label: 'Calambres', emoji: '⚡' },
+  { id: 'TOOTHACHE', label: 'Dolor de muelas', emoji: '🦷' },
 ];
 
 const NOTIFICATION_ADVANCES = [
@@ -76,6 +110,36 @@ export default function CrearEventoScreen() {
 
   // Campos Vacuna
   const [vaccineApplied, setVaccineApplied] = useState(false);
+
+  // Campos Síntomas (Condition)
+  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [isSymptomsDropdownOpen, setIsSymptomsDropdownOpen] = useState(false);
+  const [symptomSearch, setSymptomSearch] = useState('');
+
+  const toggleSymptom = (symptomId: string) => {
+    setSelectedSymptoms((prev) =>
+      prev.includes(symptomId)
+        ? prev.filter((id) => id !== symptomId)
+        : [...prev, symptomId]
+    );
+  };
+
+  const removeSymptom = (symptomId: string) => {
+    setSelectedSymptoms((prev) => prev.filter((id) => id !== symptomId));
+  };
+
+  const handleSelectEventType = (type: EventTypeOption) => {
+    setEventType(type);
+    if (type === 'CONDITION') {
+      setEnableNotification(false);
+      const today = new Date();
+      const selectedDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      if (selectedDay > todayDay) {
+        setDate(today);
+      }
+    }
+  };
 
   // Campos Medicamento
   const [dosage, setDosage] = useState('');
@@ -155,6 +219,14 @@ export default function CrearEventoScreen() {
     const updated = new Date(date);
     updated.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
     const now = new Date();
+    if (eventType === 'CONDITION') {
+      const selectedDay = new Date(updated.getFullYear(), updated.getMonth(), updated.getDate());
+      const todayDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (selectedDay > todayDay) {
+        setDate(now);
+        return;
+      }
+    }
     if (eventType === 'VACCINE' && vaccineApplied && updated.getTime() > now.getTime()) {
       const isFutureDay = new Date(newDate).setHours(0, 0, 0, 0) > new Date().setHours(0, 0, 0, 0);
       if (isFutureDay) {
@@ -214,8 +286,15 @@ export default function CrearEventoScreen() {
     if (!selectedChildId) {
       return Alert.alert('Falta el hijo/a', 'Debes seleccionar a qué hijo se asigna este evento.');
     }
-    if (!title.trim()) {
-      return Alert.alert('Campo obligatorio', 'Por favor introduce el nombre o título del registro.');
+
+    if (eventType === 'CONDITION') {
+      if (selectedSymptoms.length === 0) {
+        return Alert.alert('Síntoma obligatorio', 'Por favor selecciona al menos un síntoma de la lista.');
+      }
+    } else {
+      if (!title.trim()) {
+        return Alert.alert('Campo obligatorio', 'Por favor introduce el nombre o título del registro.');
+      }
     }
 
     if (eventType === 'MEDICINE') {
@@ -241,6 +320,22 @@ export default function CrearEventoScreen() {
     setSaving(true);
 
     try {
+      if (eventType === 'CONDITION') {
+        const res = await fetch(`${API_URL}/condition`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tag: selectedSymptoms,
+            timestamp: date.toISOString(),
+            notes: notes.trim() || undefined,
+            childId: selectedChildId,
+          }),
+        });
+        if (!res.ok) throw new Error('Error al registrar el síntoma');
+        navigation.goBack();
+        return;
+      }
+
       // Si el usuario intentó configurar alerta, comprobamos permisos a nivel de sistema del móvil
       let notificationAllowed = false;
       let permissionRestricted = false;
@@ -466,7 +561,7 @@ export default function CrearEventoScreen() {
             return (
               <TouchableOpacity
                 key={t.id}
-                onPress={() => setEventType(t.id)}
+                onPress={() => handleSelectEventType(t.id)}
                 className={`w-[48%] flex-row items-center rounded-2xl border p-4 ${
                   isSelected
                     ? 'border-[#cc7a66] bg-[#faece7]'
@@ -486,29 +581,179 @@ export default function CrearEventoScreen() {
           })}
         </View>
 
-        {/* Campo Título / Nombre */}
-        <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">
-          {eventType === 'MEDICINE'
-            ? 'Nombre del medicamento *'
-            : eventType === 'VACCINE'
-            ? 'Nombre de la vacuna *'
-            : 'Título *'}
-        </Text>
-        <TextInput
-          value={title}
-          onChangeText={setTitle}
-          placeholder={
-            eventType === 'MEDICINE'
-              ? 'Ej. Apiretal 100 mg/ml'
-              : eventType === 'VACCINE'
-              ? 'Ej. Meningitis B'
-              : eventType === 'MEDICAL_APPOINTMENT'
-              ? 'Ej. Revisión de los 6 meses'
-              : 'Ej. Resfriado común'
-          }
-          placeholderTextColor="#9a928b"
-          className="mb-6 rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5 text-base text-[#2B2B2B]"
-        />
+        {/* Selector Desplegable de Síntomas (Solo cuando es CONDITION) */}
+        {eventType === 'CONDITION' && (
+          <View className="mb-6">
+            <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">
+              Síntomas del niño/a *
+            </Text>
+
+            {/* Botón que despliega la lista */}
+            <TouchableOpacity
+              onPress={() => setIsSymptomsDropdownOpen((prev) => !prev)}
+              className="flex-row items-center justify-between rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5"
+            >
+              <View className="flex-row items-center flex-1 pr-2">
+                <Text className="text-xl mr-2.5">🤒</Text>
+                <Text
+                  numberOfLines={1}
+                  className={`text-base ${
+                    selectedSymptoms.length > 0
+                      ? 'font-semibold text-[#2B2B2B]'
+                      : 'text-[#9a928b]'
+                  }`}
+                >
+                  {selectedSymptoms.length > 0
+                    ? `${selectedSymptoms.length} síntoma${
+                        selectedSymptoms.length === 1 ? '' : 's'
+                      } seleccionado${selectedSymptoms.length === 1 ? '' : 's'}`
+                    : 'Toca para abrir la lista de síntomas...'}
+                </Text>
+              </View>
+              <Ionicons
+                name={isSymptomsDropdownOpen ? 'chevron-up' : 'chevron-down'}
+                size={22}
+                color="#5B5149"
+              />
+            </TouchableOpacity>
+
+            {/* Menú desplegable con lista scrolleable y buscador */}
+            {isSymptomsDropdownOpen && (
+              <View className="mt-2 rounded-2xl border border-[#ded5c5] bg-[#fbf8f3] p-3 shadow-sm">
+                {/* Buscador rápido de síntomas */}
+                <View className="mb-2.5 flex-row items-center rounded-xl border border-[#e0d9c9] bg-[#ece6d9] px-3 py-2">
+                  <Ionicons name="search" size={16} color="#8A7F75" style={{ marginRight: 6 }} />
+                  <TextInput
+                    value={symptomSearch}
+                    onChangeText={setSymptomSearch}
+                    placeholder="Buscar síntoma (ej. fiebre, tos...)"
+                    placeholderTextColor="#9a928b"
+                    className="flex-1 text-sm text-[#2B2B2B] p-0"
+                  />
+                  {symptomSearch.length > 0 && (
+                    <TouchableOpacity onPress={() => setSymptomSearch('')}>
+                      <Ionicons name="close-circle" size={16} color="#8A7F75" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Lista scrolleable con altura fija */}
+                <ScrollView
+                  nestedScrollEnabled
+                  style={{ maxHeight: 220 }}
+                  showsVerticalScrollIndicator
+                >
+                  {SYMPTOMS_LIST.filter((s) =>
+                    s.label.toLowerCase().includes(symptomSearch.toLowerCase())
+                  ).map((s) => {
+                    const isSel = selectedSymptoms.includes(s.id);
+                    return (
+                      <TouchableOpacity
+                        key={s.id}
+                        onPress={() => toggleSymptom(s.id)}
+                        className={`flex-row items-center justify-between rounded-xl px-3 py-2.5 mb-1 ${
+                          isSel ? 'bg-[#faece7]' : 'bg-transparent'
+                        }`}
+                      >
+                        <View className="flex-row items-center flex-1 pr-2">
+                          <Text className="mr-2 text-lg">{s.emoji}</Text>
+                          <Text
+                            className={`text-sm ${
+                              isSel ? 'font-bold text-[#cc7a66]' : 'text-[#2B2B2B]'
+                            }`}
+                          >
+                            {s.label}
+                          </Text>
+                        </View>
+                        {isSel ? (
+                          <Ionicons name="checkmark-circle" size={20} color="#cc7a66" />
+                        ) : (
+                          <Ionicons name="add-circle-outline" size={20} color="#b4a99a" />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* SECCIÓN ABAJO: Síntomas seleccionados */}
+            <View className="mt-4">
+              <View className="mb-2 flex-row items-center justify-between">
+                <Text className="text-xs font-semibold uppercase tracking-wider text-[#8A7F75]">
+                  Síntomas seleccionados ({selectedSymptoms.length})
+                </Text>
+                {selectedSymptoms.length > 0 && (
+                  <TouchableOpacity onPress={() => setSelectedSymptoms([])}>
+                    <Text className="text-xs font-medium text-[#cc7a66]">
+                      Borrar todos
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {selectedSymptoms.length === 0 ? (
+                <View className="rounded-2xl border border-dashed border-[#d8cfbe] bg-[#f2ecdf]/50 p-4 items-center">
+                  <Text className="text-xs text-[#8A7F75] text-center">
+                    Ningún síntoma seleccionado todavía. Toca la lista desplegable de arriba para elegir.
+                  </Text>
+                </View>
+              ) : (
+                <View className="flex-row flex-wrap gap-2">
+                  {selectedSymptoms.map((symptomId) => {
+                    const item = SYMPTOMS_LIST.find((s) => s.id === symptomId);
+                    if (!item) return null;
+                    return (
+                      <View
+                        key={item.id}
+                        className="flex-row items-center rounded-2xl border border-[#cc7a66] bg-[#faece7] pl-3 pr-2 py-1.5"
+                      >
+                        <Text className="mr-1.5 text-base">{item.emoji}</Text>
+                        <Text className="mr-2 text-sm font-bold text-[#cc7a66]">
+                          {item.label}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => removeSymptom(item.id)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Ionicons name="close-circle" size={18} color="#cc7a66" />
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Campo Título / Nombre (No necesario en Síntoma porque se eligen de la lista) */}
+        {eventType !== 'CONDITION' && (
+          <>
+            <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">
+              {eventType === 'MEDICINE'
+                ? 'Nombre del medicamento *'
+                : eventType === 'VACCINE'
+                ? 'Nombre de la vacuna *'
+                : 'Título *'}
+            </Text>
+            <TextInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder={
+                eventType === 'MEDICINE'
+                  ? 'Ej. Apiretal 100 mg/ml'
+                  : eventType === 'VACCINE'
+                  ? 'Ej. Meningitis B'
+                  : eventType === 'MEDICAL_APPOINTMENT'
+                  ? 'Ej. Revisión de los 6 meses'
+                  : 'Ej. Resfriado común'
+              }
+              placeholderTextColor="#9a928b"
+              className="mb-6 rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5 text-base text-[#2B2B2B]"
+            />
+          </>
+        )}
 
         {/* Campos adicionales para VACUNA */}
         {eventType === 'VACCINE' && (
@@ -607,11 +852,16 @@ export default function CrearEventoScreen() {
                 ? vaccineApplied
                   ? 'Fecha de aplicación *'
                   : 'Fecha prevista *'
+                : eventType === 'CONDITION'
+                ? 'Fecha en que se detectó *'
                 : 'Fecha *'}
             </Text>
             <TouchableOpacity
               onPress={() => {
-                const maxDate = eventType === 'VACCINE' && vaccineApplied ? new Date() : undefined;
+                const maxDate =
+                  eventType === 'CONDITION' || (eventType === 'VACCINE' && vaccineApplied)
+                    ? new Date()
+                    : undefined;
                 openDateModal(date, 'date', handleDateChange, setShowDatePicker, maxDate);
               }}
               className="flex-row items-center justify-between rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5"
@@ -642,7 +892,11 @@ export default function CrearEventoScreen() {
             value={date}
             mode="date"
             display="default"
-            maximumDate={eventType === 'VACCINE' && vaccineApplied ? new Date() : undefined}
+            maximumDate={
+              eventType === 'CONDITION' || (eventType === 'VACCINE' && vaccineApplied)
+                ? new Date()
+                : undefined
+            }
             onChange={(_, sel) => {
               setShowDatePicker(false);
               if (sel) handleDateChange(sel);
@@ -757,7 +1011,7 @@ export default function CrearEventoScreen() {
           </View>
         )}
 
-        {/* Notas para Evento / Instrucciones para Medicamento */}
+        {/* Notas para Evento / Instrucciones para Medicamento / Notas para Síntoma */}
         {eventType === 'MEDICINE' ? (
           <View className="mb-6">
             <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">Instrucciones</Text>
@@ -772,13 +1026,27 @@ export default function CrearEventoScreen() {
               className="rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3 text-base text-[#2B2B2B]"
             />
           </View>
+        ) : eventType === 'CONDITION' ? (
+          <View className="mb-6">
+            <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">Notas sobre los síntomas</Text>
+            <TextInput
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Describe lo que quieras: intensidad, temperatura, comportamiento, indicaciones..."
+              placeholderTextColor="#9a928b"
+              multiline
+              numberOfLines={4}
+              style={{ minHeight: 100, textAlignVertical: 'top' }}
+              className="rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3 text-base text-[#2B2B2B]"
+            />
+          </View>
         ) : eventType !== 'VACCINE' ? (
           <View className="mb-6">
             <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">Notas</Text>
             <TextInput
               value={notes}
               onChangeText={setNotes}
-              placeholder="Añade síntomas, indicaciones o información relevante"
+              placeholder="Añade indicaciones o información relevante"
               placeholderTextColor="#9a928b"
               multiline
               numberOfLines={4}
@@ -788,101 +1056,103 @@ export default function CrearEventoScreen() {
           </View>
         ) : null}
 
-        {/* Control de Notificaciones */}
-        <View className="mb-8 rounded-3xl border border-[#e0d9c9] bg-[#ece6d9] p-5">
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1 pr-3">
-              <Text className="text-base font-bold text-[#2B2B2B]">Recordatorio</Text>
-              <Text className="text-xs text-[#8A7F75]">
-                {eventType === 'MEDICINE'
-                  ? 'Aviso para la toma según la pauta'
-                  : 'Recibe una alerta en tu dispositivo'}
-              </Text>
+        {/* Control de Notificaciones (No disponible para Síntomas) */}
+        {eventType !== 'CONDITION' && (
+          <View className="mb-8 rounded-3xl border border-[#e0d9c9] bg-[#ece6d9] p-5">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-1 pr-3">
+                <Text className="text-base font-bold text-[#2B2B2B]">Recordatorio</Text>
+                <Text className="text-xs text-[#8A7F75]">
+                  {eventType === 'MEDICINE'
+                    ? 'Aviso para la toma según la pauta'
+                    : 'Recibe una alerta en tu dispositivo'}
+                </Text>
+              </View>
+              <Switch
+                value={enableNotification}
+                onValueChange={handleToggleNotification}
+                trackColor={{ false: '#ded6c7', true: '#6d83a1' }}
+              />
             </View>
-            <Switch
-              value={enableNotification}
-              onValueChange={handleToggleNotification}
-              trackColor={{ false: '#ded6c7', true: '#6d83a1' }}
-            />
-          </View>
 
-          {enableNotification && (
-            <View className="mt-4 border-t border-[#ded6c7] pt-4">
-              <Text className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-[#8A7F75]">
-                Antelación del aviso
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {NOTIFICATION_ADVANCES.map((item) => {
-                  const selected = advanceMinutes === item.minutes;
-                  return (
-                    <TouchableOpacity
-                      key={item.minutes}
-                      onPress={() => setAdvanceMinutes(item.minutes)}
-                      className={`rounded-full px-3 py-1.5 border ${
-                        selected
-                          ? 'border-[#6d83a1] bg-[#6d83a1]'
-                          : 'border-[#ddd5c6] bg-[#f7f3ec]'
-                      }`}
-                    >
-                      <Text
-                        className={`text-xs font-medium ${
-                          selected ? 'text-white' : 'text-[#5B5149]'
+            {enableNotification && (
+              <View className="mt-4 border-t border-[#ded6c7] pt-4">
+                <Text className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-[#8A7F75]">
+                  Antelación del aviso
+                </Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {NOTIFICATION_ADVANCES.map((item) => {
+                    const selected = advanceMinutes === item.minutes;
+                    return (
+                      <TouchableOpacity
+                        key={item.minutes}
+                        onPress={() => setAdvanceMinutes(item.minutes)}
+                        className={`rounded-full px-3 py-1.5 border ${
+                          selected
+                            ? 'border-[#6d83a1] bg-[#6d83a1]'
+                            : 'border-[#ddd5c6] bg-[#f7f3ec]'
                         }`}
                       >
-                        {item.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                        <Text
+                          className={`text-xs font-medium ${
+                            selected ? 'text-white' : 'text-[#5B5149]'
+                          }`}
+                        >
+                          {item.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
 
-              {eventType === 'MEDICINE' && (
-                <Text className="mt-3 text-xs italic text-[#7A726A]">
-                  ℹ️ Se programará la alerta para la próxima toma. Una vez enviada, el sistema programará la siguiente automáticamente sin saturar tu calendario.
-                </Text>
-              )}
+                {eventType === 'MEDICINE' && (
+                  <Text className="mt-3 text-xs italic text-[#7A726A]">
+                    ℹ️ Se programará la alerta para la próxima toma. Una vez enviada, el sistema programará la siguiente automáticamente sin saturar tu calendario.
+                  </Text>
+                )}
 
-              <TouchableOpacity
-                onPress={async () => {
-                  try {
-                    await Notifications.requestPermissionsAsync();
-                    if (Platform.OS === 'android') {
-                      await Notifications.setNotificationChannelAsync('default', {
-                        name: 'default',
-                        importance: Notifications.AndroidImportance.MAX,
-                        vibrationPattern: [0, 250, 250, 250],
-                        lightColor: '#6d83a1',
-                        sound: 'default',
-                      }).catch(() => {});
+                <TouchableOpacity
+                  onPress={async () => {
+                    try {
+                      await Notifications.requestPermissionsAsync();
+                      if (Platform.OS === 'android') {
+                        await Notifications.setNotificationChannelAsync('default', {
+                          name: 'default',
+                          importance: Notifications.AndroidImportance.MAX,
+                          vibrationPattern: [0, 250, 250, 250],
+                          lightColor: '#6d83a1',
+                          sound: 'default',
+                        }).catch(() => {});
+                      }
+                      await Notifications.scheduleNotificationAsync({
+                        content: {
+                          title: '🔔 Alerta de prueba',
+                          body: '¡Las alertas funcionan perfectamente en tu dispositivo!',
+                          sound: 'default',
+                          priority: Notifications.AndroidNotificationPriority.HIGH,
+                        },
+                        trigger: {
+                          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+                          seconds: 2,
+                          channelId: 'default',
+                        },
+                      });
+                      Alert.alert('Prueba en curso', 'En 2 segundos sonará la alerta en tu dispositivo.');
+                    } catch (e: any) {
+                      Alert.alert('Error', e?.message || 'Error desconocido');
                     }
-                    await Notifications.scheduleNotificationAsync({
-                      content: {
-                        title: '🔔 Alerta de prueba',
-                        body: '¡Las alertas funcionan perfectamente en tu dispositivo!',
-                        sound: 'default',
-                        priority: Notifications.AndroidNotificationPriority.HIGH,
-                      },
-                      trigger: {
-                        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-                        seconds: 2,
-                        channelId: 'default',
-                      },
-                    });
-                    Alert.alert('Prueba en curso', 'En 2 segundos sonará la alerta en tu dispositivo.');
-                  } catch (e: any) {
-                    Alert.alert('Error', e?.message || 'Error desconocido');
-                  }
-                }}
-                className="mt-3.5 flex-row items-center justify-center rounded-xl border border-[#6d83a1] bg-[#eef3f8] py-2.5 px-4"
-              >
-                <Ionicons name="notifications-outline" size={16} color="#6d83a1" />
-                <Text className="ml-2 text-xs font-semibold text-[#6d83a1]">
-                  Probar alerta ahora (sonará en 2s)
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
+                  }}
+                  className="mt-3.5 flex-row items-center justify-center rounded-xl border border-[#6d83a1] bg-[#eef3f8] py-2.5 px-4"
+                >
+                  <Ionicons name="notifications-outline" size={16} color="#6d83a1" />
+                  <Text className="ml-2 text-xs font-semibold text-[#6d83a1]">
+                    Probar alerta ahora (sonará en 2s)
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
