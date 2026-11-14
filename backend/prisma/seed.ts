@@ -8,6 +8,7 @@ import {
   NotificationStatus,
   NotificationType,
   EventType,
+  DifficultyRecip,
 } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -29,6 +30,9 @@ async function main() {
   await prisma.child.deleteMany();
   await prisma.disease.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.recipe.deleteMany();
+  await prisma.book.deleteMany();
+  await prisma.article.deleteMany();
 
   console.log('Sembrando base de datos extendida...');
 
@@ -548,6 +552,64 @@ async function main() {
   await prisma.thread.update({
     where: { id: hiloPolemico.id },
     data: { isHidden: true },
+  });
+
+  // ------------------------------------------------------
+  // 8. RECOMENDACIONES FINALES
+  // ------------------------------------------------------
+  await prisma.recipe.createMany({
+    data: [
+      {
+        name: 'Puré suave de calabaza, zanahoria y pollo',
+        time: '25 min',
+        difficulty: DifficultyRecip.FACIL,
+        servings: 'Para 2 raciones',
+        imageUrl: 'https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?auto=format&fit=crop&w=400&q=80',
+        ingredients: [
+          '150g de calabaza pelada',
+          '1 zanahoria mediana',
+          '1/2 patata pequeña',
+          '50g de pollo',
+          '1 cucharadita de aceite de oliva'
+        ],
+        steps: [
+          'Pela y corta en dados las verduras.',
+          'Cocina en agua durante 15 minutos.',
+          'Añade el pollo y cocina 5 minutos más.',
+          'Tritura y añade aceite en crudo.'
+        ]
+      },
+      {
+        name: 'Tortitas de avena y plátano (BLW)',
+        time: '15 min',
+        difficulty: DifficultyRecip.FACIL,
+        servings: 'Para 2 raciones (4 tortitas)',
+        imageUrl: 'https://images.unsplash.com/photo-1528207776546-365bb710ee93?auto=format&fit=crop&w=400&q=80',
+        ingredients: ['1 plátano maduro', '1 huevo', '4 cdas de copos de avena'],
+        steps: ['Chafa el plátano.', 'Mezcla con huevo y avena.', 'Cocina en sartén 2 min por lado.']
+      },
+      // ... ¡Aquí puedes añadir tantas recetas como quieras!
+    ]
+  });
+
+  await prisma.book.create({
+    data: {
+      title: 'El cerebro del niño explicado a los padres',
+      authors: ['Álvaro Bilbao'],
+      synopsis: 'Durante los seis primeros años de vida...',
+      imageUrl: 'https://imagessl1.casadellibro.com/a/l/t5/61/9788416429561.jpg',
+      isFeatured: true
+    }
+  });
+
+  await prisma.article.create({
+    data: {
+      title: 'Rutinas de sueño respetuosas en los primeros meses',
+      description: 'Aprende a reconocer las ventanas de vigilia...',
+      url: 'https://enfamilia.aeped.es',
+      source: 'EnFamilia (AEP)',
+      isWeekly: true
+    }
   });
 
   console.log('✅ Base de datos sembrada con éxito. ¡Lista para pruebas!');

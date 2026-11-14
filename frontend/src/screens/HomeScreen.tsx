@@ -17,6 +17,7 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
+//Ejemplo de datos para el libro del mes y el artículo semanal, que se muestran en la sección de Recomendaciones
 const MOCK_LIBRO_DEL_MES = {
   titulo: 'El cerebro del niño explicado a los padres',
   autores: 'Álvaro Bilbao',
@@ -32,6 +33,53 @@ const MOCK_ARTICULO_SEMANAL = {
   enlace: 'https://enfamilia.aeped.es',
   fuente: 'EnFamilia (AEP)',
 };
+
+const MOCK_RECETAS = [
+  {
+    id: 1,
+    nombre: 'Puré suave de calabaza, zanahoria y pollo',
+    tiempo: '25 min',
+    dificultad: 'Fácil',
+    raciones: 'Para 2 raciones',
+    imagenUrl:
+      'https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?auto=format&fit=crop&w=400&q=80',
+    ingredientes: [
+      '150g de calabaza pelada y troceada',
+      '1 zanahoria mediana limpia',
+      '1/2 patata pequeña',
+      '50g de pechuga de pollo',
+      '1 cucharadita de aceite de oliva virgen extra',
+    ],
+    pasos: [
+      'Pela y corta en dados pequeños la calabaza, la zanahoria y la patata.',
+      'Pon las verduras en una olla con agua justa para cubrirlas y cocina a fuego medio durante 15 minutos.',
+      'Añade el pollo limpio y deja cocinar 5 minutos más hasta que esté tierno.',
+      'Tritura todo con la batidora hasta lograr una textura homogénea y cremosa. Añade el aceite de oliva en crudo antes de servir.',
+    ],
+  },
+  {
+    id: 2,
+    nombre: 'Tortitas de avena y plátano',
+    tiempo: '15 min',
+    dificultad: 'Fácil',
+    raciones: 'Para 2 raciones (4 tortitas)',
+    imagenUrl:
+      'https://images.unsplash.com/photo-1528207776546-365bb710ee93?auto=format&fit=crop&w=400&q=80',
+    ingredientes: [
+      '1 plátano maduro',
+      '1 huevo (o 3 cucharadas de leche)',
+      '4 cucharadas de copos de avena triturados',
+      '1 pizca de canela de Ceylán (opcional)',
+      'Unas gotas de aceite de oliva para engrasar la sartén',
+    ],
+    pasos: [
+      'Chafa el plátano con un tenedor en un bol hasta formar un puré suave.',
+      'Añade el huevo y bate bien. Incorpora la avena y la canela mezclando hasta obtener una masa uniforme.',
+      'Pincela una sartén antiadherente con unas gotas de aceite de oliva y calienta a fuego medio-bajo.',
+      'Vierte pequeñas porciones de masa, cocina 2 minutos por cada lado hasta que doren y retira con cuidado.',
+    ],
+  },
+];
 
 export default function HomeScreen() {
   const { setSelectedUserId, setSelectedUserRole, isAdmin } = useFamilySelection();
@@ -51,6 +99,7 @@ export default function HomeScreen() {
   const [checklistTab, setChecklistTab] = useState<'pending' | 'completed'>('pending');
   const [recomendacionesTab, setRecomendacionesTab] = useState<'articulos' | 'comidas'>('articulos');
   const [showLibroSinopsis, setShowLibroSinopsis] = useState(false);
+  const [expandedRecipeId, setExpandedRecipeId] = useState<number | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState('');
@@ -665,10 +714,110 @@ export default function HomeScreen() {
                     </View>
                   </View>
                 ) : (
-                  <View className="mx-4 mb-4">
-                    <Text className="text-sm text-nanny-text">
-                      Aquí puedes ver las recomendaciones de recetas y comidas para el niño, basadas en su edad y desarrollo.
-                    </Text>
+                  //Sección de recetas recomendadas
+                  <View className="mx-4 mb-4 gap-4">
+                    <View className="mb-1 flex-row items-center gap-1.5">
+                      <Ionicons name="restaurant" size={17} color="#b87427" />
+                      <Text className="text-sm font-bold text-nanny-text">Recetas de la semana</Text>
+                    </View>
+
+                    {MOCK_RECETAS.map((receta) => {
+                      const isExpanded = expandedRecipeId === receta.id;
+                      return (
+                        <TouchableOpacity
+                          key={receta.id}
+                          activeOpacity={0.85}
+                          onPress={() => setExpandedRecipeId(isExpanded ? null : receta.id)}
+                          className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4"
+                        >
+                          {/* Cabecera de la receta */}
+                          <View className="flex-row gap-3.5">
+                            <Image
+                              source={{ uri: receta.imagenUrl }}
+                              className="h-24 w-24 rounded-xl bg-[#e5dfd4]"
+                              resizeMode="cover"
+                            />
+                            <View className="flex-1 justify-between py-0.5">
+                              <View>
+                                <Text className="text-base font-bold text-nanny-text leading-snug">
+                                  {receta.nombre}
+                                </Text>
+                                <View className="mt-2 flex-row flex-wrap items-center gap-3">
+                                  <View className="flex-row items-center">
+                                    <Ionicons name="time-outline" size={14} color="#808080" />
+                                    <Text className="ml-1 text-xs text-nanny-muted">{receta.tiempo}</Text>
+                                  </View>
+                                  <View className="flex-row items-center">
+                                    <Ionicons name="speedometer-outline" size={14} color="#808080" />
+                                    <Text className="ml-1 text-xs text-nanny-muted">{receta.dificultad}</Text>
+                                  </View>
+                                </View>
+                              </View>
+
+                              {/* Botón ver receta a la derecha, tamaño fijo y sin fondo */}
+                              <View className="mt-2 w-32 flex-row items-center justify-end self-end">
+                                <Text className="mr-1 text-xs font-semibold text-[#b87427]">
+                                  {isExpanded ? 'Ocultar receta' : 'Ver receta'}
+                                </Text>
+                                <Ionicons
+                                  name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                                  size={14}
+                                  color="#b87427"
+                                />
+                              </View>
+                            </View>
+                          </View>
+
+                          {/* Instrucciones desplegables: Ingredientes y Pasos */}
+                          {isExpanded && (
+                            <View className="mt-3.5 border-t border-[#ded6ca]/70 pt-3">
+                              {/* Raciones */}
+                              <View className="mb-3 flex-row items-center gap-1.5 self-start rounded-lg bg-[#ded6ca]/50 px-2.5 py-1">
+                                <Ionicons name="people-outline" size={14} color="#6d83a1" />
+                                <Text className="text-xs font-semibold text-nanny-text">
+                                  {receta.raciones}
+                                </Text>
+                              </View>
+
+                              {/* Ingredientes */}
+                              <Text className="mb-1.5 text-xs font-bold uppercase tracking-wider text-nanny-muted">
+                                Ingredientes
+                              </Text>
+                              <View className="mb-3.5 gap-1.5">
+                                {receta.ingredientes.map((ingrediente, idx) => (
+                                  <View key={idx} className="flex-row items-start">
+                                    <Text className="mr-2 text-xs font-bold text-[#b87427]">•</Text>
+                                    <Text className="flex-1 text-xs text-nanny-text leading-relaxed">
+                                      {ingrediente}
+                                    </Text>
+                                  </View>
+                                ))}
+                              </View>
+
+                              {/* Pasos de preparación */}
+                              <Text className="mb-1.5 text-xs font-bold uppercase tracking-wider text-nanny-muted">
+                                Preparación paso a paso
+                              </Text>
+                              <View className="gap-2.5">
+                                {receta.pasos.map((paso, idx) => (
+                                  <View key={idx} className="flex-row items-start gap-2">
+                                    <View className="h-5 w-5 items-center justify-center rounded-full bg-[#ded6ca] mt-0.5">
+                                      <Text className="text-[10px] font-bold text-nanny-text">{idx + 1}</Text>
+                                    </View>
+                                    <Text
+                                      style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
+                                      className="flex-1 text-xs leading-relaxed text-nanny-text"
+                                    >
+                                      {paso}
+                                    </Text>
+                                  </View>
+                                ))}
+                              </View>
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 )
               ) : (
