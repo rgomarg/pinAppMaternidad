@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndicator, TextInput, KeyboardAvoidingView, type ScrollViewInstance } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndicator, TextInput, KeyboardAvoidingView, Image, Linking, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
 import { API_URL } from '../api/config';
@@ -17,6 +17,21 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
+const MOCK_LIBRO_DEL_MES = {
+  titulo: 'El cerebro del niño explicado a los padres',
+  autores: 'Álvaro Bilbao',
+  sinopsis:
+    'Durante los seis primeros años de vida el cerebro infantil tiene un potencial que no volverá a tener. Este libro ayuda a padres y educadores a entender el fascinante desarrollo cerebral y emocional del niño para educar con serenidad, potenciar su inteligencia y fortalecer su autoestima sin recurrir a castigos ni métodos autoritarios.',
+  imagenUrl: 'https://imagessl1.casadellibro.com/a/l/t5/61/9788416429561.jpg',
+};
+
+const MOCK_ARTICULO_SEMANAL = {
+  titular: 'Rutinas de sueño respetuosas en los primeros meses',
+  descripcion:
+    'Aprende a reconocer las ventanas de vigilia y a establecer rituales de descanso que ayuden a tu bebé a dormir tranquilo durante la noche.',
+  enlace: 'https://enfamilia.aeped.es',
+  fuente: 'EnFamilia (AEP)',
+};
 
 export default function HomeScreen() {
   const { setSelectedUserId, setSelectedUserRole, isAdmin } = useFamilySelection();
@@ -35,6 +50,7 @@ export default function HomeScreen() {
   const [checklist, setChecklist] = useState<any[]>([]);
   const [checklistTab, setChecklistTab] = useState<'pending' | 'completed'>('pending');
   const [recomendacionesTab, setRecomendacionesTab] = useState<'articulos' | 'comidas'>('articulos');
+  const [showLibroSinopsis, setShowLibroSinopsis] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState('');
@@ -556,10 +572,97 @@ export default function HomeScreen() {
               {/* Contenido condicionado al rol PRO / Admin */}
               {activeUser?.role === 'PRO' || isAdmin ? (
                 recomendacionesTab === 'articulos' ? (
-                  <View className="mx-4 mb-4">
-                    <Text className="text-sm text-nanny-text">
-                      Aquí puedes ver las recomendaciones sobre artículos y libros para el cuidado del niño, basadas en su edad y desarrollo.
-                    </Text>
+                  <View className="mx-4 mb-4 gap-4">
+                    {/* Sección Libro del Mes */}
+                    <View>
+                      <View className="mb-2 flex-row items-center gap-1.5">
+                        <Ionicons name="book" size={17} color="#b87427" />
+                        <Text className="text-sm font-bold text-nanny-text">Libro del mes</Text>
+                      </View>
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => setShowLibroSinopsis((prev) => !prev)}
+                        className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4"
+                      >
+                        {/* Cabecera: Portada del libro + Título + Autores + Botón desplegable */}
+                        <View className="flex-row gap-3.5">
+                          <Image
+                            source={{ uri: MOCK_LIBRO_DEL_MES.imagenUrl }}
+                            className="h-36 w-24 rounded-lg bg-[#e5dfd4]"
+                            resizeMode="cover"
+                          />
+                          <View className="flex-1 justify-between py-1">
+                            <View>
+                              <Text className="text-base font-bold text-nanny-text leading-snug">
+                                {MOCK_LIBRO_DEL_MES.titulo}
+                              </Text>
+                              <Text className="mt-1 text-xs font-semibold text-nanny-muted">
+                                Por {MOCK_LIBRO_DEL_MES.autores}
+                              </Text>
+                            </View>
+
+                            {/* Botón interactivo sin fondo, alineado a la derecha y con ancho fijo */}
+                            <View className="mt-3 w-36 flex-row items-center justify-end self-end">
+                              <Text className="mr-1 text-xs font-semibold text-[#b87427]">
+                                {showLibroSinopsis ? 'Ocultar sinopsis' : 'Ver sinopsis'}
+                              </Text>
+                              <Ionicons
+                                name={showLibroSinopsis ? 'chevron-up' : 'chevron-down'}
+                                size={14}
+                                color="#b87427"
+                              />
+                            </View>
+                          </View>
+                        </View>
+
+                        {/* Sinopsis completa y justificada que se despliega al clicar */}
+                        {showLibroSinopsis && (
+                          <View className="mt-3.5 border-t border-[#ded6ca]/70 pt-3">
+                            <Text className="mb-1 text-xs font-bold uppercase tracking-wider text-nanny-muted">
+                              Sinopsis
+                            </Text>
+                            <Text
+                              style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
+                              className="w-full text-xs leading-relaxed text-nanny-text"
+                            >
+                              {MOCK_LIBRO_DEL_MES.sinopsis}
+                            </Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Sección Artículos Semanales */}
+                    <View>
+                      <View className="mb-2 flex-row items-center gap-1.5">
+                        <Ionicons name="newspaper" size={17} color="#6d83a1" />
+                        <Text className="text-sm font-bold text-nanny-text">Artículos semanales</Text>
+                      </View>
+                      <View className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4">
+                        <Text className="text-base font-bold text-nanny-text leading-snug">
+                          {MOCK_ARTICULO_SEMANAL.titular}
+                        </Text>
+                        <Text
+                          style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
+                          className="mt-2 w-full text-xs leading-relaxed text-nanny-text"
+                        >
+                          {MOCK_ARTICULO_SEMANAL.descripcion}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() =>
+                            Linking.openURL(MOCK_ARTICULO_SEMANAL.enlace).catch((err) =>
+                              console.error('Error abriendo enlace:', err),
+                            )
+                          }
+                          className="mt-3 flex-row items-center self-start rounded-xl bg-[#6d83a1]/15 px-3 py-1.5 active:opacity-70"
+                        >
+                          <Text className="mr-1.5 text-xs font-semibold text-[#6d83a1]">
+                            Leer artículo ({MOCK_ARTICULO_SEMANAL.fuente})
+                          </Text>
+                          <Ionicons name="open-outline" size={13} color="#6d83a1" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
                   </View>
                 ) : (
                   <View className="mx-4 mb-4">
