@@ -598,7 +598,8 @@ async function main() {
       authors: ['Álvaro Bilbao'],
       synopsis: 'Durante los seis primeros años de vida...',
       imageUrl: 'https://imagessl1.casadellibro.com/a/l/t5/61/9788416429561.jpg',
-      isFeatured: true
+      month: 11,
+      year: 2026,
     }
   });
 
@@ -608,7 +609,7 @@ async function main() {
       description: 'Aprende a reconocer las ventanas de vigilia...',
       url: 'https://enfamilia.aeped.es',
       source: 'EnFamilia (AEP)',
-      isWeekly: true
+      publishedAt: null,
     }
   });
 
