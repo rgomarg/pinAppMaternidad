@@ -34,6 +34,7 @@ export default function HomeScreen() {
   const [usersError, setUsersError] = useState<string | null>(null);
   const [checklist, setChecklist] = useState<any[]>([]);
   const [checklistTab, setChecklistTab] = useState<'pending' | 'completed'>('pending');
+  const [recomendacionesTab, setRecomendacionesTab] = useState<'articulos' | 'comidas'>('articulos');
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState('');
@@ -440,6 +441,7 @@ export default function HomeScreen() {
               onAddMeasurement={(metric) => metric === 'weight' ? setModalPesoVisible(true) : setModalAlturaVisible(true)}
             />
 
+            {/* Checklist */}
             <View className="bg-nanny-card rounded-2xl mb-6 overflow-hidden">
               <Text className="font-semibold text-lg text-nanny-text px-4 pt-4 pb-3">ToDoList</Text>
               <View className="mx-4 mb-3 flex-row rounded-2xl bg-[#ded6ca] p-1">
@@ -456,7 +458,7 @@ export default function HomeScreen() {
                   <Ionicons name="checkmark-circle-outline" size={22} color={checklistTab === 'completed' ? '#4e8c67' : '#968e84'} />
                 </TouchableOpacity>
               </View>
-               <View className="mx-4 mb-3 flex-row items-center gap-3">
+                <View className="mx-4 mb-3 flex-row items-center gap-3">
                 <TextInput
                   value={newTaskTitle}
                   onChangeText={setNewTaskTitle}
@@ -515,7 +517,83 @@ export default function HomeScreen() {
                 </View>
               ))}
             </View>
+            {/* Recomendaciones */}
+            <View className="bg-nanny-card rounded-2xl mb-6 overflow-hidden">
+              <View className="flex-row items-center justify-between px-4 pt-4 pb-3">
+                <Text className="font-semibold text-lg text-nanny-text">Recomendaciones</Text>
+                {activeUser?.role !== 'PRO' && (
+                  <View className="flex-row items-center rounded-full bg-[#b87427]/15 px-2.5 py-1">
+                    <Ionicons name="sparkles" size={13} color="#b87427" />
+                    <Text className="ml-1 text-xs font-bold text-[#b87427]">PRO</Text>
+                  </View>
+                )}
+              </View>
 
+              {/* Selector de pestañas siempre visible, para elegir seccion de articulos/libros y comidas */}
+              <View className="mx-4 mb-3 flex-row rounded-2xl bg-[#ded6ca] p-1">
+                <TouchableOpacity
+                  onPress={() => setRecomendacionesTab('articulos')}
+                  className={`flex-1 items-center rounded-xl py-2 ${recomendacionesTab === 'articulos' ? 'bg-[#f7f3ec]' : ''}`}
+                >
+                  <Ionicons
+                    name="book-outline"
+                    size={22}
+                    color={recomendacionesTab === 'articulos' ? '#b87427' : '#968e84'}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setRecomendacionesTab('comidas')}
+                  className={`flex-1 items-center rounded-xl py-2 ${recomendacionesTab === 'comidas' ? 'bg-[#f7f3ec]' : ''}`}
+                >
+                  <Ionicons
+                    name="nutrition-outline"
+                    size={22}
+                    color={recomendacionesTab === 'comidas' ? '#b87427' : '#968e84'}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Contenido condicionado al rol PRO / Admin */}
+              {activeUser?.role === 'PRO' || isAdmin ? (
+                recomendacionesTab === 'articulos' ? (
+                  <View className="mx-4 mb-4">
+                    <Text className="text-sm text-nanny-text">
+                      Aquí puedes ver las recomendaciones sobre artículos y libros para el cuidado del niño, basadas en su edad y desarrollo.
+                    </Text>
+                  </View>
+                ) : (
+                  <View className="mx-4 mb-4">
+                    <Text className="text-sm text-nanny-text">
+                      Aquí puedes ver las recomendaciones de recetas y comidas para el niño, basadas en su edad y desarrollo.
+                    </Text>
+                  </View>
+                )
+              ) : (
+                /* Aviso para usuarios que no son PRO */
+                <View className="mx-4 mb-4 items-center justify-center rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-5">
+                  <View className="mb-2.5 h-12 w-12 items-center justify-center rounded-full bg-[#ded6ca]/70">
+                    <Ionicons name="lock-closed" size={24} color="#b87427" />
+                  </View>
+                  <Text className="text-base font-semibold text-nanny-text text-center">
+                    Función exclusiva para usuarios PRO
+                  </Text>
+                  <Text className="mt-1 text-center text-xs text-nanny-muted px-2">
+                    {recomendacionesTab === 'articulos'
+                      ? 'Accede a artículos, guías y lecturas recomendadas según la edad y desarrollo de tu hijo.'
+                      : 'Descubre recetas saludables y recomendaciones de alimentación adaptadas a su etapa.'}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      // Acción futura: abrir modal de suscripción
+                    }}
+                    className="mt-4 flex-row items-center rounded-xl bg-[#b87427] px-5 py-2.5 shadow-sm active:opacity-80"
+                  >
+                    <Ionicons name="star" size={16} color="white" />
+                    <Text className="ml-2 text-sm font-semibold text-white">Hazte PRO</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           </>
         )}
       </ScrollView>
