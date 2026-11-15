@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "Nanny - RF-01 y RF-02 (Calendario)",
-    "description": "Pruebas de aceptación del registro de eventos médicos con recordatorio (RF-01) y del calendario multiperfil (RF-02). Requiere el backend en marcha y la base de datos cargada con el seed (npx prisma db seed).",
+    "name": "Nanny - RF-01 Registro de evento médico con recordatorio",
+    "description": "Pruebas de aceptación del registro de eventos médicos con recordatorio (RF-01). Requiere el backend en marcha y la base de datos cargada con el seed (npx prisma db seed).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -10,7 +10,7 @@
       "description": "Obtiene los IDs reales de los usuarios y menores del seed. Los IDs cambian cada vez que se ejecuta el seed, por eso no se escriben a mano.",
       "item": [
         {
-          "name": "SETUP-1 Buscar tutores (Laura y Carlos)",
+          "name": "SETUP-1 Buscar a la tutora (Laura)",
           "request": {
             "method": "GET",
             "header": [],
@@ -31,15 +31,9 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
-                  "const users = pm.response.json();",
-                  "const laura = users.find(u => u.email === 'laura.pro@example.com');",
-                  "const carlos = users.find(u => u.email === 'carlos.user@example.com');",
-                  "pm.test(\"Existen los tutores del seed\", () => {",
-                  "    pm.expect(laura, 'Laura').to.exist;",
-                  "    pm.expect(carlos, 'Carlos').to.exist;",
-                  "});",
-                  "pm.collectionVariables.set('lauraId', laura.id);",
-                  "pm.collectionVariables.set('carlosId', carlos.id);"
+                  "const laura = pm.response.json().find(u => u.email === 'laura.pro@example.com');",
+                  "pm.test(\"Existe la tutora del seed\", () => pm.expect(laura, 'Laura').to.exist);",
+                  "pm.collectionVariables.set('lauraId', laura.id);"
                 ]
               }
             }
@@ -71,43 +65,12 @@
                   "const kids = pm.response.json().children;",
                   "const leo = kids.find(c => c.name === 'Leo');",
                   "const ines = kids.find(c => c.name === 'Inés');",
-                  "pm.test(\"Laura tiene a Leo e Inés (multiperfil)\", () => {",
+                  "pm.test(\"Laura tiene a Leo e Inés\", () => {",
                   "    pm.expect(leo).to.exist;",
                   "    pm.expect(ines).to.exist;",
                   "});",
                   "pm.collectionVariables.set('leoId', leo.id);",
                   "pm.collectionVariables.set('inesId', ines.id);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "SETUP-3 Menores de Carlos (Sofía)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/user/{{carlosId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "user",
-                "{{carlosId}}"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
-                  "const sofia = pm.response.json().children.find(c => c.name === 'Sofía');",
-                  "pm.test(\"Carlos tiene a Sofía\", () => pm.expect(sofia).to.exist);",
-                  "pm.collectionVariables.set('sofiaId', sofia.id);"
                 ]
               }
             }
@@ -208,48 +171,6 @@
                   "pm.test(\"Por defecto: tipo GENERAL\", () => pm.expect(ev.type).to.eql('GENERAL'));",
                   "pm.test(\"Sin descripción se guarda como null\", () => pm.expect(ev.description).to.eql(null));",
                   "pm.collectionVariables.set('eventInesId', ev.id);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "PA-01c Crear evento de otro tutor el mismo día (Sofía)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/event",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "event"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Revisión Sofía\",\n  \"date\": \"{{testDate}}T11:00:00.000Z\",\n  \"notification\": true,\n  \"childId\": {{sofiaId}}\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Devuelve 201 Created\", () => pm.response.to.have.status(201));",
-                  "pm.collectionVariables.set('eventSofiaId', pm.response.json().id);"
                 ]
               }
             }
@@ -746,358 +667,6 @@
       ]
     },
     {
-      "name": "RF-02 Calendario multiperfil por tutor",
-      "item": [
-        {
-          "name": "PA-09 Calendario diario de Laura",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/event/guardian/{{lauraId}}?date={{testDate}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "event",
-                "guardian",
-                "{{lauraId}}"
-              ],
-              "query": [
-                {
-                  "key": "date",
-                  "value": "{{testDate}}"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
-                  "const evs = pm.response.json();",
-                  "const v = k => Number(pm.collectionVariables.get(k));",
-                  "const propios = [v('leoId'), v('inesId')];",
-                  "const ajenos = [v('sofiaId')];",
-                  "pm.test(\"Todos los eventos pertenecen a menores de Laura\", () => {",
-                  "    evs.forEach(e => pm.expect(propios).to.include(e.child.id));",
-                  "});",
-                  "pm.test(\"No aparece ningún menor de otro tutor\", () => {",
-                  "    evs.forEach(e => pm.expect(ajenos).to.not.include(e.child.id));",
-                  "});",
-                  "pm.test(\"Eventos ordenados por fecha ascendente\", () => {",
-                  "    const fechas = evs.map(e => e.date);",
-                  "    pm.expect(fechas).to.eql([...fechas].sort());",
-                  "});",
-                  "const ids = evs.map(e => e.id);",
-                  "pm.test(\"Incluye los eventos de Leo e Inés\", () => {",
-                  "    pm.expect(ids).to.include(v('eventLeoId'));",
-                  "    pm.expect(ids).to.include(v('eventInesId'));",
-                  "});",
-                  "pm.test(\"No incluye el evento de Sofía\", () => pm.expect(ids).to.not.include(v('eventSofiaId')));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "PA-10 Calendario diario de Carlos",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/event/guardian/{{carlosId}}?date={{testDate}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "event",
-                "guardian",
-                "{{carlosId}}"
-              ],
-              "query": [
-                {
-                  "key": "date",
-                  "value": "{{testDate}}"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
-                  "const evs = pm.response.json();",
-                  "const v = k => Number(pm.collectionVariables.get(k));",
-                  "const propios = [v('sofiaId')];",
-                  "const ajenos = [v('leoId'), v('inesId')];",
-                  "pm.test(\"Todos los eventos pertenecen a menores de Carlos\", () => {",
-                  "    evs.forEach(e => pm.expect(propios).to.include(e.child.id));",
-                  "});",
-                  "pm.test(\"No aparece ningún menor de otro tutor\", () => {",
-                  "    evs.forEach(e => pm.expect(ajenos).to.not.include(e.child.id));",
-                  "});",
-                  "pm.test(\"Eventos ordenados por fecha ascendente\", () => {",
-                  "    const fechas = evs.map(e => e.date);",
-                  "    pm.expect(fechas).to.eql([...fechas].sort());",
-                  "});",
-                  "pm.test(\"Incluye el evento de Sofía\", () => pm.expect(evs.map(e => e.id)).to.include(v('eventSofiaId')));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "PA-10b Calendario mensual de Laura (rango)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/event/guardian/{{lauraId}}?from=2026-01-01&to=2028-01-01",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "event",
-                "guardian",
-                "{{lauraId}}"
-              ],
-              "query": [
-                {
-                  "key": "from",
-                  "value": "2026-01-01"
-                },
-                {
-                  "key": "to",
-                  "value": "2028-01-01"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
-                  "const evs = pm.response.json();",
-                  "const v = k => Number(pm.collectionVariables.get(k));",
-                  "const propios = [v('leoId'), v('inesId')];",
-                  "const ajenos = [v('sofiaId')];",
-                  "pm.test(\"Todos los eventos pertenecen a menores de Laura\", () => {",
-                  "    evs.forEach(e => pm.expect(propios).to.include(e.child.id));",
-                  "});",
-                  "pm.test(\"No aparece ningún menor de otro tutor\", () => {",
-                  "    evs.forEach(e => pm.expect(ajenos).to.not.include(e.child.id));",
-                  "});",
-                  "pm.test(\"Eventos ordenados por fecha ascendente\", () => {",
-                  "    const fechas = evs.map(e => e.date);",
-                  "    pm.expect(fechas).to.eql([...fechas].sort());",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "PA-11 Error: fecha con formato incorrecto",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/event/guardian/{{lauraId}}?date=15-03-2027",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "event",
-                "guardian",
-                "{{lauraId}}"
-              ],
-              "query": [
-                {
-                  "key": "date",
-                  "value": "15-03-2027"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Devuelve 400 Bad Request\", () => pm.response.to.have.status(400));",
-                  "pm.test(\"El mensaje de error menciona 'YYYY-MM-DD'\", () => {",
-                  "    const msg = [].concat(pm.response.json().message).join(' | ');",
-                  "    pm.expect(msg).to.include('YYYY-MM-DD');",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "PA-11b Error: fecha que no existe (30 de febrero)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/event/guardian/{{lauraId}}?date=2027-02-30",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "event",
-                "guardian",
-                "{{lauraId}}"
-              ],
-              "query": [
-                {
-                  "key": "date",
-                  "value": "2027-02-30"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Devuelve 400 Bad Request\", () => pm.response.to.have.status(400));",
-                  "pm.test(\"El mensaje de error menciona 'YYYY-MM-DD'\", () => {",
-                  "    const msg = [].concat(pm.response.json().message).join(' | ');",
-                  "    pm.expect(msg).to.include('YYYY-MM-DD');",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "PA-12 Error: rango invertido",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/event/guardian/{{lauraId}}?from=2027-12-01&to=2027-11-01",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "event",
-                "guardian",
-                "{{lauraId}}"
-              ],
-              "query": [
-                {
-                  "key": "from",
-                  "value": "2027-12-01"
-                },
-                {
-                  "key": "to",
-                  "value": "2027-11-01"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Devuelve 400 Bad Request\", () => pm.response.to.have.status(400));",
-                  "pm.test(\"El mensaje de error menciona 'rango'\", () => {",
-                  "    const msg = [].concat(pm.response.json().message).join(' | ');",
-                  "    pm.expect(msg).to.include('rango');",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "PA-12b Error: sin fecha ni rango",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/event/guardian/{{lauraId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "event",
-                "guardian",
-                "{{lauraId}}"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Devuelve 400 Bad Request\", () => pm.response.to.have.status(400));",
-                  "pm.test(\"El mensaje de error menciona 'YYYY-MM-DD'\", () => {",
-                  "    const msg = [].concat(pm.response.json().message).join(' | ');",
-                  "    pm.expect(msg).to.include('YYYY-MM-DD');",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "PA-12c Error: identificador de tutor no numérico",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/event/guardian/abc?date={{testDate}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "event",
-                "guardian",
-                "abc"
-              ],
-              "query": [
-                {
-                  "key": "date",
-                  "value": "{{testDate}}"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Devuelve 400\", () => pm.response.to.have.status(400));"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
       "name": "9. Limpieza",
       "description": "Borra los eventos creados para que la colección se pueda repetir sin acumular datos.",
       "item": [
@@ -1216,45 +785,7 @@
           ]
         },
         {
-          "name": "CLEAN-3 Borrar evento de Sofía",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/event/{{eventSofiaId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "event",
-                "{{eventSofiaId}}"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (!pm.collectionVariables.get('eventSofiaId')) { pm.execution.skipRequest(); }"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Devuelve 200\", () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.unset('eventSofiaId');"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "CLEAN-4 Borrar evento pasado (si se creó por el fallo PA-05)",
+          "name": "CLEAN-3 Borrar evento pasado (si se creó por el fallo PA-05)",
           "request": {
             "method": "DELETE",
             "header": [],

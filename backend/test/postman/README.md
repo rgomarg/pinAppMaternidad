@@ -1,59 +1,98 @@
-# Pruebas de API: RF-01 y RF-02 (Postman + Newman + c8)
+# Validación de RF-01 (Postman + Newman + c8)
 
-Colección: `nanny-rf01-rf02.postman_collection.json` (31 peticiones, 67 comprobaciones).
+**RF-01:** registrar un evento médico con recordatorio para un menor.
 
-- **RF-01**: registro de un evento médico con recordatorio.
-- **RF-02**: calendario multiperfil por tutor (sin mezclar datos entre tutores).
+Colección: `nanny-rf01.postman_collection.json` (20 peticiones, 39 comprobaciones).
 
-Los IDs de usuarios y menores se obtienen automáticamente en la carpeta
-"0. Preparación", porque cambian cada vez que se ejecuta el seed. La carpeta
-"9. Limpieza" borra los eventos creados para poder repetir la ejecución.
+| Carpeta | Contenido |
+|---|---|
+| 0. Preparación | Busca a la tutora del seed (Laura) y a sus hijos (Leo e Inés) y guarda sus IDs en variables, porque cambian cada vez que se ejecuta el seed |
+| RF-01 | Los 14 casos de prueba (PA-01 … PA-13b) |
+| 9. Limpieza | Borra los eventos creados para poder repetir la ejecución |
 
-## Requisitos
+La validación prueba solo el backend a través de su API. Se supone que la base
+de datos y el servicio de notificaciones push (Expo) funcionan correctamente.
 
-- Docker Desktop en marcha con la base de datos (`docker compose up -d` en la raíz del repo).
-- Node.js 20 o superior.
-- Newman y c8 se ejecutan con `npx`, sin instalarlos en el proyecto.
+## Requisitos (una sola vez por ordenador)
 
-## 1. Preparar los datos (borra la base de datos local)
+- Git, Node.js 24 y Docker Desktop.
+- Fichero `backend/.env` (no está en Git) con esta línea:
 
-```bash
+  ```
+  DATABASE_URL="postgresql://root:rootpassword@localhost:5432/maternidad_db?schema=public"
+  ```
+
+- Dependencias del backend:
+
+  ```
+  cd backend
+  npm install
+  npx prisma generate
+  ```
+
+Newman y c8 se descargan solos con `npx`; no hace falta instalarlos.
+
+## Ejecución
+
+Con Docker Desktop abierto, desde la raíz del repositorio:
+
+```
+docker compose up -d
 cd backend
+npx prisma migrate deploy
 npx prisma db seed
-npm run build
+npm run validacion:rf01
 ```
 
-## 2. Ejecución manual (Postman)
+> `npx prisma db seed` **borra la base de datos local** y carga los datos de prueba.
 
-Postman → Import → `nanny-rf01-rf02.postman_collection.json` → botón **Run** sobre la colección.
+`npm run validacion:rf01` compila el backend, lo arranca bajo c8, ejecuta la
+colección con Newman, espera 65 s a que el cron de notificaciones se ejecute y
+para el backend. Tarda unos 2 minutos. Al terminar, c8 muestra la tabla de
+cobertura en la terminal.
 
-## 3. Ejecución automática con medida de cobertura
+Si Newman encuentra pruebas fallidas, npm termina con un mensaje de error. Es lo
+esperado mientras los bugs de RF-01 no estén corregidos.
 
-Terminal 1, arranca el backend instrumentado con c8:
+Para repetir la validación, vuelve a ejecutar `npx prisma db seed` y
+`npm run validacion:rf01`.
 
-```bash
-npx c8@10 --reports-dir coverage/api --reporter=text --reporter=html \
-  --include "**/src/event/**" --include "**/src/notifications/**" --include "**/src/common/**" \
-  node test/postman/coverage-server.js
-```
-
-Terminal 2, ejecuta la colección con Newman y genera informes HTML y JUnit:
-
-```bash
-npx -p newman@6 -p newman-reporter-htmlextra@1 newman run test/postman/nanny-rf01-rf02.postman_collection.json \
-  -r cli,htmlextra,junit \
-  --reporter-htmlextra-export coverage/newman/informe-newman.html \
-  --reporter-junit-export coverage/newman/resultados.xml
-```
-
-Espera al menos un minuto (para que el cron de notificaciones se ejecute) y pulsa
-**Ctrl+C** en la terminal 1. c8 imprime la tabla de cobertura y genera
-`coverage/api/index.html`.
-
-Resultados en `coverage/` (carpeta ignorada por Git):
+## Resultados (carpeta `backend/coverage/`, ignorada por Git)
 
 | Fichero | Contenido |
 |---|---|
-| `coverage/newman/informe-newman.html` | Resultado de cada petición y comprobación |
-| `coverage/newman/resultados.xml` | Resultados en formato JUnit |
-| `coverage/api/index.html` | Cobertura de código línea a línea |
+| `coverage/newman/informe-newman.html` | Resultado de cada prueba: petición, respuesta y comprobaciones |
+| `coverage/api/index.html` | Cobertura de código línea a línea (verde ejecutado, rojo no) |
+
+## Ejecución por partes (opcional)
+
+Para ver cada paso por separado, en lugar de `npm run validacion:rf01`:
+
+```
+npm run build
+```
+
+Terminal 1, backend con c8:
+
+```
+npx c8@10 --reports-dir coverage/api --reporter=text --reporter=html --include "**/src/event/**" --include "**/src/notifications/**" node test/postman/coverage-server.js
+```
+
+Terminal 2, solo las pruebas (Newman):
+
+```
+npm run test:rf01
+```
+
+Espera un minuto y pulsa **Ctrl+C** en la terminal 1 para que c8 genere la cobertura.
+
+También se puede importar `nanny-rf01.postman_collection.json` en Postman
+(Import → Run) para lanzar las pruebas a mano con el backend arrancado.
+
+## Ficheros
+
+| Fichero | Para qué sirve |
+|---|---|
+| `nanny-rf01.postman_collection.json` | Los casos de prueba y sus comprobaciones |
+| `run-rf01.js` | Lanza backend + c8 + Newman y lo para todo al final |
+| `coverage-server.js` | Arranca el backend compilado y lo cierra de forma ordenada para que c8 guarde los datos |

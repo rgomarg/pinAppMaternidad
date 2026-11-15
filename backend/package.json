@@ -17,7 +17,9 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:rf01": "npx -p newman@6 -p newman-reporter-htmlextra@1 newman run test/postman/nanny-rf01.postman_collection.json -r cli,htmlextra --reporter-htmlextra-export coverage/newman/informe-newman.html",
+    "validacion:rf01": "npm run build && node test/postman/run-rf01.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
