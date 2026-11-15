@@ -22,6 +22,7 @@ import { useFamilySelection } from '../context/FamilySelectionContext';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { allergyRecords, type Allergy, type AllergySeverity } from '../utils/allergies';
+import HealthHistory, { HealthHistoryLocked } from '../components/HealthHistory';
 
 type Child = {
   id: number;
@@ -428,9 +429,15 @@ function ChildProfileScreen() {
   const route = useRoute<any>();
   const [data, setData] = useState<Dashboard | null>(null);
   const [loading, setLoading] = useState(true);
+  // El historial médico completo lo ven PRO y ADMIN (igual que ProGuard en el backend);
+  // el resto ve una vista previa bloqueada. Se recarga cada vez que se recarga el perfil.
+  const { selectedUserRole } = useFamilySelection();
+  const canSeeHistory = selectedUserRole === 'PRO' || selectedUserRole === 'ADMIN';
+  const [historyKey, setHistoryKey] = useState(0);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
+    setHistoryKey((key) => key + 1);
     try {
       setData(await fetchChildDashboard(route.params.childId));
     } catch {
@@ -628,6 +635,14 @@ function ChildProfileScreen() {
               />
             ))}
           </Section>
+
+          {canSeeHistory ? (
+            <HealthHistory key={historyKey} childId={data.id} />
+          ) : (
+            <HealthHistoryLocked
+              onUpgrade={() => Alert.alert('Plan PRO', 'La mejora de plan estará disponible próximamente.')}
+            />
+          )}
         </View>
       </ScrollView>
     </Shell>
