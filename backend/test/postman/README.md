@@ -2,6 +2,20 @@
 
 **RF-01:** registrar un evento médico con recordatorio para un menor.
 
+## Lanzar toda la validación con un solo comando
+
+Con Docker Desktop abierto y la base de datos encendida (ver "Ejecución" más abajo),
+desde la carpeta `backend`:
+
+```
+npm run validacion:rf01
+```
+
+Este comando lo hace todo: compila el backend, lo arranca con c8, ejecuta las
+pruebas con Newman, mide la cobertura y para el backend. Al terminar, verás en la
+terminal el resultado de cada prueba y la tabla de cobertura, y los informes HTML
+quedan en `backend/coverage/`.
+
 Colección: `nanny-rf01.postman_collection.json` (20 peticiones, 39 comprobaciones).
 
 | Carpeta | Contenido |
