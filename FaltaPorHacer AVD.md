@@ -29,9 +29,5 @@
   - [ ] Indicar el límite de la validación: solo se prueba el backend; la app móvil no se prueba de forma automática.
   - [ ] Comprobar que nadie menciona Keploy como herramienta usada (el profesor dijo que con Newman + c8 basta).
 
-- [ ] **6. Repositorio**
-  - [ ] Subir la rama: `git push -u origin testing/avd`.
-  - [ ] Comprobar que un compañero puede replicar la validación siguiendo `backend/test/postman/README.md`.
-
-- [ ] **7. Requisitos no funcionales**
+- [ ] **6. Requisitos no funcionales**
   - [ ] TODO
