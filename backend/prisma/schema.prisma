@@ -382,7 +382,7 @@ model Recipe {
   imageUrl     String?
   ingredients  String[] 
   steps        String[] 
-  ageFor       Int?  // Ej: 1 (años)
+  ageFor       Int  // Ej: 1 (años)
 }
 
 model Book {
