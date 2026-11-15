@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Condition, Disease, Event, EventType, Medicine, Vaccine } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
 import { ChildService } from './child.service';
@@ -26,7 +26,7 @@ export class ChildHistorialService {
         
         const child = await this.childService.findOne(childId);
         if (!child) {
-            throw new Error(`Child with ID ${childId} not found`);
+            throw new NotFoundException(`Child with ID ${childId} not found`);
         }
         
         // 1. wants(kind): true si kinds viene vacío o incluye ese tipo.
@@ -45,7 +45,8 @@ export class ChildHistorialService {
             if (isNaN(cursorDate.getTime())) {
                 throw new BadRequestException (`Invalid cursor`);
             } 
-            if (! cursorId) {
+            // El id tiene la forma `<prefijo>-<número>` (p. ej. `medicine-5`).
+            if (! cursorId || !/^[a-z]+-\d+$/.test(cursorId)) {
                 throw new BadRequestException (`Invalid cursor`);
             }
             if (to) {
@@ -57,9 +58,44 @@ export class ChildHistorialService {
 
 
         }
-        // 3. Construye UN objeto de filtro de fecha {gte: from, lte: upper}
+        // El historial no muestra nada futuro: el límite superior nunca pasa del final de hoy
+        // (hora del servidor). Así `to` siempre tiene valor y todas las consultas lo respetan.
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+        if (!to || to > endOfToday) {
+            to = endOfToday;
+        }
+        // 3. Construye UN objeto de filtro de fecha {gte: from, lte: to}
         //    con solo las claves que existan. Reutilízalo en las consultas puntuales.
         const dateFilter = { gte: from, lte: to };
+
+        // Orden total del historial: fecha desc → prefijo desc → número desc.
+        // Dentro de una tabla coincide con el orderBy de Prisma (fecha desc, id desc).
+        const parseId = (id: string) => {
+            const sep = id.lastIndexOf('-');
+            return { prefix: id.slice(0, sep), num: Number(id.slice(sep + 1)) };
+        };
+        const compare = (a: { date: string; id: string }, b: { date: string; id: string }) => {
+            if (a.date !== b.date) return a.date > b.date ? -1 : 1;   // ISO en UTC: se compara como texto
+            const pa = parseId(a.id);
+            const pb = parseId(b.id);
+            if (pa.prefix !== pb.prefix) return pa.prefix > pb.prefix ? -1 : 1;
+            return pb.num - pa.num;
+        };
+
+        // Condición de Prisma "va detrás del cursor" para una tabla, usando el mismo orden que `compare`:
+        // fecha anterior, o misma fecha y (prefijo menor, o mismo prefijo e id menor).
+        // Se aplica en la BD para que `take: limit + 1` no se gaste en registros ya vistos.
+        const cursorPos = cursorDate && cursorId ? parseId(cursorId) : undefined;
+        const afterCursor = (field: string, prefix: string): Record<string, unknown> => {
+            if (!cursorDate || !cursorPos) return {};
+            const earlier = { [field]: { lt: cursorDate } };
+            if (prefix > cursorPos.prefix) return earlier;                  // en la misma fecha va antes: ya se vio
+            const sameDate = prefix < cursorPos.prefix
+                ? { [field]: cursorDate }                                   // en la misma fecha va después
+                : { [field]: cursorDate, id: { lt: cursorPos.num } };       // misma tabla: desempate por id
+            return { OR: [earlier, sameDate] };
+        };
 
         // 4. Promise.all con 5 findMany (cada uno con where childId, su filtro de fecha,
         //    orderBy fecha desc y take: limit). Si !wants(kind) devuelve [].
@@ -79,10 +115,11 @@ export class ChildHistorialService {
                     OR: [
                         { endDate: null },
                         { endDate: { gte: from } }
-                    ]
+                    ],
+                    AND: [afterCursor('diagnosticatedAge', 'disease')]
                 },
                 orderBy: [{ diagnosticatedAge: 'desc' }, { id: 'desc' }],
-                take: limit
+                take: limit+1
             }) : [],
             wants(HistoryKind.MEDICINE) ? this.prisma.medicine.findMany({
                 where: {
@@ -91,36 +128,40 @@ export class ChildHistorialService {
                     OR: [
                         { endDate: null },
                         { endDate: { gte: from } }
-                    ]
+                    ],
+                    AND: [afterCursor('startDate', 'medicine')]
                 },
                 orderBy: [{ startDate: 'desc' }, { id: 'desc' }],
-                take: limit
+                take: limit+1 
             }) : [],
             // Solo vacunas aplicadas: las pendientes no forman parte del historial.
             wants(HistoryKind.VACCINE) ? this.prisma.vaccine.findMany({
                 where: {
                     childId,
-                    appliedAt: { not: null, ...dateFilter }
+                    appliedAt: { not: null, ...dateFilter },
+                    AND: [afterCursor('appliedAt', 'vaccine')]
                 },
                 orderBy: [{ appliedAt: 'desc' }, { id: 'desc' }],
-                take: limit
+                take: limit +1 
             }) : [],
             wants(HistoryKind.APPOINTMENT) ? this.prisma.event.findMany({
                 where: {
                     childId,
                     type: EventType.MEDICAL_APPOINTMENT,
-                    date: dateFilter
+                    date: dateFilter,
+                    AND: [afterCursor('date', 'appointment')]
                 },
                 orderBy: [{ date: 'desc' }, { id: 'desc' }],
-                take: limit
+                take: limit + 1 
             }) : [],
             wants(HistoryKind.SYMPTOM) ? this.prisma.condition.findMany({
                 where: {
                     childId,
-                    timestamp: dateFilter
+                    timestamp: dateFilter,
+                    AND: [afterCursor('timestamp', 'condition')]
                 },
                 orderBy: [{ timestamp: 'desc' }, { id: 'desc' }],
-                take: limit
+                take: limit + 1
             }) : []
         ]);
 
@@ -177,23 +218,28 @@ export class ChildHistorialService {
             refId: condition.id
         });
 
+        // 6. Junta los 5 arrays y ordena con el mismo criterio que el cursor.
+        //    Lo ya visto se descartó en la BD con `afterCursor`.
         const items = [
             ...diseases.map(mapDisease),
             ...medicines.map(mapMedicine),
             ...vaccines.map(mapVaccine),
             ...appointments.map(mapAppointment),
             ...conditions.map(mapCondition)
-        ];  
-        
-
-        // 6. Junta los 5 arrays, descarta los items sin date, ordena por date desc.
+        ].sort(compare);
 
         // 7. Recorta a `limit`.
+        const limitedItems = items.slice(0, limit);
 
-        // 8. Si el resultado llegó a `limit` elementos, nextCursor = codificar
-        //    (fecha + id) del último item; si no, null.
+        // 8. Hay página siguiente si sobró algo (cada query pide `limit + 1`).
+        let nextCursor: string | null = null;
+        if (items.length > limit) {
+            const last = limitedItems[limitedItems.length - 1];
+            nextCursor = Buffer.from(`${last.date}|${last.id}`).toString('base64url');
+        }
 
         // 9. return { items, nextCursor }.
+        return { items: limitedItems, nextCursor };
 
     }
 }

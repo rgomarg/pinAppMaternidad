@@ -10,6 +10,12 @@ export enum HistoryKind {
 }
 
 export class HistorialChildDto {
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    proId?: number;
+
     @IsOptional()
     @Transform(({ value }) => (typeof value === 'string' ? value.split(',') : value))
     @IsArray()
