@@ -26,11 +26,22 @@ const thread = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+const message = (overrides: Record<string, unknown> = {}) => ({
+  id: 11,
+  content: 'Comentario',
+  isHidden: false,
+  deletedAt: null,
+  threadId: 7,
+  author: { id: 5, blockedAt: null },
+  ...overrides,
+});
+
 describe('AdminService', () => {
   let service: AdminService;
   const prisma = {
     user: { findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
     thread: { findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn(), delete: jest.fn() },
+    message: { findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn(), delete: jest.fn() },
   };
 
   beforeEach(async () => {
@@ -157,6 +168,57 @@ describe('AdminService', () => {
     it('lanza NotFound si el hilo no existe', async () => {
       prisma.thread.findUnique.mockResolvedValue(null);
       await expect(service.deleteThread(99)).rejects.toThrow(NotFoundException);
+    });
+  });
+  describe('comentarios', () => {
+    it('lista todos los comentarios del hilo con su estado', async () => {
+      prisma.thread.findUnique.mockResolvedValue(thread());
+      prisma.message.findMany.mockResolvedValue([
+        message({ id: 1, deletedAt: new Date() }),
+        message({ id: 2, author: { id: 5, blockedAt: new Date() } }),
+        message({ id: 3, isHidden: true }),
+        message({ id: 4 }),
+      ]);
+
+      const result = await service.findThreadMessages(7);
+
+      expect(prisma.message.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { threadId: 7 } }));
+      expect(result.map((m) => m.status)).toEqual(['DELETED', 'AUTHOR_BLOCKED', 'HIDDEN', 'VISIBLE']);
+    });
+
+    it('eliminar hace borrado lógico del comentario, nunca físico', async () => {
+      prisma.message.findUnique.mockResolvedValue(message());
+      prisma.message.update.mockResolvedValue(message({ deletedAt: new Date() }));
+
+      const result = await service.deleteMessage(11);
+
+      expect(prisma.message.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 11 }, data: { deletedAt: expect.any(Date) } }),
+      );
+      expect(prisma.message.delete).not.toHaveBeenCalled();
+      expect(result.status).toBe('DELETED');
+    });
+
+    it('eliminar un comentario ya eliminado conserva la fecha original', async () => {
+      prisma.message.findUnique.mockResolvedValue(message({ deletedAt: new Date('2026-01-01') }));
+      const result = await service.deleteMessage(11);
+      expect(prisma.message.update).not.toHaveBeenCalled();
+      expect(result.status).toBe('DELETED');
+    });
+
+    it('restaurar vuelve a hacer visible el comentario', async () => {
+      prisma.message.findUnique.mockResolvedValue(message({ deletedAt: new Date() }));
+      prisma.message.update.mockResolvedValue(message());
+
+      const result = await service.restoreMessage(11);
+
+      expect(prisma.message.update).toHaveBeenCalledWith(expect.objectContaining({ data: { deletedAt: null } }));
+      expect(result.status).toBe('VISIBLE');
+    });
+
+    it('lanza NotFound si el comentario no existe', async () => {
+      prisma.message.findUnique.mockResolvedValue(null);
+      await expect(service.deleteMessage(99)).rejects.toThrow(NotFoundException);
     });
   });
 });

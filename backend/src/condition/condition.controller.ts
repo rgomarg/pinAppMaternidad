@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query } from '@nestjs/common';
 import { ConditionService } from './condition.service';
 import { CreateConditionDto } from './dto/create-condition.dto';
 import { UpdateConditionDto } from './dto/update-condition.dto';
@@ -15,6 +15,16 @@ export class ConditionController {
   @Get()
   findAll() {
     return this.conditionService.findAll();
+  }
+
+  @Get('guardian/:guardianId')
+  findConditionsForGuardianOnDate(
+    @Param('guardianId', ParseIntPipe) guardianId: number,
+    @Query('date') date?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.conditionService.findConditionsForGuardianOnDate(guardianId, date, from, to);
   }
 
   @Get(':id')

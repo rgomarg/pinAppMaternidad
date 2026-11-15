@@ -88,8 +88,8 @@ async function main() {
             },
             checklists: {
               create: [
-                { title: 'Revisión del primer mes', isCompleted: true, completedAt: new Date('2025-09-16T10:00:00Z') },
-                { title: 'Revisión de los 6 meses', isCompleted: false },
+                { title: 'Programar revisión pediátrica', isCompleted: true, completedAt: new Date('2025-09-16T10:00:00Z') },
+                { title: 'Revisar próxima vacuna', isCompleted: false },
               ],
             },
           },

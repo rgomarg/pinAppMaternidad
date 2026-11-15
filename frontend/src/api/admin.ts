@@ -31,6 +31,19 @@ export interface AdminThread {
   messageCount: number;
 }
 
+// Los comentarios usan los mismos estados que los hilos
+export interface AdminMessage {
+  id: number;
+  content: string;
+  createdAt: string;
+  isHidden: boolean;
+  deletedAt: string | null;
+  threadId: number;
+  parentId: number | null;
+  author: { id: number; name: string; email: string; role: Role; blockedAt: string | null };
+  status: ThreadStatus;
+}
+
 export type ReportStatus = 'PENDING' | 'RESOLVED' | 'DISMISSED';
 
 export interface AdminReport {
@@ -76,6 +89,15 @@ export const adminApi = {
 
   restoreThread: (adminId: number, threadId: number) =>
     request<AdminThread>(`/admin/threads/${threadId}/restore${adminQuery(adminId)}`, { method: 'PATCH' }),
+
+  getThreadMessages: (adminId: number, threadId: number) =>
+    request<AdminMessage[]>(`/admin/threads/${threadId}/messages${adminQuery(adminId)}`),
+
+  deleteMessage: (adminId: number, messageId: number) =>
+    request<AdminMessage>(`/admin/messages/${messageId}/delete${adminQuery(adminId)}`, { method: 'PATCH' }),
+
+  restoreMessage: (adminId: number, messageId: number) =>
+    request<AdminMessage>(`/admin/messages/${messageId}/restore${adminQuery(adminId)}`, { method: 'PATCH' }),
 
   getReports: (adminId: number, params: { search?: string; status?: ReportStatus | null } = {}) =>
     request<AdminReport[]>(`/admin/reports${adminQuery(adminId, params)}`),

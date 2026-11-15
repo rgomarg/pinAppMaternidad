@@ -1,7 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { EntityType, Prisma, ReportStatus, Role } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
-import { ListAdminReportsQueryDto, ListAdminThreadsQueryDto, ListAdminUsersQueryDto, ThreadStatus, UserStatus } from './dto/admin-query.dto';
+import {
+  ListAdminReportsQueryDto,
+  ListAdminThreadsQueryDto,
+  ListAdminUsersQueryDto,
+  MessageStatus,
+  ThreadStatus,
+  UserStatus,
+} from './dto/admin-query.dto';
 
 // El panel ve los registros originales intactos (también los ocultos), nunca la contraseña
 const adminUserSelect = {
@@ -27,6 +34,17 @@ const adminThreadSelect = {
   _count: { select: { messages: true } },
 } satisfies Prisma.ThreadSelect;
 
+const adminMessageSelect = {
+  id: true,
+  content: true,
+  createdAt: true,
+  isHidden: true,
+  deletedAt: true,
+  threadId: true,
+  parentId: true,
+  author: { select: { id: true, name: true, email: true, role: true, blockedAt: true } },
+} satisfies Prisma.MessageSelect;
+
 const adminReportSelect = {
   id: true,
   reason: true,
@@ -40,6 +58,7 @@ const adminReportSelect = {
 type AdminReportRow = Prisma.ReportGetPayload<{ select: typeof adminReportSelect }>;
 type AdminUserRow = Prisma.UserGetPayload<{ select: typeof adminUserSelect }>;
 type AdminThreadRow = Prisma.ThreadGetPayload<{ select: typeof adminThreadSelect }>;
+type AdminMessageRow = Prisma.MessageGetPayload<{ select: typeof adminMessageSelect }>;
 
 const userStatusWhere: Record<UserStatus, Prisma.UserWhereInput> = {
   ACTIVE: { blockedAt: null },
@@ -153,6 +172,40 @@ export class AdminService {
     return toAdminThread(updated);
   }
 
+  async findThreadMessages(threadId: number) {
+    await this.findThreadOrFail(threadId);
+    const messages = await this.prisma.message.findMany({
+      where: { threadId },
+      orderBy: { createdAt: 'asc' },
+      select: adminMessageSelect,
+    });
+    return messages.map(toAdminMessage);
+  }
+
+  // Borrado lógico: el comentario desaparece al instante de todas las vistas públicas
+  // (visibleMessageWhere se aplica en cada consulta) pero se conserva en la BD
+  async deleteMessage(id: number) {
+    const message = await this.findMessageOrFail(id);
+    if (message.deletedAt) return toAdminMessage(message);
+
+    const updated = await this.prisma.message.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+      select: adminMessageSelect,
+    });
+    return toAdminMessage(updated);
+  }
+
+  async restoreMessage(id: number) {
+    await this.findMessageOrFail(id);
+    const updated = await this.prisma.message.update({
+      where: { id },
+      data: { deletedAt: null },
+      select: adminMessageSelect,
+    });
+    return toAdminMessage(updated);
+  }
+
   async findReports({ search, status }: ListAdminReportsQueryDto) {
     const reports = await this.prisma.report.findMany({
       where: {
@@ -209,7 +262,14 @@ export class AdminService {
       }),
       this.prisma.message.findMany({
         where: { id: { in: messageIds } },
-        select: { id: true, content: true, isHidden: true, threadId: true, author: { select: { id: true, name: true } } },
+        select: {
+          id: true,
+          content: true,
+          isHidden: true,
+          deletedAt: true,
+          threadId: true,
+          author: { select: { id: true, name: true } },
+        },
       }),
     ]);
     const threadById = new Map(threads.map((t) => [t.id, t]));
@@ -222,7 +282,8 @@ export class AdminService {
         if (t) target = { title: t.title, content: t.content, isHidden: t.isHidden, author: t.owner };
       } else {
         const m = messageById.get(report.targetId);
-        if (m) target = { title: null, content: m.content, isHidden: m.isHidden, author: m.author };
+        // Un comentario eliminado por un admin tampoco se ve en el foro
+        if (m) target = { title: null, content: m.content, isHidden: m.isHidden || m.deletedAt !== null, author: m.author };
       }
       return { ...report, target };
     });
@@ -234,6 +295,14 @@ export class AdminService {
       throw new NotFoundException(`No user with id ${id} found`);
     }
     return user;
+  }
+
+  private async findMessageOrFail(id: number) {
+    const message = await this.prisma.message.findUnique({ where: { id }, select: adminMessageSelect });
+    if (!message) {
+      throw new NotFoundException(`No message with id ${id} found`);
+    }
+    return message;
   }
 
   private async findThreadOrFail(id: number) {
@@ -256,4 +325,13 @@ function toAdminUser({ _count, ...user }: AdminUserRow) {
 
 function toAdminThread({ _count, ...thread }: AdminThreadRow) {
   return { ...thread, status: threadStatus(thread), messageCount: _count.messages };
+}
+
+// Mismo orden de prioridad que threadStatus()
+function toAdminMessage(message: AdminMessageRow) {
+  let status: MessageStatus = 'VISIBLE';
+  if (message.deletedAt) status = 'DELETED';
+  else if (message.author.blockedAt) status = 'AUTHOR_BLOCKED';
+  else if (message.isHidden) status = 'HIDDEN';
+  return { ...message, status };
 }

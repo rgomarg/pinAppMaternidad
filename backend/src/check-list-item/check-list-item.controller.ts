@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query } from '@nestjs/common';
 import { CheckListItemService } from './check-list-item.service';
 import { CreateCheckListItemDto } from './dto/create-check-list-item.dto';
 import { UpdateCheckListItemDto } from './dto/update-check-list-item.dto';
@@ -13,13 +13,16 @@ export class CheckListItemController {
   }
 
   @Get()
-  findAll() {
-    return this.checkListItemService.findAll();
+  findAll(
+    @Query('childId', ParseIntPipe) childId: number,
+    @Query('userId', ParseIntPipe) userId: number,
+  ) {
+    return this.checkListItemService.findAll(childId, userId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.checkListItemService.findOne(+id);
+  findOne(@Param('id') id: string, @Query('userId', ParseIntPipe) userId: number) {
+    return this.checkListItemService.findOne(+id, userId);
   }
 
   @Patch(':id')
@@ -28,7 +31,7 @@ export class CheckListItemController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.checkListItemService.remove(+id);
+  remove(@Param('id') id: string, @Query('userId', ParseIntPipe) userId: number) {
+    return this.checkListItemService.remove(+id, userId);
   }
 }

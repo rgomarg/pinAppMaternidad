@@ -1,7 +1,42 @@
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsString, IsOptional, IsDate, IsNumber, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsDate, IsNumber, IsEnum, IsArray, IsInt, ValidateNested } from 'class-validator';
 import { Sex } from '@prisma/client';
 
+
+export class ChildVaccineInput {
+    @IsString()
+    @IsNotEmpty()
+    name!: string;
+
+    @IsOptional()
+    @Type(() => Date)
+    @IsDate()
+    appliedAt?: Date;
+
+    @IsOptional()
+    @Type(() => Date)
+    @IsDate()
+    scheduledFor?: Date;
+}
+
+export class ChildMedicineInput {
+    @IsString()
+    @IsNotEmpty()
+    name!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    dosage!: string;
+
+    @IsOptional()
+    @IsInt()
+    intervalHours?: number;
+
+    @IsOptional()
+    @Type(() => Date)
+    @IsDate()
+    startDate?: Date;
+}
 
 export class CreateChildDto {
     @IsString()
@@ -39,6 +74,18 @@ export class CreateChildDto {
     @IsOptional()
     @IsString({ each: true })
     diseases?: string[];
+
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ChildVaccineInput)
+    vaccines?: ChildVaccineInput[];
+
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ChildMedicineInput)
+    medicines?: ChildMedicineInput[];
 
     @IsNotEmpty()
     @IsEnum(Sex)
