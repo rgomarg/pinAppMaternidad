@@ -5,20 +5,49 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class RecommendationService {
     constructor(private readonly prisma: PrismaService) {}
 
-    async findBooks(month: number, year: number) {
-        return await this.prisma.book.findMany({
-            where: { 
-                month: month, 
-                year: year 
-            }, 
+    async findBooks(month?: number, year?: number) {
+        const now = new Date();
+        const targetMonth = month ? Number(month) : now.getMonth() + 1;
+        const targetYear = year ? Number(year) : now.getFullYear();
+
+        // 1. Intentamos buscar el libro del mes y año solicitados
+        let book = await this.prisma.book.findFirst({
+            where: {  
+                month: targetMonth,
+                year: targetYear
+            },
             select: {
                 id: true,
                 title: true,
                 authors: true,
                 synopsis: true,
                 imageUrl: true, 
+                month: true,
+                year: true,
             }
         });
+
+        // 2. Si no hay libro para ese mes/año exacto, fallback al más reciente o primero disponible
+        if (!book) {
+            book = await this.prisma.book.findFirst({
+                orderBy: [
+                    { year: 'desc' },
+                    { month: 'desc' },
+                    { id: 'asc' }
+                ],
+                select: {
+                    id: true,
+                    title: true,
+                    authors: true,
+                    synopsis: true,
+                    imageUrl: true, 
+                    month: true,
+                    year: true,
+                }
+            });
+        }
+
+        return book ? [book] : [];
     }
 
     async findArticles() {

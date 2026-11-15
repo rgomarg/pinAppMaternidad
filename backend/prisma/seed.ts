@@ -1850,13 +1850,13 @@ async function main() {
 
   await prisma.book.createMany({
     data: [
-      {
-        title: 'El cerebro del niño explicado a los padres',
-        authors: ['Álvaro Bilbao'],
-        synopsis: 'Durante los seis primeros años de vida...',
-        imageUrl: 'https://imagessl1.casadellibro.com/a/l/t5/61/9788416429561.jpg',
-        month: 11,
-        year: 2026,
+    {
+      title: "La crianza feliz: Cómo cuidar y entender a tu hijo de 0 a 6 años",
+      authors: ["Rosa Jové"],
+      synopsis: "La psicóloga infantil explica las etapas evolutivas de los primeros seis años y ofrece pautas respetuosas para acompañar procesos clave como las rutinas, la alimentación, la retirada del pañal, los miedos y los celos entre hermanos.",
+      imageUrl: "https://www.casadellibro.com/libro-la-crianza-feliz-como-cuidar-y-entender-a-tu-hijo-de-0-a-6-anos/9788497348164/1246903",
+      month: 11,
+      year: 2026
     },
     {
       title: 'El gran libro de Lucía, mi pediatra', 
@@ -1903,31 +1903,23 @@ async function main() {
       authors: ["Lucy Jones"],
       synopsis: "Ensayo revelador que combina testimonio personal y divulgación científica para analizar la profunda transformación física, neurológica, psicológica y social que atraviesa una mujer al convertirse en madre, alejándose de la idealización habitual.",
       imageUrl: "https://www.casadellibro.com/libro-matrescencia/9791387761523/17782367",
-      month: 11,
-      year: 2026
+      month: 5,
+      year: 2027
     },
     {
       title: "Neuromaternal: ¿Qué le pasa a mi cerebro durante el embarazo y la maternidad?",
       authors: ["Susana Carmona"],
       synopsis: "La neurocientífica española expone las investigaciones pioneras sobre cómo cambia la estructura y plasticidad del cerebro femenino durante la gestación y la crianza para adaptarse al cuidado del bebé y fortalecer el vínculo.",
       imageUrl: "https://www.casadellibro.com/libro-neuromaternal/9788466678087/14452380",
-      month: 12,
-      year: 2026
+      month: 6,
+      year: 2027
     },
     {
       title: "Conoce tu posparto: 40 días y 500 noches", 
       authors: ["Laia Aguilar"], 
       synopsis: "Una mirada realista y cercana sobre el puerperio, esa etapa a menudo invisibilizada tras el nacimiento. Aborda la recuperación física, el vaivén hormonal, el cansancio, los cambios en la pareja y la gestión de expectativas y comentarios externos.", 
       imageUrl: "https://www.casadellibro.com/libro-conoce-tu-posparto-40-dias-y-500-noches/9788418055294/12641568",
-      month: 1,
-      year: 2027
-    },
-    {
-      title: "La crianza feliz: Cómo cuidar y entender a tu hijo de 0 a 6 años",
-      authors: ["Rosa Jové"],
-      synopsis: "La psicóloga infantil explica las etapas evolutivas de los primeros seis años y ofrece pautas respetuosas para acompañar procesos clave como las rutinas, la alimentación, la retirada del pañal, los miedos y los celos entre hermanos.",
-      imageUrl: "https://www.casadellibro.com/libro-la-crianza-feliz-como-cuidar-y-entender-a-tu-hijo-de-0-a-6-anos/9788497348164/1246903",
-      month: 2,
+      month: 7,
       year: 2027
     },
     {
@@ -1935,7 +1927,7 @@ async function main() {
       authors: ["Hetty van de Rijt y Frans Plooij"],
       synopsis: "Basado en décadas de investigación sobre el desarrollo infantil, identifica los diez grandes saltos mentales que experimentan los bebés durante sus primeros 20 meses de vida, explicando por qué atraviesan fases de mayor irritabilidad y cómo estimular cada nueva habilidad.",
       imageUrl: "https://www.casadellibro.com/libro-las-semanas-magicas/9789491882012/12401864",
-      month: 3,
+      month: 8,
       year: 2027
     }
   ]});

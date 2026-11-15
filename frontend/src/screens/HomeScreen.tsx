@@ -17,69 +17,7 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-//Ejemplo de datos para el libro del mes y el artículo semanal, que se muestran en la sección de Recomendaciones
-const MOCK_LIBRO_DEL_MES = {
-  titulo: 'El cerebro del niño explicado a los padres',
-  autores: 'Álvaro Bilbao',
-  sinopsis:
-    'Durante los seis primeros años de vida el cerebro infantil tiene un potencial que no volverá a tener. Este libro ayuda a padres y educadores a entender el fascinante desarrollo cerebral y emocional del niño para educar con serenidad, potenciar su inteligencia y fortalecer su autoestima sin recurrir a castigos ni métodos autoritarios.',
-  imagenUrl: 'https://imagessl1.casadellibro.com/a/l/t5/61/9788416429561.jpg',
-};
 
-const MOCK_ARTICULO_SEMANAL = {
-  titular: 'Rutinas de sueño respetuosas en los primeros meses',
-  descripcion:
-    'Aprende a reconocer las ventanas de vigilia y a establecer rituales de descanso que ayuden a tu bebé a dormir tranquilo durante la noche.',
-  enlace: 'https://enfamilia.aeped.es',
-  fuente: 'EnFamilia (AEP)',
-};
-
-const MOCK_RECETAS = [
-  {
-    id: 1,
-    nombre: 'Puré suave de calabaza, zanahoria y pollo',
-    tiempo: '25 min',
-    dificultad: 'Fácil',
-    raciones: 'Para 2 raciones',
-    imagenUrl:
-      'https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?auto=format&fit=crop&w=400&q=80',
-    ingredientes: [
-      '150g de calabaza pelada y troceada',
-      '1 zanahoria mediana limpia',
-      '1/2 patata pequeña',
-      '50g de pechuga de pollo',
-      '1 cucharadita de aceite de oliva virgen extra',
-    ],
-    pasos: [
-      'Pela y corta en dados pequeños la calabaza, la zanahoria y la patata.',
-      'Pon las verduras en una olla con agua justa para cubrirlas y cocina a fuego medio durante 15 minutos.',
-      'Añade el pollo limpio y deja cocinar 5 minutos más hasta que esté tierno.',
-      'Tritura todo con la batidora hasta lograr una textura homogénea y cremosa. Añade el aceite de oliva en crudo antes de servir.',
-    ],
-  },
-  {
-    id: 2,
-    nombre: 'Tortitas de avena y plátano',
-    tiempo: '15 min',
-    dificultad: 'Fácil',
-    raciones: 'Para 2 raciones (4 tortitas)',
-    imagenUrl:
-      'https://images.unsplash.com/photo-1528207776546-365bb710ee93?auto=format&fit=crop&w=400&q=80',
-    ingredientes: [
-      '1 plátano maduro',
-      '1 huevo (o 3 cucharadas de leche)',
-      '4 cucharadas de copos de avena triturados',
-      '1 pizca de canela de Ceylán (opcional)',
-      'Unas gotas de aceite de oliva para engrasar la sartén',
-    ],
-    pasos: [
-      'Chafa el plátano con un tenedor en un bol hasta formar un puré suave.',
-      'Añade el huevo y bate bien. Incorpora la avena y la canela mezclando hasta obtener una masa uniforme.',
-      'Pincela una sartén antiadherente con unas gotas de aceite de oliva y calienta a fuego medio-bajo.',
-      'Vierte pequeñas porciones de masa, cocina 2 minutos por cada lado hasta que doren y retira con cuidado.',
-    ],
-  },
-];
 
 export default function HomeScreen() {
   const { setSelectedUserId, setSelectedUserRole, isAdmin } = useFamilySelection();
@@ -104,6 +42,101 @@ export default function HomeScreen() {
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState('');
   const scrollViewRef = useRef<ScrollViewInstance>(null);
+
+  // ------------------------------
+  // RECOMENDACIONES — estados
+  // ------------------------------
+  const [articles, setArticles] = useState<any[]>([]);
+  const [recipes, setRecipes] = useState<any[]>([]);
+  const [books, setBooks] = useState<any[]>([]);
+  const [recLoading, setRecLoading] = useState(false);
+
+  // Calcula la edad del hijo (1–6, capped)
+  const calculateChildAge = (birthDateString: string): number => {
+    const birth = new Date(birthDateString);
+    const now = new Date();
+    const diffMs = now.getTime() - birth.getTime();
+    const age = Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000));
+    return Math.max(1, Math.min(age, 6));
+  };
+
+  // FETCH 1 – Libro del mes (mes y año actuales)
+  const fetchBooks = async () => {
+    try {
+      const now = new Date();
+      const month = now.getMonth() + 1; // 1-12
+      const year = now.getFullYear();
+      const res = await fetch(`${API_URL}/recommendation/books?month=${month}&year=${year}`);
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setBooks(data);
+      } else if (data && typeof data === 'object' && (data as any).id) {
+        setBooks([data]);
+      } else {
+        setBooks([]);
+      }
+    } catch (err) {
+      console.error('Error fetching books:', err);
+      setBooks([]);
+    }
+  };
+
+  // FETCH 2 – Artículos semanales (sin parámetro, el backend rota por día)
+  const fetchArticles = async () => {
+    setRecLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/recommendation/articles`);
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const data = await res.json();
+      setArticles(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching articles:', err);
+      setArticles([]);
+    } finally {
+      setRecLoading(false);
+    }
+  };
+
+  // FETCH 3 – Recetas semanales (filtradas por edad del hijo)
+  const fetchRecipes = async (age: number) => {
+    setRecLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/recommendation/recipes?childAge=${age}`);
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const data = await res.json();
+      setRecipes(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching recipes:', err);
+      setRecipes([]);
+    } finally {
+      setRecLoading(false);
+    }
+  };
+
+  // useEffect 1 – Libro del mes: se carga al entrar a la sección de artículos
+  useEffect(() => {
+    if (recomendacionesTab === 'articulos') {
+      fetchBooks();
+    }
+  }, [recomendacionesTab]);
+
+  // useEffect 2 – Artículos: se recarga cuando cambia el hijo activo O cuando el tab es 'articulos'
+  useEffect(() => {
+    const child = children.find((c: any) => c.id === activeChildId);
+    if (!child?.birthDate) return;
+    if (recomendacionesTab !== 'articulos') return;
+    fetchArticles();
+  }, [activeChildId, children, recomendacionesTab]);
+
+  // useEffect 3 – Recetas: se recarga cuando cambia el hijo activo O cuando el tab es 'comidas'
+  useEffect(() => {
+    const child = children.find((c: any) => c.id === activeChildId);
+    if (!child?.birthDate) return;
+    if (recomendacionesTab !== 'comidas') return;
+    const age = calculateChildAge(child.birthDate);
+    fetchRecipes(age);
+  }, [activeChildId, children, recomendacionesTab]);
 
   const updateFamiliaChild = (childId: number | null, userId: number | null = activeUserId) => {
     const navigationState = navigation.getState();
@@ -628,57 +661,64 @@ export default function HomeScreen() {
                         <Ionicons name="book" size={17} color="#b87427" />
                         <Text className="text-sm font-bold text-nanny-text">Libro del mes</Text>
                       </View>
-                      <TouchableOpacity
-                        activeOpacity={0.85}
-                        onPress={() => setShowLibroSinopsis((prev) => !prev)}
-                        className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4"
-                      >
-                        {/* Cabecera: Portada del libro + Título + Autores + Botón desplegable */}
-                        <View className="flex-row gap-3.5">
-                          <Image
-                            source={{ uri: MOCK_LIBRO_DEL_MES.imagenUrl }}
-                            className="h-36 w-24 rounded-lg bg-[#e5dfd4]"
-                            resizeMode="cover"
-                          />
-                          <View className="flex-1 justify-between py-1">
-                            <View>
-                              <Text className="text-base font-bold text-nanny-text leading-snug">
-                                {MOCK_LIBRO_DEL_MES.titulo}
-                              </Text>
-                              <Text className="mt-1 text-xs font-semibold text-nanny-muted">
-                                Por {MOCK_LIBRO_DEL_MES.autores}
-                              </Text>
-                            </View>
-
-                            {/* Botón interactivo sin fondo, alineado a la derecha y con ancho fijo */}
-                            <View className="mt-3 w-36 flex-row items-center justify-end self-end">
-                              <Text className="mr-1 text-xs font-semibold text-[#b87427]">
-                                {showLibroSinopsis ? 'Ocultar sinopsis' : 'Ver sinopsis'}
-                              </Text>
-                              <Ionicons
-                                name={showLibroSinopsis ? 'chevron-up' : 'chevron-down'}
-                                size={14}
-                                color="#b87427"
+                      {books.length > 0 ? (
+                        <TouchableOpacity
+                          activeOpacity={0.85}
+                          onPress={() => setShowLibroSinopsis((prev) => !prev)}
+                          className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4"
+                        >
+                          <View className="flex-row gap-3.5">
+                            {books[0].imageUrl ? (
+                              <Image
+                                source={{ uri: books[0].imageUrl }}
+                                className="h-36 w-24 rounded-lg bg-[#e5dfd4]"
+                                resizeMode="cover"
                               />
+                            ) : (
+                              <View className="h-36 w-24 items-center justify-center rounded-lg bg-[#e5dfd4]">
+                                <Ionicons name="book-outline" size={32} color="#968e84" />
+                              </View>
+                            )}
+                            <View className="flex-1 justify-between py-1">
+                              <View>
+                                <Text className="text-base font-bold text-nanny-text leading-snug">
+                                  {books[0].title}
+                                </Text>
+                                <Text className="mt-1 text-xs font-semibold text-nanny-muted">
+                                  Por {books[0].authors?.join(', ')}
+                                </Text>
+                              </View>
+                              <View className="mt-3 w-36 flex-row items-center justify-end self-end">
+                                <Text className="mr-1 text-xs font-semibold text-[#b87427]">
+                                  {showLibroSinopsis ? 'Ocultar sinopsis' : 'Ver sinopsis'}
+                                </Text>
+                                <Ionicons
+                                  name={showLibroSinopsis ? 'chevron-up' : 'chevron-down'}
+                                  size={14}
+                                  color="#b87427"
+                                />
+                              </View>
                             </View>
                           </View>
+                          {showLibroSinopsis && (
+                            <View className="mt-3.5 border-t border-[#ded6ca]/70 pt-3">
+                              <Text className="mb-1 text-xs font-bold uppercase tracking-wider text-nanny-muted">
+                                Sinopsis
+                              </Text>
+                              <Text
+                                style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
+                                className="w-full text-xs leading-relaxed text-nanny-text"
+                              >
+                                {books[0].synopsis}
+                              </Text>
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      ) : (
+                        <View className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4">
+                          <Text className="text-xs text-nanny-muted">Cargando libro recomendado...</Text>
                         </View>
-
-                        {/* Sinopsis completa y justificada que se despliega al clicar */}
-                        {showLibroSinopsis && (
-                          <View className="mt-3.5 border-t border-[#ded6ca]/70 pt-3">
-                            <Text className="mb-1 text-xs font-bold uppercase tracking-wider text-nanny-muted">
-                              Sinopsis
-                            </Text>
-                            <Text
-                              style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
-                              className="w-full text-xs leading-relaxed text-nanny-text"
-                            >
-                              {MOCK_LIBRO_DEL_MES.sinopsis}
-                            </Text>
-                          </View>
-                        )}
-                      </TouchableOpacity>
+                      )}
                     </View>
 
                     {/* Sección Artículos Semanales */}
@@ -687,30 +727,40 @@ export default function HomeScreen() {
                         <Ionicons name="newspaper" size={17} color="#6d83a1" />
                         <Text className="text-sm font-bold text-nanny-text">Artículos semanales</Text>
                       </View>
-                      <View className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4">
-                        <Text className="text-base font-bold text-nanny-text leading-snug">
-                          {MOCK_ARTICULO_SEMANAL.titular}
-                        </Text>
-                        <Text
-                          style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
-                          className="mt-2 w-full text-xs leading-relaxed text-nanny-text"
-                        >
-                          {MOCK_ARTICULO_SEMANAL.descripcion}
-                        </Text>
-                        <TouchableOpacity
-                          onPress={() =>
-                            Linking.openURL(MOCK_ARTICULO_SEMANAL.enlace).catch((err) =>
-                              console.error('Error abriendo enlace:', err),
-                            )
-                          }
-                          className="mt-3 flex-row items-center self-start rounded-xl bg-[#6d83a1]/15 px-3 py-1.5 active:opacity-70"
-                        >
-                          <Text className="mr-1.5 text-xs font-semibold text-[#6d83a1]">
-                            Leer artículo ({MOCK_ARTICULO_SEMANAL.fuente})
-                          </Text>
-                          <Ionicons name="open-outline" size={13} color="#6d83a1" />
-                        </TouchableOpacity>
-                      </View>
+                      {recLoading ? (
+                        <ActivityIndicator size="small" color="#6d83a1" />
+                      ) : articles.length > 0 ? (
+                        <View className="gap-3">
+                          {articles.map((art) => (
+                            <View key={art.id} className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4">
+                              <Text className="text-base font-bold text-nanny-text leading-snug">
+                                {art.title}
+                              </Text>
+                              <Text
+                                style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
+                                className="mt-2 w-full text-xs leading-relaxed text-nanny-text"
+                              >
+                                {art.description}
+                              </Text>
+                              <TouchableOpacity
+                                onPress={() =>
+                                  Linking.openURL(art.url).catch((err) =>
+                                    console.error('Error abriendo enlace:', err),
+                                  )
+                                }
+                                className="mt-3 flex-row items-center self-start rounded-xl bg-[#6d83a1]/15 px-3 py-1.5 active:opacity-70"
+                              >
+                                <Text className="mr-1.5 text-xs font-semibold text-[#6d83a1]">
+                                  Leer artículo {art.source ? `(${art.source})` : ''}
+                                </Text>
+                                <Ionicons name="open-outline" size={13} color="#6d83a1" />
+                              </TouchableOpacity>
+                            </View>
+                          ))}
+                        </View>
+                      ) : (
+                        <Text className="text-xs text-nanny-muted">No hay artículos para mostrar.</Text>
+                      )}
                     </View>
                   </View>
                 ) : (
@@ -721,35 +771,38 @@ export default function HomeScreen() {
                       <Text className="text-sm font-bold text-nanny-text">Recetas de la semana</Text>
                     </View>
 
-                    {MOCK_RECETAS.map((receta) => {
-                      const isExpanded = expandedRecipeId === receta.id;
-                      return (
-                        <TouchableOpacity
-                          key={receta.id}
-                          activeOpacity={0.85}
-                          onPress={() => setExpandedRecipeId(isExpanded ? null : receta.id)}
-                          className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4"
-                        >
+                    {recLoading ? (
+                      <ActivityIndicator size="small" color="#b87427" />
+                    ) : recipes.length > 0 ? (
+                      recipes.map((receta) => {
+                        const isExpanded = expandedRecipeId === receta.id;
+                        return (
+                          <TouchableOpacity
+                            key={receta.id}
+                            activeOpacity={0.85}
+                            onPress={() => setExpandedRecipeId(isExpanded ? null : receta.id)}
+                            className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4"
+                          >
                           {/* Cabecera de la receta */}
                           <View className="flex-row gap-3.5">
                             <Image
-                              source={{ uri: receta.imagenUrl }}
+                              source={{ uri: receta.imageUrl }}
                               className="h-24 w-24 rounded-xl bg-[#e5dfd4]"
                               resizeMode="cover"
                             />
                             <View className="flex-1 justify-between py-0.5">
                               <View>
                                 <Text className="text-base font-bold text-nanny-text leading-snug">
-                                  {receta.nombre}
+                                  {receta.name}
                                 </Text>
                                 <View className="mt-2 flex-row flex-wrap items-center gap-3">
                                   <View className="flex-row items-center">
                                     <Ionicons name="time-outline" size={14} color="#808080" />
-                                    <Text className="ml-1 text-xs text-nanny-muted">{receta.tiempo}</Text>
+                                    <Text className="ml-1 text-xs text-nanny-muted">{receta.time}</Text>
                                   </View>
                                   <View className="flex-row items-center">
                                     <Ionicons name="speedometer-outline" size={14} color="#808080" />
-                                    <Text className="ml-1 text-xs text-nanny-muted">{receta.dificultad}</Text>
+                                    <Text className="ml-1 text-xs text-nanny-muted">{receta.difficulty}</Text>
                                   </View>
                                 </View>
                               </View>
@@ -775,7 +828,7 @@ export default function HomeScreen() {
                               <View className="mb-3 flex-row items-center gap-1.5 self-start rounded-lg bg-[#ded6ca]/50 px-2.5 py-1">
                                 <Ionicons name="people-outline" size={14} color="#6d83a1" />
                                 <Text className="text-xs font-semibold text-nanny-text">
-                                  {receta.raciones}
+                                  {receta.servings}
                                 </Text>
                               </View>
 
@@ -784,7 +837,7 @@ export default function HomeScreen() {
                                 Ingredientes
                               </Text>
                               <View className="mb-3.5 gap-1.5">
-                                {receta.ingredientes.map((ingrediente, idx) => (
+                                {receta.ingredients.map((ingrediente: string, idx: number) => (
                                   <View key={idx} className="flex-row items-start">
                                     <Text className="mr-2 text-xs font-bold text-[#b87427]">•</Text>
                                     <Text className="flex-1 text-xs text-nanny-text leading-relaxed">
@@ -799,7 +852,7 @@ export default function HomeScreen() {
                                 Preparación paso a paso
                               </Text>
                               <View className="gap-2.5">
-                                {receta.pasos.map((paso, idx) => (
+                                {receta.steps.map((paso: string, idx: number) => (
                                   <View key={idx} className="flex-row items-start gap-2">
                                     <View className="h-5 w-5 items-center justify-center rounded-full bg-[#ded6ca] mt-0.5">
                                       <Text className="text-[10px] font-bold text-nanny-text">{idx + 1}</Text>
@@ -816,8 +869,11 @@ export default function HomeScreen() {
                             </View>
                           )}
                         </TouchableOpacity>
-                      );
-                    })}
+                        );
+                      })
+                    ) : (
+                      <Text className="text-xs text-nanny-muted">No hay recetas para mostrar.</Text>
+                    )}
                   </View>
                 )
               ) : (
