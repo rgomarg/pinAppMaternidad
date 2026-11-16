@@ -195,6 +195,135 @@ async function main() {
     },
   });
 
+  // Usuario 6: Marta (PRO) con 2 hijos y un historial médico completo.
+  // Pensado para probar GET /child/:id/historial (?proId=<id de Marta>):
+  //  - Los 5 tipos: enfermedades, medicamentos, vacunas, citas médicas y síntomas.
+  //  - Casos límite: tratamiento activo sin fin, tratamiento que empezó antes del rango y sigue,
+  //    enfermedad sin fecha de diagnóstico (no debe salir), vacuna pendiente (no debe salir),
+  //    evento GENERAL (no es cita médica: no debe salir), cita futura (PENDING).
+  //  - Varios registros con la MISMA fecha exacta (desempate del cursor).
+  //  - Más de 20 registros en Lucía (paginación con el límite por defecto).
+  const mismaHora = new Date('2026-09-02T09:00:00Z');
+  const diarioSintomasLucia = Array.from({ length: 12 }, (_, i) => ({
+    tag: i % 3 === 0 ? [TagCondition.FEVER, TagCondition.COUGH] : i % 3 === 1 ? [TagCondition.RUNNY_NOSE] : [TagCondition.FATIGUE],
+    desciption: `Diario de síntomas, día ${i + 1}`,
+    notes: i % 3 === 0 ? 'Fiebre 38.2°C por la tarde' : 'Buen estado general',
+    timestamp: new Date(Date.UTC(2026, 9, 1 + i * 2, 18, 0, 0)), // octubre 2026, cada 2 días
+  }));
+
+  const marta = await prisma.user.create({
+    data: {
+      email: 'marta.pro@example.com',
+      name: 'Marta Ruiz (PRO)',
+      password: 'hashed_password_pro',
+      role: Role.PRO,
+      children: {
+        create: [
+          {
+            name: 'Lucía',
+            surname: 'Ruiz',
+            birthDate: new Date('2022-05-03T07:00:00Z'),
+            bloodGroup: 'A+',
+            allergies: JSON.stringify([{ name: 'Frutos secos', severity: 'severa', notes: 'Llevar autoinyector' }]),
+            sex: Sex.FEMALE,
+            diseases: {
+              create: [
+                // Misma fecha exacta que Paracetamol y que un síntoma → prueba el desempate
+                { name: 'Resfriado común', description: 'Fiebre 38.2°C, congestión nasal', diagnosticatedAge: mismaHora, endDate: new Date('2026-09-09T09:00:00Z') },
+                { name: 'Dermatitis atópica', description: 'Brotes en invierno, crema hidratante a diario', diagnosticatedAge: new Date('2024-01-15T10:00:00Z') }, // activa (sin fin)
+                { name: 'Varicela', description: 'Cuadro leve, sin complicaciones', diagnosticatedAge: new Date('2025-03-10T10:00:00Z'), endDate: new Date('2025-03-20T10:00:00Z') },
+                { name: 'Gastroenteritis', description: 'Vómitos y diarrea durante 2 días', diagnosticatedAge: new Date('2026-06-18T12:00:00Z'), endDate: new Date('2026-06-21T12:00:00Z') },
+                { name: 'Alergia estacional (sin fecha)', description: 'NO debe aparecer en el historial: sin diagnosticatedAge' },
+              ],
+            },
+            medicine: {
+              create: [
+                { name: 'Paracetamol 250mg', dosage: '5 ml', intervalHours: 8, startDate: mismaHora, endDate: new Date('2026-09-05T09:00:00Z'), instructions: 'Cada 8h durante 3 días' },
+                { name: 'Crema hidratante (emoliente)', dosage: 'Capa fina', intervalHours: 24, startDate: new Date('2024-01-16T09:00:00Z'), instructions: 'Tratamiento crónico, sin fecha de fin' }, // activo desde antes de cualquier rango
+                { name: 'Suero oral', dosage: '50 ml', intervalHours: 2, startDate: new Date('2026-06-18T13:00:00Z'), endDate: new Date('2026-06-20T13:00:00Z') },
+                { name: 'Amoxicilina 250mg', dosage: '4 ml', intervalHours: 8, startDate: new Date('2026-10-20T08:00:00Z'), endDate: new Date('2026-12-01T08:00:00Z'), instructions: 'Termina en el futuro: debe salir ACTIVE' },
+              ],
+            },
+            vaccines: {
+              create: [
+                { name: 'Hexavalente (2 meses)', scheduledFor: new Date('2022-07-03T09:00:00Z'), appliedAt: new Date('2022-07-04T09:00:00Z') },
+                { name: 'Triple vírica (12 meses)', scheduledFor: new Date('2023-05-03T09:00:00Z'), appliedAt: new Date('2023-05-08T09:00:00Z') },
+                { name: 'Gripe 2026-2027', scheduledFor: new Date('2026-10-15T09:00:00Z'), appliedAt: new Date('2026-10-16T10:30:00Z') },
+                { name: 'Varicela 2ª dosis', scheduledFor: new Date('2026-12-10T09:00:00Z') }, // pendiente: NO debe aparecer
+              ],
+            },
+            events: {
+              create: [
+                { title: 'Control pediátrico', description: 'Revisión semestral con Dr. Morales', date: new Date('2026-09-10T10:00:00Z'), type: EventType.MEDICAL_APPOINTMENT },
+                { title: 'Dermatólogo', description: 'Seguimiento de la dermatitis', date: new Date('2026-03-04T16:00:00Z'), type: EventType.MEDICAL_APPOINTMENT },
+                { title: 'Revisión de los 5 años', description: 'Cita futura: debe salir PENDING', date: new Date('2026-12-02T09:30:00Z'), type: EventType.MEDICAL_APPOINTMENT, notification: true },
+                { title: 'Cumpleaños de la abuela', description: 'Evento GENERAL: NO debe aparecer en el historial', date: new Date('2026-09-20T17:00:00Z'), type: EventType.GENERAL },
+              ],
+            },
+            conditions: {
+              create: [
+                { tag: [TagCondition.FEVER, TagCondition.NASAL_CONGESTION], desciption: 'Primer día del resfriado', timestamp: mismaHora },
+                { tag: [TagCondition.FEVER], notes: 'Fiebre bajó a 37.1°C, buen estado general', timestamp: new Date('2026-09-04T19:00:00Z') },
+                { tag: [TagCondition.VOMITING, TagCondition.DIARRHEA], timestamp: new Date('2026-06-18T08:00:00Z') },
+                { tag: [TagCondition.RASH, TagCondition.ITCHING], desciption: 'Brote de dermatitis en los codos', timestamp: new Date('2026-02-11T20:00:00Z') },
+                ...diarioSintomasLucia,
+              ],
+            },
+          },
+          {
+            name: 'Pablo',
+            surname: 'Ruiz',
+            birthDate: new Date('2025-11-20T05:30:00Z'),
+            bloodGroup: '0-',
+            sex: Sex.MALE,
+            measurements: {
+              create: [
+                { date: new Date('2025-11-20T05:30:00Z'), weight: 3.4, height: 51 },
+                { date: new Date('2026-02-20T10:00:00Z'), weight: 5.9, height: 60 },
+                { date: new Date('2026-05-20T10:00:00Z'), weight: 7.4, height: 66 },
+                { date: new Date('2026-08-20T10:00:00Z'), weight: 8.5, height: 71 },
+              ],
+            },
+            diseases: {
+              create: [
+                { name: 'Bronquiolitis', description: 'Ingreso de 2 días, oxigenoterapia', diagnosticatedAge: new Date('2026-01-12T22:00:00Z'), endDate: new Date('2026-01-26T10:00:00Z') },
+                { name: 'Otitis media', description: 'Oído derecho', diagnosticatedAge: new Date('2026-10-28T11:00:00Z') }, // activa
+              ],
+            },
+            medicine: {
+              create: [
+                { name: 'Salbutamol inhalado', dosage: '2 puffs con cámara', intervalHours: 6, startDate: new Date('2026-01-13T08:00:00Z'), endDate: new Date('2026-01-25T08:00:00Z') },
+                { name: 'Ibuprofeno 2%', dosage: '3 ml', intervalHours: 8, startDate: new Date('2026-10-28T12:00:00Z'), endDate: new Date('2026-10-31T12:00:00Z'), instructions: 'Con comida' },
+              ],
+            },
+            vaccines: {
+              create: [
+                { name: 'Hepatitis B (nacimiento)', scheduledFor: new Date('2025-11-20T09:00:00Z'), appliedAt: new Date('2025-11-21T09:00:00Z') },
+                { name: 'Hexavalente (2 meses)', scheduledFor: new Date('2026-01-20T09:00:00Z'), appliedAt: new Date('2026-02-02T09:00:00Z') }, // aplicada tras la bronquiolitis
+                { name: 'Hexavalente (4 meses)', scheduledFor: new Date('2026-03-20T09:00:00Z'), appliedAt: new Date('2026-03-20T09:30:00Z') },
+                { name: 'Meningococo B (12 meses)', scheduledFor: new Date('2026-11-20T09:00:00Z') }, // pendiente: NO debe aparecer
+              ],
+            },
+            events: {
+              create: [
+                { title: 'Urgencias pediátricas', description: 'Dificultad respiratoria', date: new Date('2026-01-12T21:00:00Z'), type: EventType.MEDICAL_APPOINTMENT },
+                { title: 'Revisión del niño sano (12 meses)', description: 'Peso, talla y desarrollo', date: new Date('2026-11-24T10:00:00Z'), type: EventType.MEDICAL_APPOINTMENT },
+              ],
+            },
+            conditions: {
+              create: [
+                { tag: [TagCondition.WHEEZING, TagCondition.SHORTNESS_OF_BREATH], desciption: 'Respira con pitos', timestamp: new Date('2026-01-12T19:00:00Z') },
+                { tag: [TagCondition.EARACHE, TagCondition.IRRITABILITY], notes: 'Se toca la oreja y llora al tumbarlo', timestamp: new Date('2026-10-27T23:00:00Z') },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    include: { children: true },
+  });
+  console.log(`Usuario PRO de prueba: Marta (id ${marta.id}) · hijos: ${marta.children.map((c) => `${c.name} (id ${c.id})`).join(', ')}`);
+
   // Segundo hijo de Laura para probar el filtro por hijo en el calendario
   const ines = await prisma.child.create({
     data: {
