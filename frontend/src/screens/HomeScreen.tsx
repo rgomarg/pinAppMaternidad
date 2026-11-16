@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
 import { API_URL } from '../api/config';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
 
 import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
 import ActualizarPesoModal from '../components/MeasuramentWeightForm';
@@ -73,6 +73,12 @@ export default function HomeScreen() {
       setUsersLoading(false);
     }
   };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (activeUserId) fetchUsers();
+    }, [activeUserId]),
+  );
 
   // keepChildId: tras guardar una medición se mantiene el hijo que estaba seleccionado
   const fetchChildren = async (userId: number, keepChildId: number | null = null) => {
@@ -530,6 +536,19 @@ export default function HomeScreen() {
                 <Ionicons name="close" size={24} color="black" />
               </TouchableOpacity>
             </View>
+            {activeUserId && (
+              <TouchableOpacity
+                onPress={() => {
+                  setIsUserModalVisible(false);
+                  navigation.navigate('MiPerfil', { userId: activeUserId });
+                }}
+                className="mb-4 flex-row items-center rounded-2xl bg-nanny-card px-4 py-3"
+              >
+                <Ionicons name="person-circle-outline" size={24} color="#6d83a1" />
+                <Text className="ml-3 text-base font-semibold text-nanny-text">Editar mi perfil</Text>
+                <Ionicons name="chevron-forward" size={20} color="#808080" style={{ marginLeft: 'auto' }} />
+              </TouchableOpacity>
+            )}
             {usersLoading ? (
               <ActivityIndicator size="large" color="#6d83a1" />
             ) : usersError ? (
@@ -551,7 +570,7 @@ export default function HomeScreen() {
                     className="flex-row items-center justify-between border-b border-gray-100 p-4"
                   >
                     <View className="flex-row items-center">
-                      <Text className="text-lg">{item.name}</Text>
+                      <Text className="text-lg">{[item.name, item.surname].filter(Boolean).join(' ')}</Text>
                       {item.role === 'ADMIN' && (
                         <Text className="ml-2 rounded-full bg-nanny-blue/15 px-2 py-0.5 text-xs font-semibold text-nanny-blue">
                           Admin

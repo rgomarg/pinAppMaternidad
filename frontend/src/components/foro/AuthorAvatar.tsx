@@ -1,8 +1,7 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import type { Author } from '../../api/forum';
 
-// Iniciales sobre un color fijo por usuario (aún no hay fotos de perfil)
 const COLORS = ['#6d83a1', '#65a882', '#cc7a66', '#a38b6d', '#8a76a8'];
 
 export default function AuthorAvatar({ author, size = 36 }: { author: Author; size?: number }) {
@@ -22,9 +21,11 @@ export default function AuthorAvatar({ author, size = 36 }: { author: Author; si
       }}
       className="items-center justify-center"
     >
-      <Text style={{ fontSize: size * 0.38 }} className="font-bold text-white">
-        {initials}
-      </Text>
+      {author.avatarUrl ? (
+        <Image source={{ uri: author.avatarUrl }} style={{ width: size, height: size, borderRadius: size / 2 }} />
+      ) : (
+        <Text style={{ fontSize: size * 0.38 }} className="font-bold text-white">{initials}</Text>
+      )}
     </View>
   );
 }

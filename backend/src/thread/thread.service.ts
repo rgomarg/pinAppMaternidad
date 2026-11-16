@@ -8,7 +8,15 @@ import { buildMessageTree } from './message-tree';
 import { assertNotBlocked, visibleMessageWhere, visibleThreadWhere } from './visibility';
 
 // Datos públicos del autor (nunca email ni password)
-export const authorSelect = { id: true, name: true, avatarUrl: true, role: true } satisfies Prisma.UserSelect;
+export const authorSelect = { id: true, name: true, surname: true, avatarUrl: true, role: true } satisfies Prisma.UserSelect;
+type PublicAuthor = Prisma.UserGetPayload<{ select: typeof authorSelect }>;
+
+export function formatAuthor(author: PublicAuthor) {
+  return {
+    ...author,
+    name: [author.name, author.surname].filter(Boolean).join(' '),
+  };
+}
 
 const threadSummarySelect = {
   id: true,
@@ -31,7 +39,7 @@ export class ThreadService {
     assertNotBlocked(owner);
     await this.assertTagsExist(tagIds);
 
-    return this.prisma.thread.create({
+    const thread = await this.prisma.thread.create({
       data: {
         title,
         content,
@@ -40,6 +48,7 @@ export class ThreadService {
       },
       select: threadSummarySelect,
     });
+    return { ...thread, owner: formatAuthor(thread.owner) };
   }
 
   async findAll({ tagId, page, limit }: ListThreadsQueryDto) {
@@ -63,7 +72,11 @@ export class ThreadService {
     ]);
 
     return {
-      items: items.map(({ _count, ...thread }) => ({ ...thread, messageCount: _count.messages })),
+      items: items.map(({ _count, ...thread }) => ({
+        ...thread,
+        owner: formatAuthor(thread.owner),
+        messageCount: _count.messages,
+      })),
       page,
       limit,
       total,
@@ -115,17 +128,24 @@ export class ThreadService {
 
     const messages = thread.messages.map(({ likes, ...message }) => ({
       ...message,
+      author: formatAuthor(message.author),
       likedByMe: likes.length > 0,
       reportedByMe: reportedMessages.has(message.id),
     }));
-    return { ...thread, reportedByMe: reportedThread, messageCount: messages.length, messages: buildMessageTree(messages) };
+    return {
+      ...thread,
+      owner: formatAuthor(thread.owner),
+      reportedByMe: reportedThread,
+      messageCount: messages.length,
+      messages: buildMessageTree(messages),
+    };
   }
 
   async update(id: number, { ownerId, title, content, tagIds }: UpdateThreadDto) {
     await this.assertOwner(id, ownerId);
     await this.assertTagsExist(tagIds);
 
-    return this.prisma.thread.update({
+    const thread = await this.prisma.thread.update({
       where: { id },
       data: {
         title,
@@ -135,6 +155,7 @@ export class ThreadService {
       },
       select: threadSummarySelect,
     });
+    return { ...thread, owner: formatAuthor(thread.owner) };
   }
 
   // Borrado lógico: el hilo deja de ser público pero se conserva en la BD para auditoría

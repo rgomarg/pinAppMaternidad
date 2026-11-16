@@ -49,7 +49,9 @@ async function main() {
   const laura = await prisma.user.create({
     data: {
       email: 'laura.pro@example.com',
-      name: 'Laura Pérez',
+      name: 'Laura',
+      surname: 'Pérez',
+      phone: '+34 612 345 678',
       password: 'hashed_password_123',
       role: Role.USER,
       children: {
@@ -109,7 +111,9 @@ async function main() {
   const carlos = await prisma.user.create({
     data: {
       email: 'carlos.user@example.com',
-      name: 'Carlos Martín',
+      name: 'Carlos',
+      surname: 'Martín',
+      phone: '+34 623 456 789',
       password: 'hashed_password_456',
       role: Role.USER,
       children: {
@@ -146,7 +150,9 @@ async function main() {
   const elena = await prisma.user.create({
     data: {
       email: 'elena.admin@example.com',
-      name: 'Elena Gómez (Pediatra)',
+      name: 'Elena',
+      surname: 'Gómez',
+      phone: '+34 634 567 890',
       password: 'hashed_password_789',
       role: Role.PRO,
       children: {
@@ -175,6 +181,7 @@ async function main() {
     data: {
       email: 'admin@example.com',
       name: 'Administración',
+      phone: '+34 645 678 901',
       password: 'hashed_password_admin',
       role: Role.ADMIN,
     },
@@ -184,7 +191,9 @@ async function main() {
   const usuarioBloqueado = await prisma.user.create({
     data: {
       email: 'spam.user@example.com',
-      name: 'Marcos Spam',
+      name: 'Marcos',
+      surname: 'Spam',
+      phone: '+34 656 789 012',
       password: 'hashed_password_spam',
       role: Role.USER,
       blockedAt: new Date('2026-11-01T12:00:00Z'),
@@ -210,7 +219,9 @@ async function main() {
   const marta = await prisma.user.create({
     data: {
       email: 'marta.pro@example.com',
-      name: 'Marta Ruiz (PRO)',
+      name: 'Marta',
+      surname: 'Ruiz',
+      phone: '+34 667 890 123',
       password: 'hashed_password_pro',
       role: Role.PRO,
       children: {

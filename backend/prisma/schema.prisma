@@ -98,6 +98,8 @@ model User {
   password      String?   //si se crea cuenta con google, no se necesitará contraseña. Por eso password es opcional
   googleId      String?   @unique 
   name          String
+  surname       String?
+  phone         String?
   avatarUrl     String?   // URL de Cloudinary/AWS S3
   role          Role      @default(USER)
   createdAt     DateTime  @default(now())

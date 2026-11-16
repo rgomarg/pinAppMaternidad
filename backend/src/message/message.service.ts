@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
-import { authorSelect } from '../thread/thread.service';
+import { authorSelect, formatAuthor } from '../thread/thread.service';
 import { assertNotBlocked, visibleMessageWhere, visibleThreadWhere } from '../thread/visibility';
 import { CreateMessageDto } from './dto/create-message.dto';
 
@@ -43,7 +43,7 @@ export class MessageService {
       },
     });
     // Mismo formato que los nodos de GET /thread/:id
-    return { ...message, likedByMe: false, replies: [] };
+    return { ...message, author: formatAuthor(message.author), likedByMe: false, replies: [] };
   }
 
   // Idempotente: si el usuario ya dio like no se duplica ni suma al contador

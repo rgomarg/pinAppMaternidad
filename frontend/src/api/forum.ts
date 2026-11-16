@@ -7,8 +7,13 @@ export type Role = 'USER' | 'PRO' | 'ADMIN';
 export interface Author {
   id: number;
   name: string;
+  surname: string | null;
   avatarUrl: string | null;
   role: Role;
+}
+
+export function authorDisplayName(author: Pick<Author, 'name' | 'surname'>) {
+  return [author.name, author.surname].filter(Boolean).join(' ');
 }
 
 export interface Tag {
