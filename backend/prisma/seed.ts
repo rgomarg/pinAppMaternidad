@@ -1854,7 +1854,7 @@ async function main() {
       title: "La crianza feliz: Cómo cuidar y entender a tu hijo de 0 a 6 años",
       authors: ["Rosa Jové"],
       synopsis: "La psicóloga infantil explica las etapas evolutivas de los primeros seis años y ofrece pautas respetuosas para acompañar procesos clave como las rutinas, la alimentación, la retirada del pañal, los miedos y los celos entre hermanos.",
-      imageUrl: "https://www.casadellibro.com/libro-la-crianza-feliz-como-cuidar-y-entender-a-tu-hijo-de-0-a-6-anos/9788497348164/1246903",
+      imageUrl: "https://imagessl8.casadellibro.com/a/l/t5/64/9788497348164.jpg",
       month: 11,
       year: 2026
     },
@@ -1862,7 +1862,7 @@ async function main() {
       title: 'El gran libro de Lucía, mi pediatra', 
       authors: ['Lucía Galán Bertrand'], 
       synopsis: 'Manual de referencia sobre salud y bienestar infantil desde el nacimiento hasta la adolescencia. Resuelve de forma clara y tranquilizadora las dudas médicas más frecuentes de madres y padres primerizos (fiebre, vacunas, alimentación, sueño y desarrollo emocional).', 
-      imageUrl: 'https://www.casadellibro.com/libro-el-gran-libro-de-lucia-mi-pediatra/9788408226789/11347252',
+      imageUrl: 'https://imagessl2.casadellibro.com/a/l/t5/89/9788408226789.jpg',
       month: 12,
       year: 2026
     },
@@ -1870,7 +1870,7 @@ async function main() {
       title: "Bésame mucho: Cómo criar a tus hijos con amor", 
       authors: ["Carlos González"], 
       synopsis: "Un clásico de la crianza con apego que desmonta mitos sobre el llanto, el colecho y el contacto físico. El pediatra defiende atender las necesidades afectivas del bebé sin miedo a 'malcriarlo', apoyándose en la biología y el sentido común.", 
-      imageUrl: "https://www.casadellibro.com/libro-besame-mucho-como-criar-a-tus-hijos-con-amor/9788484605850/1085021", 
+      imageUrl: "https://imagessl0.casadellibro.com/a/l/t5/50/9788484605850.jpg", 
       month: 1, 
       year: 2027
     },
@@ -1878,7 +1878,7 @@ async function main() {
       title: "Ser mamá: Guía de embarazo, parto y posparto con evidencia y emoción",
       authors: ["Nazareth Olivera Belart (@comadronaenlaola)"],
       synopsis: "Escrito por una matrona, recorre paso a paso la gestación, el momento del parto y los primeros meses tras dar a luz combinando rigor científico actualizado con acompañamiento emocional para que cada mujer tome decisiones informadas.",
-      imageUrl: "https://www.casadellibro.com/libro-ser-mama-guia-del-embarazo-parto-y-posparto-con-ciencia-y-emocion/9788418055607/12804276",
+      imageUrl: "https://imagessl7.casadellibro.com/a/l/t5/07/9788418055607.jpg",
       month: 2,
       year: 2027
     },
@@ -1886,7 +1886,7 @@ async function main() {
       title: "Somos la leche: Dudas, consejos y falsos mitos sobre la lactancia",
       authors: ["Alba Padró"],
       synopsis: "Guía práctica escrita por una de las consultoras internacionales de lactancia (IBCLC) más reconocidas en España. Aborda desde la subida de la leche y el agarre hasta las crisis de crecimiento, el dolor, la extracción y el destete respetuoso.",
-      imageUrl: "https://www.casadellibro.com/libro-somos-la-leche/9788416895205/5702084",
+      imageUrl: "https://imagessl5.casadellibro.com/a/l/t5/05/9788416895205.jpg",
       month: 3,
       year: 2027
     },
@@ -1894,7 +1894,7 @@ async function main() {
       title: "El cerebro del niño explicado a los padres",
       authors: ["Álvaro Bilbao"],
       synopsis: "El neuropsicólogo traduce los hallazgos de la neurociencia infantil a herramientas prácticas para el día a día. Explica cómo madura el cerebro durante los primeros seis años de vida y cómo gestionar rabietas, límites y emociones desde la empatía.",
-      imageUrl: "https://www.casadellibro.com/libro-el-cerebro-del-nino-explicado-a-los-padres/9788416429561/2612330",
+      imageUrl: "https://imagessl1.casadellibro.com/a/l/t5/61/9788416429561.jpg",
       month: 4,
       year: 2027
     },
@@ -1902,7 +1902,7 @@ async function main() {
       title: "Matrescencia: La metamorfosis del embarazo, el parto y la maternidad",
       authors: ["Lucy Jones"],
       synopsis: "Ensayo revelador que combina testimonio personal y divulgación científica para analizar la profunda transformación física, neurológica, psicológica y social que atraviesa una mujer al convertirse en madre, alejándose de la idealización habitual.",
-      imageUrl: "https://www.casadellibro.com/libro-matrescencia/9791387761523/17782367",
+      imageUrl: "https://imagessl3.casadellibro.com/a/l/t5/23/9791387761523.jpg",
       month: 5,
       year: 2027
     },
@@ -1910,7 +1910,7 @@ async function main() {
       title: "Neuromaternal: ¿Qué le pasa a mi cerebro durante el embarazo y la maternidad?",
       authors: ["Susana Carmona"],
       synopsis: "La neurocientífica española expone las investigaciones pioneras sobre cómo cambia la estructura y plasticidad del cerebro femenino durante la gestación y la crianza para adaptarse al cuidado del bebé y fortalecer el vínculo.",
-      imageUrl: "https://www.casadellibro.com/libro-neuromaternal/9788466678087/14452380",
+      imageUrl: "https://imagessl7.casadellibro.com/a/l/t5/87/9788466678087.jpg",
       month: 6,
       year: 2027
     },
@@ -1918,7 +1918,7 @@ async function main() {
       title: "Conoce tu posparto: 40 días y 500 noches", 
       authors: ["Laia Aguilar"], 
       synopsis: "Una mirada realista y cercana sobre el puerperio, esa etapa a menudo invisibilizada tras el nacimiento. Aborda la recuperación física, el vaivén hormonal, el cansancio, los cambios en la pareja y la gestión de expectativas y comentarios externos.", 
-      imageUrl: "https://www.casadellibro.com/libro-conoce-tu-posparto-40-dias-y-500-noches/9788418055294/12641568",
+      imageUrl: "https://imagessl4.casadellibro.com/a/l/t5/94/9788418055294.jpg", 
       month: 7,
       year: 2027
     },
@@ -1926,7 +1926,7 @@ async function main() {
       title: "Las semanas mágicas",
       authors: ["Hetty van de Rijt y Frans Plooij"],
       synopsis: "Basado en décadas de investigación sobre el desarrollo infantil, identifica los diez grandes saltos mentales que experimentan los bebés durante sus primeros 20 meses de vida, explicando por qué atraviesan fases de mayor irritabilidad y cómo estimular cada nueva habilidad.",
-      imageUrl: "https://www.casadellibro.com/libro-las-semanas-magicas/9789491882012/12401864",
+      imageUrl: "https://covers.openlibrary.org/b/id/14487642-L.jpg",
       month: 8,
       year: 2027
     }

@@ -19,6 +19,53 @@ import Constants from 'expo-constants';
 
 
 
+function BookCoverImage({ uri }: { uri?: string | null }) {
+  const [hasError, setHasError] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  if (!uri || hasError) {
+    return (
+      <View
+        style={{ width: 96, height: 144 }}
+        className="items-center justify-center rounded-lg bg-[#e5dfd4] border border-[#ded6ca]"
+      >
+        <Ionicons name="book-outline" size={36} color="#968e84" />
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ width: 96, height: 144 }} className="relative overflow-hidden rounded-lg bg-[#e5dfd4]">
+      {loading && (
+        <View
+          style={{ width: 96, height: 144 }}
+          className="absolute inset-0 items-center justify-center bg-[#e5dfd4]"
+        >
+          <ActivityIndicator size="small" color="#b87427" />
+        </View>
+      )}
+      <Image
+        source={{
+          uri,
+          headers: {
+            Accept: 'image/webp,image/apng,image/jpeg,image/*,*/*;q=0.8',
+          },
+          cache: 'force-cache',
+        }}
+        style={{ width: 96, height: 144 }}
+        className="rounded-lg"
+        resizeMode="cover"
+        onLoadStart={() => setLoading(true)}
+        onLoad={() => setLoading(false)}
+        onError={() => {
+          setLoading(false);
+          setHasError(true);
+        }}
+      />
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const { setSelectedUserId, setSelectedUserRole, isAdmin } = useFamilySelection();
   const [activeChildId, setActiveChildId] = useState<number | null>(null);
@@ -702,17 +749,7 @@ export default function HomeScreen() {
                           className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4"
                         >
                           <View className="flex-row gap-3.5">
-                            {books[0].imageUrl ? (
-                              <Image
-                                source={{ uri: books[0].imageUrl }}
-                                className="h-36 w-24 rounded-lg bg-[#e5dfd4]"
-                                resizeMode="cover"
-                              />
-                            ) : (
-                              <View className="h-36 w-24 items-center justify-center rounded-lg bg-[#e5dfd4]">
-                                <Ionicons name="book-outline" size={32} color="#968e84" />
-                              </View>
-                            )}
+                            <BookCoverImage uri={books[0].imageUrl} />
                             <View className="flex-1 justify-between py-1">
                               <View>
                                 <Text className="text-base font-bold text-nanny-text leading-snug">
@@ -821,6 +858,7 @@ export default function HomeScreen() {
                           <View className="flex-row gap-3.5">
                             <Image
                               source={{ uri: receta.imageUrl }}
+                              style={{ width: 96, height: 96 }}
                               className="h-24 w-24 rounded-xl bg-[#e5dfd4]"
                               resizeMode="cover"
                             />
