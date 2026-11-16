@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndicator, TextInput, KeyboardAvoidingView, Image, Linking, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
 import { API_URL } from '../api/config';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
 
 import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
 import ActualizarPesoModal from '../components/MeasuramentWeightForm';
@@ -51,13 +51,12 @@ export default function HomeScreen() {
   const [books, setBooks] = useState<any[]>([]);
   const [recLoading, setRecLoading] = useState(false);
 
-  // Calcula la edad del hijo (1–6, capped)
+  // Calcula la edad del hijo en años
   const calculateChildAge = (birthDateString: string): number => {
     const birth = new Date(birthDateString);
     const now = new Date();
     const diffMs = now.getTime() - birth.getTime();
-    const age = Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000));
-    return Math.max(1, Math.min(age, 6));
+    return Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000));
   };
 
   // FETCH 1 – Libro del mes (mes y año actuales)
@@ -116,15 +115,24 @@ export default function HomeScreen() {
 
   // useEffect 1 – Libro del mes: se carga al entrar a la sección de artículos
   useEffect(() => {
+    const child = children.find((c: any) => c.id === activeChildId);
+    if (child?.birthDate && calculateChildAge(child.birthDate) > 6) {
+      setBooks([]);
+      return;
+    }
     if (recomendacionesTab === 'articulos') {
       fetchBooks();
     }
-  }, [recomendacionesTab]);
+  }, [recomendacionesTab, activeChildId, children]);
 
   // useEffect 2 – Artículos: se recarga cuando cambia el hijo activo O cuando el tab es 'articulos'
   useEffect(() => {
     const child = children.find((c: any) => c.id === activeChildId);
     if (!child?.birthDate) return;
+    if (calculateChildAge(child.birthDate) > 6) {
+      setArticles([]);
+      return;
+    }
     if (recomendacionesTab !== 'articulos') return;
     fetchArticles();
   }, [activeChildId, children, recomendacionesTab]);
@@ -133,9 +141,13 @@ export default function HomeScreen() {
   useEffect(() => {
     const child = children.find((c: any) => c.id === activeChildId);
     if (!child?.birthDate) return;
-    if (recomendacionesTab !== 'comidas') return;
     const age = calculateChildAge(child.birthDate);
-    fetchRecipes(age);
+    if (age > 6) {
+      setRecipes([]);
+      return;
+    }
+    if (recomendacionesTab !== 'comidas') return;
+    fetchRecipes(Math.max(1, age));
   }, [activeChildId, children, recomendacionesTab]);
 
   const updateFamiliaChild = (childId: number | null, userId: number | null = activeUserId) => {
@@ -174,8 +186,8 @@ export default function HomeScreen() {
   };
 
   // keepChildId: tras guardar una medición se mantiene el hijo que estaba seleccionado
-  const fetchChildren = async (userId: number, keepChildId: number | null = null) => {
-    setLoading(true);
+  const fetchChildren = async (userId: number, keepChildId: number | null = null, silent: boolean = false) => {
+    if (!silent) setLoading(true);
     try {
       const response = await fetch(`${API_URL}/user/${userId}`);
       const data = await response.json();
@@ -193,9 +205,18 @@ export default function HomeScreen() {
     } catch (error) {
       console.error("Error fetching children:", error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  // Al volver a la pantalla Home (o ganar el foco), refrescamos los hijos del usuario activo
+  useFocusEffect(
+    useCallback(() => {
+      if (activeUserId) {
+        fetchChildren(activeUserId, activeChildId, true);
+      }
+    }, [activeUserId, activeChildId])
+  );
 
 
     const registerForPushNotifications = async (userId: number) => {
@@ -284,6 +305,7 @@ export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const activeChild = children.find(c => c.id === activeChildId);
   const activeUser = users.find(u => u.id === activeUserId);
+  const activeChildAge = activeChild?.birthDate ? calculateChildAge(activeChild.birthDate) : 0;
   const growth = useGrowth(activeChild);
   const proyeccionPeso = growth.data?.weight?.projection.at(-1);
   const proyeccionAltura = growth.data?.height?.projection.at(-1);
@@ -653,7 +675,19 @@ export default function HomeScreen() {
 
               {/* Contenido condicionado al rol PRO / Admin */}
               {activeUser?.role === 'PRO' || isAdmin ? (
-                recomendacionesTab === 'articulos' ? (
+                activeChildAge > 6 ? (
+                  <View className="mx-4 mb-4 items-center justify-center rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-5">
+                    <View className="mb-2.5 h-12 w-12 items-center justify-center rounded-full bg-[#ded6ca]/70">
+                      <Ionicons name="information-circle-outline" size={26} color="#6d83a1" />
+                    </View>
+                    <Text className="text-base font-semibold text-nanny-text text-center">
+                      No hay información para niños de esta edad
+                    </Text>
+                    <Text className="mt-1 text-center text-xs text-nanny-muted px-2">
+                      Las recomendaciones actuales están disponibles para niños de hasta 6 años.
+                    </Text>
+                  </View>
+                ) : recomendacionesTab === 'articulos' ? (
                   <View className="mx-4 mb-4 gap-4">
                     {/* Sección Libro del Mes */}
                     <View>
