@@ -8,7 +8,7 @@ import { buildMessageTree } from './message-tree';
 import { assertNotBlocked, visibleMessageWhere, visibleThreadWhere } from './visibility';
 
 // Datos públicos del autor (nunca email ni password)
-export const authorSelect = { id: true, name: true, surname: true, avatarUrl: true, role: true } satisfies Prisma.UserSelect;
+export const authorSelect = { id: true, name: true, surname: true, avatarUrl: true, role: true, isPediatrician: true } satisfies Prisma.UserSelect;
 type PublicAuthor = Prisma.UserGetPayload<{ select: typeof authorSelect }>;
 
 export function formatAuthor(author: PublicAuthor) {

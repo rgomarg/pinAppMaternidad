@@ -43,10 +43,10 @@ export function timeAgo(date: string) {
 
 // Distintivo para profesionales sanitarios (rol PRO)
 export function ProBadge({ author }: { author: Author }) {
-  if (author.role !== 'PRO') return null;
+  if (!author.isPediatrician) return null;
   return (
     <Text className="ml-2 rounded-full bg-nanny-green/15 px-2 py-0.5 text-xs font-semibold text-nanny-green">
-      Profesional
+      Pediatra
     </Text>
   );
 }

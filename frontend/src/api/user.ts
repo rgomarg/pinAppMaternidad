@@ -7,6 +7,7 @@ export type ProfileUser = {
   surname: string | null;
   phone: string | null;
   avatarUrl: string | null;
+  profileRole: 'MOTHER' | 'FATHER' | 'GUARDIAN';
   role: 'USER' | 'PRO' | 'ADMIN';
 };
 
@@ -18,7 +19,7 @@ export async function getUser(id: number): Promise<ProfileUser> {
 
 export async function updateUser(
   id: number,
-  data: Pick<ProfileUser, 'name' | 'surname' | 'phone' | 'avatarUrl'>,
+  data: Pick<ProfileUser, 'name' | 'surname' | 'phone' | 'avatarUrl' | 'profileRole'>,
 ): Promise<ProfileUser> {
   const response = await fetch(`${API_URL}/user/${id}`, {
     method: 'PATCH',

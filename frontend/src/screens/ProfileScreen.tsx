@@ -30,6 +30,7 @@ export default function ProfileScreen() {
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
   const [phone, setPhone] = useState('');
+  const [profileRole, setProfileRole] = useState<ProfileUser['profileRole']>('MOTHER');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -46,6 +47,7 @@ export default function ProfileScreen() {
       setName(value.name);
       setSurname(value.surname ?? '');
       setPhone(value.phone ?? '');
+      setProfileRole(value.profileRole);
       setAvatarUrl(value.avatarUrl);
     }).catch((error: Error) => setErrors({ form: error.message })).finally(() => setLoading(false));
   }, [userId]);
@@ -64,6 +66,19 @@ export default function ProfileScreen() {
     if (!result.canceled) setAvatarUrl(result.assets[0].uri);
   };
 
+  const openPhotoOptions = () => {
+    if (!avatarUrl) {
+      choosePhoto();
+      return;
+    }
+
+    Alert.alert('Foto de perfil', '¿Qué quieres hacer con tu foto actual?', [
+      { text: 'Cambiar foto', onPress: choosePhoto },
+      { text: 'Eliminar foto', style: 'destructive', onPress: () => setAvatarUrl(null) },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  };
+
   const save = async () => {
     const nextErrors: Record<string, string> = {};
     if (!name.trim()) nextErrors.name = 'El nombre es obligatorio.';
@@ -75,7 +90,7 @@ export default function ProfileScreen() {
 
     setSaving(true);
     try {
-      await updateUser(userId, { name: name.trim(), surname: surname.trim(), phone: phone.trim(), avatarUrl });
+      await updateUser(userId, { name: name.trim(), surname: surname.trim(), phone: phone.trim(), avatarUrl, profileRole });
       navigation.goBack();
     } catch (error) {
       setErrors({ form: error instanceof Error ? error.message : 'No se pudo guardar el perfil.' });
@@ -88,7 +103,7 @@ export default function ProfileScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: BG }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={{ paddingTop: 44, paddingHorizontal: 24, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#ded6ca', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ paddingTop: 58, paddingHorizontal: 24, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#ded6ca', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Pressable onPress={() => navigation.goBack()} accessibilityRole="button">
           <Text style={{ color: BLUE, fontSize: 16 }}>‹ Volver</Text>
         </Pressable>
@@ -98,7 +113,7 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
-        <Pressable onPress={choosePhoto} style={{ alignSelf: 'center', marginBottom: 22 }} accessibilityRole="button" accessibilityLabel="Cambiar fotografía">
+        <Pressable onPress={openPhotoOptions} style={{ alignSelf: 'center', marginBottom: 22 }} accessibilityRole="button" accessibilityLabel={avatarUrl ? 'Gestionar fotografía de perfil' : 'Añadir fotografía de perfil'}>
           <View style={{ width: 108, height: 108, borderRadius: 54, borderWidth: 4, borderColor: BLUE, backgroundColor: CARD, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
             {avatarUrl ? <Image source={{ uri: avatarUrl }} style={{ width: '100%', height: '100%' }} /> : <Ionicons name="person" size={48} color={MUTED} />}
           </View>
@@ -107,28 +122,44 @@ export default function ProfileScreen() {
           </View>
         </Pressable>
         <View style={{ flexDirection: 'row', gap: 12 }}>
-          <Field label="Nombre" value={name} onChangeText={setName} error={errors.name} />
-          <Field label="Apellido" value={surname} onChangeText={setSurname} error={errors.surname} />
+          <Field label="NOMBRE" value={name} onChangeText={setName} error={errors.name} contact />
+          <Field label="APELLIDO" value={surname} onChangeText={setSurname} error={errors.surname} contact />
+        </View>
+        <Text style={{ color: MUTED, fontSize: 14, fontWeight: '600', marginTop: 6, marginBottom: 8 }}>ROL</Text>
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 8 }}>
+          {([
+            ['MOTHER', 'Madre'],
+            ['FATHER', 'Padre'],
+            ['GUARDIAN', 'Tutor/a'],
+          ] as const).map(([value, label]) => (
+            <Pressable
+              key={value}
+              onPress={() => setProfileRole(value)}
+              style={{ flex: 1, backgroundColor: profileRole === value ? BLUE : '#eee5d6', borderColor: '#ddd2c4', borderWidth: 1, borderRadius: 14, paddingVertical: 11, alignItems: 'center' }}
+            >
+              <Text style={{ color: profileRole === value ? 'white' : BLUE, fontSize: 15, fontWeight: '600' }}>{label}</Text>
+            </Pressable>
+          ))}
         </View>
         <Text style={{ color: MUTED, fontSize: 13, fontWeight: '700', marginTop: 18, marginBottom: 8, letterSpacing: 0.8 }}>INFORMACIÓN DE CONTACTO</Text>
         <View style={{ backgroundColor: CARD, borderRadius: 16, padding: 12 }}>
-          <Field label="Correo electrónico" value={user?.email ?? ''} onChangeText={() => undefined} editable={false} />
-          <Field label="Teléfono" value={phone} onChangeText={setPhone} error={errors.phone} keyboardType="phone-pad" />
+          <Field label="Correo electrónico" value={user?.email ?? ''} onChangeText={() => undefined} editable={false} contact />
+          <Field label="Teléfono" value={phone} onChangeText={setPhone} error={errors.phone} keyboardType="phone-pad" contact />
         </View>
         {errors.form && <Text style={{ color: '#cc7a66', marginTop: 16 }}>{errors.form}</Text>}
-        <Pressable onPress={() => navigation.goBack()} style={{ marginTop: 24, backgroundColor: CARD, borderRadius: 18, padding: 14, alignItems: 'center' }}>
-          <Text style={{ color: MUTED, fontSize: 15, fontWeight: '600' }}>Cancelar cambios</Text>
+        <Pressable onPress={() => navigation.goBack()} style={{ marginTop: 24, backgroundColor: '#fff1ec', borderColor: '#ddd2c4', borderWidth: 1, borderRadius: 18, padding: 14, alignItems: 'center' }}>
+          <Text style={{ color: '#cc7a66', fontSize: 15, fontWeight: '600' }}>Cancelar cambios</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-function Field({ label, value, onChangeText, error, editable = true, keyboardType }: { label: string; value: string; onChangeText: (value: string) => void; error?: string; editable?: boolean; keyboardType?: 'phone-pad' }) {
+function Field({ label, value, onChangeText, error, editable = true, keyboardType, contact = false }: { label: string; value: string; onChangeText: (value: string) => void; error?: string; editable?: boolean; keyboardType?: 'phone-pad'; contact?: boolean }) {
   return (
     <View style={{ flex: 1, marginBottom: 10 }}>
       <Text style={{ color: MUTED, fontSize: 14, fontWeight: '600', marginBottom: 5 }}>{label}</Text>
-      <TextInput value={value} onChangeText={onChangeText} editable={editable} keyboardType={keyboardType} style={{ backgroundColor: CARD, borderRadius: 14, borderWidth: error ? 1 : 0, borderColor: '#cc7a66', paddingHorizontal: 13, paddingVertical: 11, color: TEXT, fontSize: 15 }} />
+      <TextInput value={value} onChangeText={onChangeText} editable={editable} keyboardType={keyboardType} style={{ backgroundColor: contact ? '#eee5d6' : CARD, borderRadius: 16, borderWidth: error || contact ? 1 : 0, borderColor: error ? '#cc7a66' : '#ddd2c4', paddingHorizontal: 13, paddingVertical: 11, color: TEXT, fontSize: 15 }} />
       {error && <Text style={{ color: '#cc7a66', fontSize: 11, marginTop: 3 }}>{error}</Text>}
     </View>
   );

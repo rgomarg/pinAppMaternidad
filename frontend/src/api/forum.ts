@@ -10,6 +10,7 @@ export interface Author {
   surname: string | null;
   avatarUrl: string | null;
   role: Role;
+  isPediatrician: boolean;
 }
 
 export function authorDisplayName(author: Pick<Author, 'name' | 'surname'>) {

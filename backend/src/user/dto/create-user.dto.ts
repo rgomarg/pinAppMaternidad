@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { IsEmail, IsIn, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 export class CreateUserDto {
   @IsOptional()
@@ -23,4 +23,8 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   avatarUrl?: string | null;
+
+  @IsOptional()
+  @IsIn(['MOTHER', 'FATHER', 'GUARDIAN'])
+  profileRole?: 'MOTHER' | 'FATHER' | 'GUARDIAN';
 }
