@@ -324,6 +324,30 @@ async function main() {
   });
   console.log(`Usuario PRO de prueba: Marta (id ${marta.id}) · hijos: ${marta.children.map((c) => `${c.name} (id ${c.id})`).join(', ')}`);
 
+  // Usuario 7: Sofía (PRO) - Madre primeriza con una niña que empieza la guardería.
+  // Segundo usuario PRO para probar funciones PRO (p. ej. el resumen con IA de los hilos del foro)
+  // con más de una cuenta.
+  const sofia = await prisma.user.create({
+    data: {
+      email: 'sofia.pro@example.com',
+      name: 'Sofía Navarro (PRO)',
+      password: 'hashed_password_sofia',
+      role: Role.PRO,
+      children: {
+        create: [
+          {
+            name: 'Martina',
+            surname: 'Navarro',
+            birthDate: new Date('2025-02-10T08:00:00Z'),
+            bloodGroup: 'A+',
+            sex: Sex.FEMALE,
+          },
+        ],
+      },
+    },
+  });
+  console.log(`Usuario PRO de prueba: Sofía (id ${sofia.id})`);
+
   // Segundo hijo de Laura para probar el filtro por hijo en el calendario
   const ines = await prisma.child.create({
     data: {
@@ -634,6 +658,152 @@ async function main() {
       threadId: hiloPolemico.id,
     },
   });
+
+  // Hilo largo con muchas respuestas, anidadas y con likes, para probar el resumen con IA.
+  // Mezcla consejos prácticos, experiencias y desacuerdos (despedirse o "escaparse"),
+  // para comprobar que el resumen recoge los puntos clave y no solo repite los mensajes.
+  const hiloGuarderia = await prisma.thread.create({
+    data: {
+      title: 'Empezamos la guardería en septiembre: adaptación, llantos y virus. ¿Cómo lo habéis vivido?',
+      content:
+        'Martina tiene 19 meses y en septiembre empieza la guardería por primera vez. Yo vuelvo a trabajar a jornada completa y estoy muy nerviosa: ' +
+        'me han dicho que la adaptación puede durar semanas, que se ponen malos cada dos por tres y que lloran muchísimo al dejarlos. ' +
+        '¿Cómo fue la adaptación de vuestros peques? ¿Qué os ayudó? ¿Os despedíais o os ibais sin que os vieran? ' +
+        'Y lo de los virus, ¿cómo lo organizasteis con el trabajo? Cualquier consejo es bienvenido.',
+      ownerId: sofia.id,
+      tags: { connect: [{ id: tagDesarrollo.id }, { id: tagSalud.id }] },
+    },
+  });
+
+  // Crea una respuesta del hilo de la guardería. likesCount siempre igual al nº de filas en MessageLike
+  const responderGuarderia = (
+    autor: { id: number },
+    content: string,
+    opciones: { respondeA?: { id: number }; likes?: { id: number }[] } = {},
+  ) =>
+    prisma.message.create({
+      data: {
+        content,
+        authorId: autor.id,
+        threadId: hiloGuarderia.id,
+        parentId: opciones.respondeA?.id,
+        likesCount: opciones.likes?.length ?? 0,
+        likes: opciones.likes?.length ? { create: opciones.likes.map((u) => ({ userId: u.id })) } : undefined,
+      },
+    });
+
+  const gAdaptacion = await responderGuarderia(
+    elena,
+    'Como pediatra y madre: la adaptación progresiva es clave. Lo ideal es empezar con 1 hora los primeros días, luego hasta antes de comer, después con comida ' +
+      'y por último con siesta. Suele llevar entre 2 y 3 semanas, aunque cada niño va a su ritmo. Si podéis, evitad que coincida con vuestra vuelta al trabajo.',
+    { likes: [sofia, laura, carlos, marta] },
+  );
+  await responderGuarderia(
+    sofia,
+    'Gracias Elena. El problema es que me incorporo el 1 de septiembre y la guarde empieza ese mismo día... ¿Alguna idea para cuadrarlo?',
+    { respondeA: gAdaptacion },
+  );
+  await responderGuarderia(
+    marta,
+    'Nosotros lo cuadramos con los abuelos: la primera semana la recogían ellos a mediodía. Si no tenéis abuelos cerca, mira si en tu empresa ' +
+      'puedes pedir unos días de vacaciones o reducción de jornada solo para esas semanas.',
+    { respondeA: gAdaptacion, likes: [sofia] },
+  );
+
+  const gDespedida = await responderGuarderia(
+    laura,
+    'Un consejo que nos dieron las educadoras y funcionó: despedíos SIEMPRE, aunque llore. Una despedida corta, con la misma frase cada día ' +
+      '("mamá vuelve después de la siesta") y os vais sin alargarlo. Si te escapas sin que te vea, al principio llora menos, pero luego le cuesta más fiarse.',
+    { likes: [elena, marta, sofia] },
+  );
+  const gEscaparse = await responderGuarderia(
+    carlos,
+    'Pues yo no estoy de acuerdo del todo. Con nuestro hijo mayor, despedirnos era un drama de 20 minutos en la puerta. El día que nos fuimos mientras jugaba, ' +
+      'la educadora nos dijo que a los 2 minutos estaba tan tranquila. A cada niño le va una cosa.',
+    { respondeA: gDespedida, likes: [] },
+  );
+  await responderGuarderia(
+    elena,
+    'Lo que cuentas es muy habitual, Carlos, pero en general recomendamos la despedida breve: si el niño descubre que desapareces sin avisar, ' +
+      'muchas veces se vuelve más pegajoso también en casa. Que sea corta es lo importante, no que no exista.',
+    { respondeA: gEscaparse, likes: [laura, marta] },
+  );
+
+  await responderGuarderia(
+    marta,
+    'Lo del objeto de apego nos salvó: Lucía llevaba su conejito de trapo y una foto nuestra plastificada en la mochila. ' +
+      'Preguntad antes en la guarde si lo permiten, en algunas no dejan juguetes de casa.',
+    { likes: [sofia, laura] },
+  );
+
+  const gVirus = await responderGuarderia(
+    laura,
+    'Sobre los virus: prepárate, el primer año es una cadena. Leo estuvo malo prácticamente un fin de semana sí y otro también: mocos, otitis, gastroenteritis, ' +
+      'mano-pie-boca... A partir del segundo año mejora mucho.',
+    { likes: [carlos, marta, sofia] },
+  );
+  await responderGuarderia(
+    elena,
+    'Es normal que tengan entre 8 y 12 infecciones leves el primer año de guardería: su sistema inmune se está entrenando. ' +
+      'Llevad el calendario vacunal al día. Id al pediatra si la fiebre dura más de 3 días, si le cuesta respirar, si está muy decaído o no quiere beber.',
+    { respondeA: gVirus, likes: [laura, sofia, marta, carlos] },
+  );
+  await responderGuarderia(
+    carlos,
+    'Y tened un plan B para los días que no puede ir: nosotros nos repartimos los días de baja entre los dos y tiramos de una canguro de confianza.',
+    { respondeA: gVirus, likes: [sofia] },
+  );
+
+  await responderGuarderia(
+    marta,
+    'Otra cosa que nadie me avisó: los primeros días pueden dormir peor y estar más irritables en casa por la tarde. Es el cansancio y la tensión acumulada. ' +
+      'Nosotros adelantamos la hora de dormir media hora y mucho mimo.',
+    { likes: [laura, sofia] },
+  );
+  await responderGuarderia(
+    laura,
+    'Muy práctico: marcad TODO con el nombre (ropa, chupetes, biberones, mudas). Y dejad siempre dos mudas completas de recambio en la mochila.',
+    { likes: [sofia] },
+  );
+  await responderGuarderia(
+    carlos,
+    'Hablad mucho con las educadoras. Nosotros usábamos la agenda/app de la guarde para saber qué había comido, cuánto había dormido y si había hecho caca. ' +
+      'Te quedas mucho más tranquila.',
+    { likes: [marta] },
+  );
+
+  const gComida = await responderGuarderia(
+    sofia,
+    '¿Y la comida? Martina en casa come bien pero es muy selectiva con las texturas. Me da miedo que no coma nada allí.',
+  );
+  await responderGuarderia(
+    elena,
+    'Es frecuente que las primeras semanas coman menos fuera de casa. Mientras en casa compense y gane peso con normalidad no hay que preocuparse. ' +
+      'Avisad a la guarde de sus preferencias y de cualquier alergia por escrito.',
+    { respondeA: gComida, likes: [sofia, laura] },
+  );
+  await responderGuarderia(
+    marta,
+    'A Lucía le pasaba igual y al mes comía de todo por imitación de los otros niños. Ver a los demás comer ayuda muchísimo.',
+    { respondeA: gComida, likes: [sofia] },
+  );
+
+  await responderGuarderia(
+    carlos,
+    'Ojo con las regresiones: nuestro mayor, que ya casi no usaba pañal, volvió atrás las primeras semanas. También hubo más despertares nocturnos. ' +
+      'Al mes y medio todo volvió a la normalidad.',
+    { likes: [laura] },
+  );
+  await responderGuarderia(
+    laura,
+    'Y lo más importante: cuidad también vuestras emociones. Los niños notan muchísimo nuestros nervios. Yo lloraba más que Leo la primera semana 😅',
+    { likes: [sofia, marta, carlos, elena] },
+  );
+  await responderGuarderia(
+    sofia,
+    'Muchísimas gracias a todas y todos. Me apunto: adaptación progresiva, despedida corta, objeto de apego, plan B para los virus y paciencia. Os cuento cómo va.',
+    { likes: [laura, marta] },
+  );
 
   // Hilo eliminado por el administrador (borrado lógico: sigue en la BD para auditoría)
   await prisma.thread.create({

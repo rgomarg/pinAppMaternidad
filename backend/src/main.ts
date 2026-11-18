@@ -1,3 +1,5 @@
+// Carga backend/.env (GEMINI_API_KEY, GEMINI_MODEL) antes que el resto de módulos
+import 'dotenv/config';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';

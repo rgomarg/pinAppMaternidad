@@ -30,6 +30,12 @@ import MessageItem from "../../components/foro/MessageItem";
 import ModeratableAuthor from "../../components/foro/ModeratableAuthor";
 import ReplyComposer from "../../components/foro/ReplyComposer";
 import ReportModal from "../../components/foro/ReportModal";
+import {
+  ProUpgradeModal,
+  SummaryButton,
+  SummaryCard,
+  useThreadSummary,
+} from "../../components/foro/ThreadSummary";
 
 const SCREEN_PADDING = 24;
 
@@ -38,7 +44,13 @@ export default function ThreadDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const threadId: number = route.params.threadId;
-  const { selectedUserId, isAdmin } = useFamilySelection();
+  const { selectedUserId, selectedUserRole, isAdmin } = useFamilySelection();
+  // Resumen con IA: solo usuarios PRO (el backend lo vuelve a comprobar con ProGuard)
+  const summary = useThreadSummary(
+    threadId,
+    selectedUserId,
+    selectedUserRole === "PRO",
+  );
   // Ancho de una conversación sin sangría: la pantalla menos el padding lateral del ScrollView
   const { width: windowWidth } = useWindowDimensions();
   const conversationWidth = windowWidth - SCREEN_PADDING * 2;
@@ -258,13 +270,15 @@ export default function ThreadDetailScreen() {
                 </Text>
               ))}
             </View>
-            {thread.owner.id !== selectedUserId && (
+            <View className="mt-4 flex-row flex-wrap items-center gap-2">
+              <SummaryButton state={summary} />
+              {thread.owner.id !== selectedUserId && (
                 <TouchableOpacity
                   onPress={() =>
                     setReportTarget({ type: "THREAD", id: thread.id })
                   }
                   disabled={thread.reportedByMe}
-                  className="mt-3 flex-row items-center self-start rounded-full bg-nanny-card px-4 py-2"
+                  className="flex-row items-center rounded-full bg-nanny-card px-4 py-2"
                   accessibilityRole="button"
                   accessibilityLabel={thread.reportedByMe ? "Hilo ya reportado" : "Reportar hilo"}
                 >
@@ -278,6 +292,8 @@ export default function ThreadDetailScreen() {
                   </Text>
                 </TouchableOpacity>
               )}
+            </View>
+            <SummaryCard state={summary} />
           </View>
 
           <Text className="mb-3 text-base font-bold uppercase tracking-wider text-nanny-muted">
@@ -332,6 +348,8 @@ export default function ThreadDetailScreen() {
           onReported={loadThread}
         />
       )}
+      <ProUpgradeModal state={summary} />
+
     </KeyboardAvoidingView>
   );
 }
