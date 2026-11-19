@@ -434,6 +434,7 @@ export default function CrearEventoScreen() {
           await scheduleLocalEventNotification({
             eventId: uniqueId,
             itemType: notifType,
+            eventType,
             title: notifTitle,
             body: notifBody,
             targetDate: scheduledNotifTime,

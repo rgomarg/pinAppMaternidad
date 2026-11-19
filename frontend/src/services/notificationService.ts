@@ -51,9 +51,60 @@ export async function setupNotificationChannel(): Promise<void> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Preferencias de notificación del usuario activo (pantalla "Mi perfil")
+// ---------------------------------------------------------------------------
+export type NotificationPreferences = {
+  notifyMedicine: boolean;
+  notifyAppointments: boolean;
+  notifyForum: boolean;
+};
+
+let currentPreferences: NotificationPreferences | null = null;
+
+type PreferenceKey = 'notifyMedicine' | 'notifyAppointments' | null;
+
+// Medicación → notifyMedicine; citas médicas y vacunas → notifyAppointments; el resto siempre se avisa
+function preferenceFor(itemType?: string, eventType?: string): PreferenceKey {
+  if (itemType === 'MEDICINE' || eventType === 'MEDICINE') return 'notifyMedicine';
+  if (itemType === 'VACCINE' || eventType === 'VACCINE' || eventType === 'MEDICAL_APPOINTMENT') return 'notifyAppointments';
+  return null;
+}
+
+function isAllowed(itemType?: string, eventType?: string): boolean {
+  const key = preferenceFor(itemType, eventType);
+  return !key || !currentPreferences || currentPreferences[key];
+}
+
+/** Guarda en memoria las preferencias del usuario activo (sin tocar las alertas ya programadas). */
+export function setNotificationPreferences(prefs: NotificationPreferences | null): void {
+  currentPreferences = prefs;
+}
+
+/**
+ * Guarda las preferencias y cancela del dispositivo las alertas ya programadas
+ * de los tipos que el usuario acaba de desactivar.
+ */
+export async function applyNotificationPreferences(prefs: NotificationPreferences): Promise<void> {
+  currentPreferences = prefs;
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    for (const item of scheduled) {
+      const data = item.content?.data as { itemType?: string; eventType?: string } | undefined;
+      if (data && !isAllowed(data.itemType, data.eventType)) {
+        await Notifications.cancelScheduledNotificationAsync(item.identifier);
+      }
+    }
+  } catch (error) {
+    console.warn('Error al aplicar las preferencias de notificación:', error);
+  }
+}
+
 export interface ScheduleParams {
   eventId: number | string;
   itemType?: 'EVENT' | 'VACCINE' | 'MEDICINE';
+  // Tipo del evento del calendario (MEDICAL_APPOINTMENT, GENERAL...) para aplicar las preferencias
+  eventType?: string;
   title: string;
   body: string;
   targetDate: Date;
@@ -79,6 +130,7 @@ export async function scheduleLocalEventNotification(
     advanceMinutes = 0,
     intervalHours,
     endDate,
+    eventType,
   } = params;
 
   try {
@@ -86,6 +138,11 @@ export async function scheduleLocalEventNotification(
 
     // Limpiar previamente cualquier notificación existente de este registro para evitar duplicados
     await cancelLocalEventNotification(eventId, itemType);
+
+    if (!isAllowed(itemType, eventType)) {
+      console.log(`ℹ️ [Notificaciones] "${title}" no se programa: el usuario ha desactivado este tipo de aviso en su perfil.`);
+      return null;
+    }
 
     const now = Date.now();
     let triggerMs = targetDate.getTime() - advanceMinutes * 60 * 1000;
@@ -142,6 +199,7 @@ export async function scheduleLocalEventNotification(
                 id: eventId,
                 uniqueKey: String(eventId),
                 itemType,
+                eventType,
                 doseIndex: doseCount + 1,
               },
             },
@@ -185,6 +243,7 @@ export async function scheduleLocalEventNotification(
           id: eventId,
           uniqueKey: String(eventId),
           itemType,
+          eventType,
         },
       },
       trigger: {

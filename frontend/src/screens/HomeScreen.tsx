@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndicator, TextInput, KeyboardAvoidingView, Image, Linking, type ScrollViewInstance } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndicator, TextInput, KeyboardAvoidingView, type ScrollViewInstance, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
 import { API_URL } from '../api/config';
+import { setNotificationPreferences } from '../services/notificationService';
 import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
 
 import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
@@ -232,12 +233,26 @@ export default function HomeScreen() {
     }
   };
 
+  useFocusEffect(
+    React.useCallback(() => {
+      if (activeUserId) fetchUsers();
+    }, [activeUserId]),
+  );
+
   // keepChildId: tras guardar una medición se mantiene el hijo que estaba seleccionado
   const fetchChildren = async (userId: number, keepChildId: number | null = null, silent: boolean = false) => {
     if (!silent) setLoading(true);
     try {
       const response = await fetch(`${API_URL}/user/${userId}`);
       const data = await response.json();
+      // Preferencias de notificación del perfil: se aplican al programar nuevas alertas locales
+      if (data && typeof data.notifyMedicine === 'boolean') {
+        setNotificationPreferences({
+          notifyMedicine: data.notifyMedicine,
+          notifyAppointments: data.notifyAppointments,
+          notifyForum: data.notifyForum,
+        });
+      }
       if (data && data.children) {
         setChildren(data.children);
         if (data.children.length > 0) {
@@ -496,11 +511,15 @@ export default function HomeScreen() {
           
           <TouchableOpacity 
             onPress={() => { fetchUsers(); setIsUserModalVisible(true); }}
-            className="w-12 h-12 bg-nanny-blue rounded-full items-center justify-center relative"
+            className="relative h-12 w-12 items-center justify-center"
           >
-            <Text className="text-white font-semibold text-lg">
-              {activeUserId ? activeUserId.toString() : "?"}
-            </Text>
+            <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-nanny-blue">
+              {activeUser?.avatarUrl ? (
+                <Image source={{ uri: activeUser.avatarUrl }} className="h-full w-full" />
+              ) : (
+                <Text className="text-white font-semibold text-lg">{activeUserId ? activeUserId.toString() : "?"}</Text>
+              )}
+            </View>
             <View className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
               <View className="bg-nanny-blue rounded-full w-4 h-4 items-center justify-center">
                 <Ionicons name="person" size={10} color="white" />
@@ -988,6 +1007,19 @@ export default function HomeScreen() {
                 <Ionicons name="close" size={24} color="black" />
               </TouchableOpacity>
             </View>
+            {activeUserId && (
+              <TouchableOpacity
+                onPress={() => {
+                  setIsUserModalVisible(false);
+                  navigation.navigate('MiPerfil', { userId: activeUserId });
+                }}
+                className="mb-4 flex-row items-center rounded-2xl bg-nanny-card px-4 py-3"
+              >
+                <Ionicons name="person-circle-outline" size={24} color="#6d83a1" />
+                <Text className="ml-3 text-base font-semibold text-nanny-text">Editar mi perfil</Text>
+                <Ionicons name="chevron-forward" size={20} color="#808080" style={{ marginLeft: 'auto' }} />
+              </TouchableOpacity>
+            )}
             {usersLoading ? (
               <ActivityIndicator size="large" color="#6d83a1" />
             ) : usersError ? (
@@ -1009,10 +1041,15 @@ export default function HomeScreen() {
                     className="flex-row items-center justify-between border-b border-gray-100 p-4"
                   >
                     <View className="flex-row items-center">
-                      <Text className="text-lg">{item.name}</Text>
+                      <Text className="text-lg">{[item.name, item.surname].filter(Boolean).join(' ')}</Text>
                       {item.role === 'ADMIN' && (
                         <Text className="ml-2 rounded-full bg-nanny-blue/15 px-2 py-0.5 text-xs font-semibold text-nanny-blue">
                           Admin
+                        </Text>
+                      )}
+                      {item.isPediatrician && (
+                        <Text className="ml-2 rounded-full bg-nanny-green/15 px-2 py-0.5 text-xs font-semibold text-nanny-green">
+                          Pediatra
                         </Text>
                       )}
                     </View>
