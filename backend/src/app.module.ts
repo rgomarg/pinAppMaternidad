@@ -20,9 +20,10 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AdminModule } from './admin/admin.module';
+import { RecommendationModule } from './recommendation/recommendation.module';
 
 @Module({
-  imports: [PrismaModule, MeasurementsModule, UserModule, ChildModule, VaccineModule, DiseaseModule, CheckListItemModule, MedicineModule, EventModule, ConditionModule, ThreadModule, MessageModule, TagModule, ReportModule, GrowthModule, NotificationsModule, ScheduleModule.forRoot(), NotificationsModule, EventEmitterModule.forRoot(), AdminModule],
+  imports: [PrismaModule, MeasurementsModule, UserModule, ChildModule, VaccineModule, DiseaseModule, CheckListItemModule, MedicineModule, EventModule, ConditionModule, ThreadModule, MessageModule, TagModule, ReportModule, GrowthModule, NotificationsModule, ScheduleModule.forRoot(), NotificationsModule, EventEmitterModule.forRoot(), AdminModule, RecommendationModule],
   controllers: [AppController],
   providers: [AppService],
 })

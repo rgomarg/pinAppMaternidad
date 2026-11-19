@@ -1,5 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, HttpCode, UseGuards } from '@nestjs/common';
 import { ThreadService } from './thread.service';
+import { ThreadSummaryService } from './thread-summary.service';
+import { ProGuard } from '../child/pro.guard';
 import { CreateThreadDto } from './dto/create-thread.dto';
 import { UpdateThreadDto } from './dto/update-thread.dto';
 import { ListThreadsQueryDto } from './dto/list-threads-query.dto';
@@ -7,7 +9,18 @@ import { UserIdQueryDto } from './dto/user-id-query.dto';
 
 @Controller('thread')
 export class ThreadController {
-  constructor(private readonly threadService: ThreadService) {}
+  constructor(
+    private readonly threadService: ThreadService,
+    private readonly threadSummaryService: ThreadSummaryService,
+  ) {}
+
+  // Resumen del hilo con IA (solo usuarios PRO). ProGuard lee ?proId=
+  @UseGuards(ProGuard)
+  @Post(':id/summary')
+  summarize(@Param('id', ParseIntPipe) id: number) {
+    // El resumen se comparte entre usuarios; proId solo lo usa ProGuard para comprobar que es PRO
+    return this.threadSummaryService.summarize(id);
+  }
 
   @Post()
   create(@Body() createThreadDto: CreateThreadDto) {

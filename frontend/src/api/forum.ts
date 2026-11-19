@@ -117,4 +117,8 @@ export const forumApi = {
     comment: string;
   }) => request<{ id: number }>('/report', { method: 'POST', body: JSON.stringify(data) }),
 
+  // Resumen del hilo generado con IA. Solo PRO: el backend (ProGuard) lo comprueba con proId
+  getThreadSummary: (id: number, proId: number) =>
+    request<{ summary: string }>(`/thread/${id}/summary${query({ proId })}`, { method: 'POST' }),
+
 };

@@ -95,6 +95,12 @@ enum EventType {
   GENERAL
 }
 
+enum DifficultyRecip {
+  FACIL
+  MEDIA
+  DIFICIL
+}
+
 // ------------------------------------------------------
 // GESTIÓN DE USUARIOS Y AUTENTICACIÓN
 // ------------------------------------------------------
@@ -371,4 +377,41 @@ model Report { // Soporta las 3 nuevas UTs de Moderación
   
   reporterId    Int
   reporter      User      @relation("ReporterUser", fields: [reporterId], references: [id])
+}
+
+// ------------------------------------------------------
+// RECOMENDACIONES (PRO)
+// ------------------------------------------------------
+
+model Recipe {
+  id           Int      @id @default(autoincrement())
+  name         String
+  time         String   // Ej: "25 min"
+  difficulty   DifficultyRecip // Ej: "Fácil"
+  servings     String   // Ej: "Para 2 raciones"
+  imageUrl     String?
+  ingredients  String[] 
+  steps        String[] 
+  ageFor       Int  // Ej: 1 (años)
+}
+
+model Book {
+  id         Int      @id @default(autoincrement())
+  title      String
+  authors    String[]
+  synopsis   String   @db.Text
+  imageUrl   String?
+  publishedAt DateTime?
+  month      Int?     // Mes recomendado de lectura (1-12)
+  year       Int?     // Año recomendado de lectura (ej: 2023)
+  @@unique([year, month]) // Garantiza que no haya dos libros asignados al mismo mes y año
+}
+
+model Article {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String   @db.Text
+  url         String
+  source      String?  // Ej: "EnFamilia (AEP)"
+  publishedAt DateTime?
 }
