@@ -10,8 +10,11 @@ export class MessageService {
 
   async create({ content, authorId, threadId, parentId }: CreateMessageDto) {
     const [thread, author] = await Promise.all([
-      this.prisma.thread.findFirst({ where: { id: threadId, ...visibleThreadWhere }, select: { id: true } }),
-      this.prisma.user.findUnique({ where: { id: authorId }, select: { id: true, blockedAt: true } }),
+      this.prisma.thread.findFirst({
+        where: { id: threadId, ...visibleThreadWhere },
+        select: { id: true, title: true, owner: { select: { id: true, notifyForum: true } } },
+      }),
+      this.prisma.user.findUnique({ where: { id: authorId }, select: { id: true, name: true, blockedAt: true } }),
     ]);
     if (!thread) {
       throw new NotFoundException(`No thread with id ${threadId} found`);
@@ -42,6 +45,24 @@ export class MessageService {
         author: { select: authorSelect },
       },
     });
+
+    // "Actividad en el foro": avisar al autor del hilo si tiene activada la preferencia
+    const owner = thread.owner;
+    if (owner && owner.id !== authorId && owner.notifyForum) {
+      await this.prisma.notification
+        .create({
+          data: {
+            type: 'COMMUNITY',
+            title: `Nueva respuesta en "${thread.title}"`,
+            body: `${author.name ?? 'Alguien'}: ${content.slice(0, 120)}`,
+            scheduledAt: new Date(),
+            userId: owner.id,
+            data: { screen: 'Foro', threadId },
+          },
+        })
+        .catch(() => undefined); // un fallo en el aviso no debe impedir publicar
+    }
+
     // Mismo formato que los nodos de GET /thread/:id
     return { ...message, author: formatAuthor(message.author), likedByMe: false, replies: [] };
   }

@@ -3,6 +3,7 @@ import { View, Text, Image, TouchableOpacity, ScrollView, Modal, FlatList, Activ
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
 import { API_URL } from '../api/config';
+import { setNotificationPreferences } from '../services/notificationService';
 import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
 
 import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
@@ -244,6 +245,14 @@ export default function HomeScreen() {
     try {
       const response = await fetch(`${API_URL}/user/${userId}`);
       const data = await response.json();
+      // Preferencias de notificación del perfil: se aplican al programar nuevas alertas locales
+      if (data && typeof data.notifyMedicine === 'boolean') {
+        setNotificationPreferences({
+          notifyMedicine: data.notifyMedicine,
+          notifyAppointments: data.notifyAppointments,
+          notifyForum: data.notifyForum,
+        });
+      }
       if (data && data.children) {
         setChildren(data.children);
         if (data.children.length > 0) {

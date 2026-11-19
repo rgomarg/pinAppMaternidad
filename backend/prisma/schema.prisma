@@ -114,7 +114,11 @@ model User {
   phone         String?
   isPediatrician Boolean   @default(false)
   profileRole   ProfileRole @default(MOTHER)
-  avatarUrl     String?   // URL de Cloudinary/AWS S3
+  avatarUrl     String?   // URL remota o data URI (base64) de la foto elegida en el móvil
+  // Preferencias de notificación (pantalla "Mi perfil")
+  notifyMedicine     Boolean @default(true)  // Recordatorios de medicación
+  notifyAppointments Boolean @default(true)  // Citas médicas y vacunas
+  notifyForum        Boolean @default(false) // Respuestas a tus hilos del foro
   role          Role      @default(USER)
   createdAt     DateTime  @default(now())
   pushToken     String?   //Guarda el ExponentPushToken del movil que sea el user  

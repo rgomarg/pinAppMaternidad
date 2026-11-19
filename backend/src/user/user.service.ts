@@ -49,6 +49,9 @@ export class UserService {
         avatarUrl: true,
         profileRole: true,
         role: true,
+        notifyMedicine: true,
+        notifyAppointments: true,
+        notifyForum: true,
       },
     });
   }

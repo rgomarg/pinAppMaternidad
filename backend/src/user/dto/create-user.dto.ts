@@ -1,4 +1,4 @@
-import { IsEmail, IsIn, IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 export class CreateUserDto {
   @IsOptional()
@@ -17,7 +17,9 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^(?=.*\d)[0-9+()\s-]+$/, { message: 'El teléfono solo puede contener números y símbolos telefónicos válidos' })
+  @Matches(/^[0-9+()\s-]+$/, { message: 'El teléfono solo puede contener números y símbolos telefónicos válidos' })
+  // Entre 9 y 15 dígitos (sin contar espacios ni símbolos)
+  @Matches(/^(?:\D*\d){9,15}\D*$/, { message: 'El teléfono debe tener entre 9 y 15 dígitos' })
   phone?: string;
 
   @IsOptional()
@@ -27,4 +29,16 @@ export class CreateUserDto {
   @IsOptional()
   @IsIn(['MOTHER', 'FATHER', 'GUARDIAN'])
   profileRole?: 'MOTHER' | 'FATHER' | 'GUARDIAN';
+
+  @IsOptional()
+  @IsBoolean()
+  notifyMedicine?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  notifyAppointments?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  notifyForum?: boolean;
 }
