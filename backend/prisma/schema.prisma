@@ -17,6 +17,12 @@ enum Role {
   ADMIN
 }
 
+enum ProfileRole {
+  MOTHER
+  FATHER
+  GUARDIAN
+}
+
 enum ReportStatus {
   PENDING
   RESOLVED
@@ -89,6 +95,12 @@ enum EventType {
   GENERAL
 }
 
+enum DifficultyRecip {
+  FACIL
+  MEDIA
+  DIFICIL
+}
+
 // ------------------------------------------------------
 // GESTIÓN DE USUARIOS Y AUTENTICACIÓN
 // ------------------------------------------------------
@@ -98,7 +110,15 @@ model User {
   password      String?   //si se crea cuenta con google, no se necesitará contraseña. Por eso password es opcional
   googleId      String?   @unique 
   name          String
-  avatarUrl     String?   // URL de Cloudinary/AWS S3
+  surname       String?
+  phone         String?
+  isPediatrician Boolean   @default(false)
+  profileRole   ProfileRole @default(MOTHER)
+  avatarUrl     String?   // URL remota o data URI (base64) de la foto elegida en el móvil
+  // Preferencias de notificación (pantalla "Mi perfil")
+  notifyMedicine     Boolean @default(true)  // Recordatorios de medicación
+  notifyAppointments Boolean @default(true)  // Citas médicas y vacunas
+  notifyForum        Boolean @default(false) // Respuestas a tus hilos del foro
   role          Role      @default(USER)
   createdAt     DateTime  @default(now())
   pushToken     String?   //Guarda el ExponentPushToken del movil que sea el user  
@@ -361,4 +381,41 @@ model Report { // Soporta las 3 nuevas UTs de Moderación
   
   reporterId    Int
   reporter      User      @relation("ReporterUser", fields: [reporterId], references: [id])
+}
+
+// ------------------------------------------------------
+// RECOMENDACIONES (PRO)
+// ------------------------------------------------------
+
+model Recipe {
+  id           Int      @id @default(autoincrement())
+  name         String
+  time         String   // Ej: "25 min"
+  difficulty   DifficultyRecip // Ej: "Fácil"
+  servings     String   // Ej: "Para 2 raciones"
+  imageUrl     String?
+  ingredients  String[] 
+  steps        String[] 
+  ageFor       Int  // Ej: 1 (años)
+}
+
+model Book {
+  id         Int      @id @default(autoincrement())
+  title      String
+  authors    String[]
+  synopsis   String   @db.Text
+  imageUrl   String?
+  publishedAt DateTime?
+  month      Int?     // Mes recomendado de lectura (1-12)
+  year       Int?     // Año recomendado de lectura (ej: 2023)
+  @@unique([year, month]) // Garantiza que no haya dos libros asignados al mismo mes y año
+}
+
+model Article {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String   @db.Text
+  url         String
+  source      String?  // Ej: "EnFamilia (AEP)"
+  publishedAt DateTime?
 }

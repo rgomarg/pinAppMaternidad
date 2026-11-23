@@ -444,6 +444,7 @@ export default function CalendarioScreen() {
         await scheduleLocalEventNotification({
           eventId: event.id,
           itemType,
+          eventType: event.type,
           title: `${prefix}: ${event.title}`,
           body: `Programado para ${event.child?.name || 'tu hijo/a'}`,
           targetDate: eventDate,

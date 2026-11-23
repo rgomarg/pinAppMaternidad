@@ -44,6 +44,7 @@ import {
   saveSharedChild,
   type SharedChildProfile,
 } from '../utils/qrShare';
+import HealthHistory, { HealthHistoryLocked } from '../components/HealthHistory';
 
 type Child = {
   id: number;
@@ -908,9 +909,15 @@ function ChildProfileScreen() {
   const { selectedUserId: userId } = useFamilySelection();
   const [data, setData] = useState<(Dashboard & { isShared?: boolean; expiresAt?: string }) | null>(null);
   const [loading, setLoading] = useState(true);
+  // El historial médico completo lo ven PRO y ADMIN (igual que ProGuard en el backend);
+  // el resto ve una vista previa bloqueada. Se recarga cada vez que se recarga el perfil.
+  const { selectedUserRole } = useFamilySelection();
+  const canSeeHistory = selectedUserRole === 'PRO' || selectedUserRole === 'ADMIN';
+  const [historyKey, setHistoryKey] = useState(0);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
+    setHistoryKey((key) => key + 1);
     try {
       if (route.params?.sharedChild) {
         setData(route.params.sharedChild);
@@ -1181,6 +1188,14 @@ function ChildProfileScreen() {
               />
             ))}
           </Section>
+
+          {canSeeHistory ? (
+            <HealthHistory key={historyKey} childId={data.id} />
+          ) : (
+            <HealthHistoryLocked
+              onUpgrade={() => Alert.alert('Plan PRO', 'La mejora de plan estará disponible próximamente.')}
+            />
+          )}
         </View>
       </ScrollView>
     </Shell>

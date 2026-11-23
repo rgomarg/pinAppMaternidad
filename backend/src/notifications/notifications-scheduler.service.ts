@@ -2,6 +2,25 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from 'prisma/prisma.service';
 import { Expo, ExpoPushMessage } from 'expo-server-sdk';
+import type { NotificationType } from '@prisma/client';
+
+type PreferenceCheck = {
+  type: NotificationType;
+  user: { notifyMedicine: boolean; notifyAppointments: boolean; notifyForum: boolean } | null;
+  event: { type: string } | null;
+};
+
+// Medicación → notifyMedicine; citas médicas y vacunas → notifyAppointments; foro → notifyForum.
+// El resto (eventos generales, avisos del sistema) se envía siempre.
+export function isAllowedByPreferences({ type, user, event }: PreferenceCheck): boolean {
+  if (!user) return true;
+  if (type === 'MEDICINE' || event?.type === 'MEDICINE') return user.notifyMedicine;
+  if (type === 'VACCINE' || event?.type === 'VACCINE' || event?.type === 'MEDICAL_APPOINTMENT') {
+    return user.notifyAppointments;
+  }
+  if (type === 'COMMUNITY') return user.notifyForum;
+  return true;
+}
 
 @Injectable()
 export class NotificationSchedulerService {
@@ -22,7 +41,10 @@ export class NotificationSchedulerService {
         scheduledAt: { lte: now },
       },
       include: {
-        user: { select: { id: true, pushToken: true } },
+        user: {
+          select: { id: true, pushToken: true, notifyMedicine: true, notifyAppointments: true, notifyForum: true },
+        },
+        event: { select: { type: true } },
       },
     });
 
@@ -34,6 +56,15 @@ export class NotificationSchedulerService {
     const notificationIdsSent: number[] = [];
 
     for (const notif of pending) {
+      // Respetar las preferencias de notificación del perfil del usuario
+      if (!isAllowedByPreferences(notif)) {
+        await this.prisma.notification.update({
+          where: { id: notif.id },
+          data: { status: 'CANCELLED' },
+        });
+        continue;
+      }
+
       const token = notif.user?.pushToken;
 
       // Comprobar que el usuario tenga un token válido de Expo

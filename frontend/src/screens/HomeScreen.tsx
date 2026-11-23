@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndicator, TextInput, KeyboardAvoidingView, type ScrollViewInstance } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, Image, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndicator, TextInput, KeyboardAvoidingView, type ScrollViewInstance, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
 import { API_URL } from '../api/config';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { setNotificationPreferences } from '../services/notificationService';
+import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
 
 import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
 import ActualizarPesoModal from '../components/MeasuramentWeightForm';
@@ -17,6 +18,54 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
+
+
+function BookCoverImage({ uri }: { uri?: string | null }) {
+  const [hasError, setHasError] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  if (!uri || hasError) {
+    return (
+      <View
+        style={{ width: 96, height: 144 }}
+        className="items-center justify-center rounded-lg bg-[#e5dfd4] border border-[#ded6ca]"
+      >
+        <Ionicons name="book-outline" size={36} color="#968e84" />
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ width: 96, height: 144 }} className="relative overflow-hidden rounded-lg bg-[#e5dfd4]">
+      {loading && (
+        <View
+          style={{ width: 96, height: 144 }}
+          className="absolute inset-0 items-center justify-center bg-[#e5dfd4]"
+        >
+          <ActivityIndicator size="small" color="#b87427" />
+        </View>
+      )}
+      <Image
+        source={{
+          uri,
+          headers: {
+            Accept: 'image/webp,image/apng,image/jpeg,image/*,*/*;q=0.8',
+          },
+          cache: 'force-cache',
+        }}
+        style={{ width: 96, height: 144 }}
+        className="rounded-lg"
+        resizeMode="cover"
+        onLoadStart={() => setLoading(true)}
+        onLoad={() => setLoading(false)}
+        onError={() => {
+          setLoading(false);
+          setHasError(true);
+        }}
+      />
+    </View>
+  );
+}
 
 export default function HomeScreen() {
   const { setSelectedUserId, setSelectedUserRole, isAdmin } = useFamilySelection();
@@ -34,10 +83,120 @@ export default function HomeScreen() {
   const [usersError, setUsersError] = useState<string | null>(null);
   const [checklist, setChecklist] = useState<any[]>([]);
   const [checklistTab, setChecklistTab] = useState<'pending' | 'completed'>('pending');
+  const [recomendacionesTab, setRecomendacionesTab] = useState<'articulos' | 'comidas'>('articulos');
+  const [showLibroSinopsis, setShowLibroSinopsis] = useState(false);
+  const [expandedRecipeId, setExpandedRecipeId] = useState<number | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState('');
   const scrollViewRef = useRef<ScrollViewInstance>(null);
+
+  // ------------------------------
+  // RECOMENDACIONES — estados
+  // ------------------------------
+  const [articles, setArticles] = useState<any[]>([]);
+  const [recipes, setRecipes] = useState<any[]>([]);
+  const [books, setBooks] = useState<any[]>([]);
+  const [recLoading, setRecLoading] = useState(false);
+
+  // Calcula la edad del hijo en años
+  const calculateChildAge = (birthDateString: string): number => {
+    const birth = new Date(birthDateString);
+    const now = new Date();
+    const diffMs = now.getTime() - birth.getTime();
+    return Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000));
+  };
+
+  // FETCH 1 – Libro del mes (mes y año actuales)
+  const fetchBooks = async () => {
+    try {
+      const now = new Date();
+      const month = now.getMonth() + 1; // 1-12
+      const year = now.getFullYear();
+      const res = await fetch(`${API_URL}/recommendation/books?month=${month}&year=${year}`);
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setBooks(data);
+      } else if (data && typeof data === 'object' && (data as any).id) {
+        setBooks([data]);
+      } else {
+        setBooks([]);
+      }
+    } catch (err) {
+      console.error('Error fetching books:', err);
+      setBooks([]);
+    }
+  };
+
+  // FETCH 2 – Artículos semanales (sin parámetro, el backend rota por día)
+  const fetchArticles = async () => {
+    setRecLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/recommendation/articles`);
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const data = await res.json();
+      setArticles(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching articles:', err);
+      setArticles([]);
+    } finally {
+      setRecLoading(false);
+    }
+  };
+
+  // FETCH 3 – Recetas semanales (filtradas por edad del hijo)
+  const fetchRecipes = async (age: number) => {
+    setRecLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/recommendation/recipes?childAge=${age}`);
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const data = await res.json();
+      setRecipes(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching recipes:', err);
+      setRecipes([]);
+    } finally {
+      setRecLoading(false);
+    }
+  };
+
+  // useEffect 1 – Libro del mes: se carga al entrar a la sección de artículos
+  useEffect(() => {
+    const child = children.find((c: any) => c.id === activeChildId);
+    if (child?.birthDate && calculateChildAge(child.birthDate) > 6) {
+      setBooks([]);
+      return;
+    }
+    if (recomendacionesTab === 'articulos') {
+      fetchBooks();
+    }
+  }, [recomendacionesTab, activeChildId, children]);
+
+  // useEffect 2 – Artículos: se recarga cuando cambia el hijo activo O cuando el tab es 'articulos'
+  useEffect(() => {
+    const child = children.find((c: any) => c.id === activeChildId);
+    if (!child?.birthDate) return;
+    if (calculateChildAge(child.birthDate) > 6) {
+      setArticles([]);
+      return;
+    }
+    if (recomendacionesTab !== 'articulos') return;
+    fetchArticles();
+  }, [activeChildId, children, recomendacionesTab]);
+
+  // useEffect 3 – Recetas: se recarga cuando cambia el hijo activo O cuando el tab es 'comidas'
+  useEffect(() => {
+    const child = children.find((c: any) => c.id === activeChildId);
+    if (!child?.birthDate) return;
+    const age = calculateChildAge(child.birthDate);
+    if (age > 6) {
+      setRecipes([]);
+      return;
+    }
+    if (recomendacionesTab !== 'comidas') return;
+    fetchRecipes(Math.max(1, age));
+  }, [activeChildId, children, recomendacionesTab]);
 
   const updateFamiliaChild = (childId: number | null, userId: number | null = activeUserId) => {
     const navigationState = navigation.getState();
@@ -74,12 +233,26 @@ export default function HomeScreen() {
     }
   };
 
+  useFocusEffect(
+    React.useCallback(() => {
+      if (activeUserId) fetchUsers();
+    }, [activeUserId]),
+  );
+
   // keepChildId: tras guardar una medición se mantiene el hijo que estaba seleccionado
-  const fetchChildren = async (userId: number, keepChildId: number | null = null) => {
-    setLoading(true);
+  const fetchChildren = async (userId: number, keepChildId: number | null = null, silent: boolean = false) => {
+    if (!silent) setLoading(true);
     try {
       const response = await fetch(`${API_URL}/user/${userId}`);
       const data = await response.json();
+      // Preferencias de notificación del perfil: se aplican al programar nuevas alertas locales
+      if (data && typeof data.notifyMedicine === 'boolean') {
+        setNotificationPreferences({
+          notifyMedicine: data.notifyMedicine,
+          notifyAppointments: data.notifyAppointments,
+          notifyForum: data.notifyForum,
+        });
+      }
       if (data && data.children) {
         setChildren(data.children);
         if (data.children.length > 0) {
@@ -94,9 +267,18 @@ export default function HomeScreen() {
     } catch (error) {
       console.error("Error fetching children:", error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  // Al volver a la pantalla Home (o ganar el foco), refrescamos los hijos del usuario activo
+  useFocusEffect(
+    useCallback(() => {
+      if (activeUserId) {
+        fetchChildren(activeUserId, activeChildId, true);
+      }
+    }, [activeUserId, activeChildId])
+  );
 
 
     const registerForPushNotifications = async (userId: number) => {
@@ -185,6 +367,7 @@ export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const activeChild = children.find(c => c.id === activeChildId);
   const activeUser = users.find(u => u.id === activeUserId);
+  const activeChildAge = activeChild?.birthDate ? calculateChildAge(activeChild.birthDate) : 0;
   const growth = useGrowth(activeChild);
   const proyeccionPeso = growth.data?.weight?.projection.at(-1);
   const proyeccionAltura = growth.data?.height?.projection.at(-1);
@@ -328,11 +511,15 @@ export default function HomeScreen() {
           
           <TouchableOpacity 
             onPress={() => { fetchUsers(); setIsUserModalVisible(true); }}
-            className="w-12 h-12 bg-nanny-blue rounded-full items-center justify-center relative"
+            className="relative h-12 w-12 items-center justify-center"
           >
-            <Text className="text-white font-semibold text-lg">
-              {activeUserId ? activeUserId.toString() : "?"}
-            </Text>
+            <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-nanny-blue">
+              {activeUser?.avatarUrl ? (
+                <Image source={{ uri: activeUser.avatarUrl }} className="h-full w-full" />
+              ) : (
+                <Text className="text-white font-semibold text-lg">{activeUserId ? activeUserId.toString() : "?"}</Text>
+              )}
+            </View>
             <View className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
               <View className="bg-nanny-blue rounded-full w-4 h-4 items-center justify-center">
                 <Ionicons name="person" size={10} color="white" />
@@ -440,6 +627,7 @@ export default function HomeScreen() {
               onAddMeasurement={(metric) => metric === 'weight' ? setModalPesoVisible(true) : setModalAlturaVisible(true)}
             />
 
+            {/* Checklist */}
             <View className="bg-nanny-card rounded-2xl mb-6 overflow-hidden">
               <Text className="font-semibold text-lg text-nanny-text px-4 pt-4 pb-3">ToDoList</Text>
               <View className="mx-4 mb-3 flex-row rounded-2xl bg-[#ded6ca] p-1">
@@ -456,7 +644,7 @@ export default function HomeScreen() {
                   <Ionicons name="checkmark-circle-outline" size={22} color={checklistTab === 'completed' ? '#4e8c67' : '#968e84'} />
                 </TouchableOpacity>
               </View>
-               <View className="mx-4 mb-3 flex-row items-center gap-3">
+                <View className="mx-4 mb-3 flex-row items-center gap-3">
                 <TextInput
                   value={newTaskTitle}
                   onChangeText={setNewTaskTitle}
@@ -515,7 +703,296 @@ export default function HomeScreen() {
                 </View>
               ))}
             </View>
+            {/* Recomendaciones */}
+            <View className="bg-nanny-card rounded-2xl mb-6 overflow-hidden">
+              <View className="flex-row items-center justify-between px-4 pt-4 pb-3">
+                <Text className="font-semibold text-lg text-nanny-text">Recomendaciones</Text>
+                {activeUser?.role !== 'PRO' && (
+                  <View className="flex-row items-center rounded-full bg-[#b87427]/15 px-2.5 py-1">
+                    <Ionicons name="sparkles" size={13} color="#b87427" />
+                    <Text className="ml-1 text-xs font-bold text-[#b87427]">PRO</Text>
+                  </View>
+                )}
+              </View>
 
+              {/* Selector de pestañas siempre visible, para elegir seccion de articulos/libros y comidas */}
+              <View className="mx-4 mb-3 flex-row rounded-2xl bg-[#ded6ca] p-1">
+                <TouchableOpacity
+                  onPress={() => setRecomendacionesTab('articulos')}
+                  className={`flex-1 items-center rounded-xl py-2 ${recomendacionesTab === 'articulos' ? 'bg-[#f7f3ec]' : ''}`}
+                >
+                  <Ionicons
+                    name="book-outline"
+                    size={22}
+                    color={recomendacionesTab === 'articulos' ? '#b87427' : '#968e84'}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setRecomendacionesTab('comidas')}
+                  className={`flex-1 items-center rounded-xl py-2 ${recomendacionesTab === 'comidas' ? 'bg-[#f7f3ec]' : ''}`}
+                >
+                  <Ionicons
+                    name="nutrition-outline"
+                    size={22}
+                    color={recomendacionesTab === 'comidas' ? '#b87427' : '#968e84'}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Contenido condicionado al rol PRO / Admin */}
+              {activeUser?.role === 'PRO' || isAdmin ? (
+                activeChildAge > 6 ? (
+                  <View className="mx-4 mb-4 items-center justify-center rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-5">
+                    <View className="mb-2.5 h-12 w-12 items-center justify-center rounded-full bg-[#ded6ca]/70">
+                      <Ionicons name="information-circle-outline" size={26} color="#6d83a1" />
+                    </View>
+                    <Text className="text-base font-semibold text-nanny-text text-center">
+                      No hay información para niños de esta edad
+                    </Text>
+                    <Text className="mt-1 text-center text-xs text-nanny-muted px-2">
+                      Las recomendaciones actuales están disponibles para niños de hasta 6 años.
+                    </Text>
+                  </View>
+                ) : recomendacionesTab === 'articulos' ? (
+                  <View className="mx-4 mb-4 gap-4">
+                    {/* Sección Libro del Mes */}
+                    <View>
+                      <View className="mb-2 flex-row items-center gap-1.5">
+                        <Ionicons name="book" size={17} color="#b87427" />
+                        <Text className="text-sm font-bold text-nanny-text">Libro del mes</Text>
+                      </View>
+                      {books.length > 0 ? (
+                        <TouchableOpacity
+                          activeOpacity={0.85}
+                          onPress={() => setShowLibroSinopsis((prev) => !prev)}
+                          className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4"
+                        >
+                          <View className="flex-row gap-3.5">
+                            <BookCoverImage uri={books[0].imageUrl} />
+                            <View className="flex-1 justify-between py-1">
+                              <View>
+                                <Text className="text-base font-bold text-nanny-text leading-snug">
+                                  {books[0].title}
+                                </Text>
+                                <Text className="mt-1 text-xs font-semibold text-nanny-muted">
+                                  Por {books[0].authors?.join(', ')}
+                                </Text>
+                              </View>
+                              <View className="mt-3 w-36 flex-row items-center justify-end self-end">
+                                <Text className="mr-1 text-xs font-semibold text-[#b87427]">
+                                  {showLibroSinopsis ? 'Ocultar sinopsis' : 'Ver sinopsis'}
+                                </Text>
+                                <Ionicons
+                                  name={showLibroSinopsis ? 'chevron-up' : 'chevron-down'}
+                                  size={14}
+                                  color="#b87427"
+                                />
+                              </View>
+                            </View>
+                          </View>
+                          {showLibroSinopsis && (
+                            <View className="mt-3.5 border-t border-[#ded6ca]/70 pt-3">
+                              <Text className="mb-1 text-xs font-bold uppercase tracking-wider text-nanny-muted">
+                                Sinopsis
+                              </Text>
+                              <Text
+                                style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
+                                className="w-full text-xs leading-relaxed text-nanny-text"
+                              >
+                                {books[0].synopsis}
+                              </Text>
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      ) : (
+                        <View className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4">
+                          <Text className="text-xs text-nanny-muted">Cargando libro recomendado...</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Sección Artículos Semanales */}
+                    <View>
+                      <View className="mb-2 flex-row items-center gap-1.5">
+                        <Ionicons name="newspaper" size={17} color="#6d83a1" />
+                        <Text className="text-sm font-bold text-nanny-text">Artículos semanales</Text>
+                      </View>
+                      {recLoading ? (
+                        <ActivityIndicator size="small" color="#6d83a1" />
+                      ) : articles.length > 0 ? (
+                        <View className="gap-3">
+                          {articles.map((art) => (
+                            <View key={art.id} className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4">
+                              <Text className="text-base font-bold text-nanny-text leading-snug">
+                                {art.title}
+                              </Text>
+                              <Text
+                                style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
+                                className="mt-2 w-full text-xs leading-relaxed text-nanny-text"
+                              >
+                                {art.description}
+                              </Text>
+                              <TouchableOpacity
+                                onPress={() =>
+                                  Linking.openURL(art.url).catch((err) =>
+                                    console.error('Error abriendo enlace:', err),
+                                  )
+                                }
+                                className="mt-3 flex-row items-center self-start rounded-xl bg-[#6d83a1]/15 px-3 py-1.5 active:opacity-70"
+                              >
+                                <Text className="mr-1.5 text-xs font-semibold text-[#6d83a1]">
+                                  Leer artículo {art.source ? `(${art.source})` : ''}
+                                </Text>
+                                <Ionicons name="open-outline" size={13} color="#6d83a1" />
+                              </TouchableOpacity>
+                            </View>
+                          ))}
+                        </View>
+                      ) : (
+                        <Text className="text-xs text-nanny-muted">No hay artículos para mostrar.</Text>
+                      )}
+                    </View>
+                  </View>
+                ) : (
+                  //Sección de recetas recomendadas
+                  <View className="mx-4 mb-4 gap-4">
+                    <View className="mb-1 flex-row items-center gap-1.5">
+                      <Ionicons name="restaurant" size={17} color="#b87427" />
+                      <Text className="text-sm font-bold text-nanny-text">Recetas de la semana</Text>
+                    </View>
+
+                    {recLoading ? (
+                      <ActivityIndicator size="small" color="#b87427" />
+                    ) : recipes.length > 0 ? (
+                      recipes.map((receta) => {
+                        const isExpanded = expandedRecipeId === receta.id;
+                        return (
+                          <TouchableOpacity
+                            key={receta.id}
+                            activeOpacity={0.85}
+                            onPress={() => setExpandedRecipeId(isExpanded ? null : receta.id)}
+                            className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4"
+                          >
+                          {/* Cabecera de la receta */}
+                          <View className="flex-row gap-3.5">
+                            <Image
+                              source={{ uri: receta.imageUrl }}
+                              style={{ width: 96, height: 96 }}
+                              className="h-24 w-24 rounded-xl bg-[#e5dfd4]"
+                              resizeMode="cover"
+                            />
+                            <View className="flex-1 justify-between py-0.5">
+                              <View>
+                                <Text className="text-base font-bold text-nanny-text leading-snug">
+                                  {receta.name}
+                                </Text>
+                                <View className="mt-2 flex-row flex-wrap items-center gap-3">
+                                  <View className="flex-row items-center">
+                                    <Ionicons name="time-outline" size={14} color="#808080" />
+                                    <Text className="ml-1 text-xs text-nanny-muted">{receta.time}</Text>
+                                  </View>
+                                  <View className="flex-row items-center">
+                                    <Ionicons name="speedometer-outline" size={14} color="#808080" />
+                                    <Text className="ml-1 text-xs text-nanny-muted">{receta.difficulty}</Text>
+                                  </View>
+                                </View>
+                              </View>
+
+                              {/* Botón ver receta a la derecha, tamaño fijo y sin fondo */}
+                              <View className="mt-2 w-32 flex-row items-center justify-end self-end">
+                                <Text className="mr-1 text-xs font-semibold text-[#b87427]">
+                                  {isExpanded ? 'Ocultar receta' : 'Ver receta'}
+                                </Text>
+                                <Ionicons
+                                  name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                                  size={14}
+                                  color="#b87427"
+                                />
+                              </View>
+                            </View>
+                          </View>
+
+                          {/* Instrucciones desplegables: Ingredientes y Pasos */}
+                          {isExpanded && (
+                            <View className="mt-3.5 border-t border-[#ded6ca]/70 pt-3">
+                              {/* Raciones */}
+                              <View className="mb-3 flex-row items-center gap-1.5 self-start rounded-lg bg-[#ded6ca]/50 px-2.5 py-1">
+                                <Ionicons name="people-outline" size={14} color="#6d83a1" />
+                                <Text className="text-xs font-semibold text-nanny-text">
+                                  {receta.servings}
+                                </Text>
+                              </View>
+
+                              {/* Ingredientes */}
+                              <Text className="mb-1.5 text-xs font-bold uppercase tracking-wider text-nanny-muted">
+                                Ingredientes
+                              </Text>
+                              <View className="mb-3.5 gap-1.5">
+                                {receta.ingredients.map((ingrediente: string, idx: number) => (
+                                  <View key={idx} className="flex-row items-start">
+                                    <Text className="mr-2 text-xs font-bold text-[#b87427]">•</Text>
+                                    <Text className="flex-1 text-xs text-nanny-text leading-relaxed">
+                                      {ingrediente}
+                                    </Text>
+                                  </View>
+                                ))}
+                              </View>
+
+                              {/* Pasos de preparación */}
+                              <Text className="mb-1.5 text-xs font-bold uppercase tracking-wider text-nanny-muted">
+                                Preparación paso a paso
+                              </Text>
+                              <View className="gap-2.5">
+                                {receta.steps.map((paso: string, idx: number) => (
+                                  <View key={idx} className="flex-row items-start gap-2">
+                                    <View className="h-5 w-5 items-center justify-center rounded-full bg-[#ded6ca] mt-0.5">
+                                      <Text className="text-[10px] font-bold text-nanny-text">{idx + 1}</Text>
+                                    </View>
+                                    <Text
+                                      style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
+                                      className="flex-1 text-xs leading-relaxed text-nanny-text"
+                                    >
+                                      {paso}
+                                    </Text>
+                                  </View>
+                                ))}
+                              </View>
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                        );
+                      })
+                    ) : (
+                      <Text className="text-xs text-nanny-muted">No hay recetas para mostrar.</Text>
+                    )}
+                  </View>
+                )
+              ) : (
+                /* Aviso para usuarios que no son PRO */
+                <View className="mx-4 mb-4 items-center justify-center rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-5">
+                  <View className="mb-2.5 h-12 w-12 items-center justify-center rounded-full bg-[#ded6ca]/70">
+                    <Ionicons name="lock-closed" size={24} color="#b87427" />
+                  </View>
+                  <Text className="text-base font-semibold text-nanny-text text-center">
+                    Función exclusiva para usuarios PRO
+                  </Text>
+                  <Text className="mt-1 text-center text-xs text-nanny-muted px-2">
+                    {recomendacionesTab === 'articulos'
+                      ? 'Accede a artículos, guías y lecturas recomendadas según la edad y desarrollo de tu hijo.'
+                      : 'Descubre recetas saludables y recomendaciones de alimentación adaptadas a su etapa.'}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      // Acción futura: abrir modal de suscripción
+                    }}
+                    className="mt-4 flex-row items-center rounded-xl bg-[#b87427] px-5 py-2.5 shadow-sm active:opacity-80"
+                  >
+                    <Ionicons name="star" size={16} color="white" />
+                    <Text className="ml-2 text-sm font-semibold text-white">Hazte PRO</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           </>
         )}
       </ScrollView>
@@ -530,6 +1007,19 @@ export default function HomeScreen() {
                 <Ionicons name="close" size={24} color="black" />
               </TouchableOpacity>
             </View>
+            {activeUserId && (
+              <TouchableOpacity
+                onPress={() => {
+                  setIsUserModalVisible(false);
+                  navigation.navigate('MiPerfil', { userId: activeUserId });
+                }}
+                className="mb-4 flex-row items-center rounded-2xl bg-nanny-card px-4 py-3"
+              >
+                <Ionicons name="person-circle-outline" size={24} color="#6d83a1" />
+                <Text className="ml-3 text-base font-semibold text-nanny-text">Editar mi perfil</Text>
+                <Ionicons name="chevron-forward" size={20} color="#808080" style={{ marginLeft: 'auto' }} />
+              </TouchableOpacity>
+            )}
             {usersLoading ? (
               <ActivityIndicator size="large" color="#6d83a1" />
             ) : usersError ? (
@@ -551,10 +1041,15 @@ export default function HomeScreen() {
                     className="flex-row items-center justify-between border-b border-gray-100 p-4"
                   >
                     <View className="flex-row items-center">
-                      <Text className="text-lg">{item.name}</Text>
+                      <Text className="text-lg">{[item.name, item.surname].filter(Boolean).join(' ')}</Text>
                       {item.role === 'ADMIN' && (
                         <Text className="ml-2 rounded-full bg-nanny-blue/15 px-2 py-0.5 text-xs font-semibold text-nanny-blue">
                           Admin
+                        </Text>
+                      )}
+                      {item.isPediatrician && (
+                        <Text className="ml-2 rounded-full bg-nanny-green/15 px-2 py-0.5 text-xs font-semibold text-nanny-green">
+                          Pediatra
                         </Text>
                       )}
                     </View>

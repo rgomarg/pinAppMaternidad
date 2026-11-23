@@ -12,6 +12,7 @@ import FamiliaScreen from './src/screens/FamiliaScreen';
 import ForoScreen from './src/screens/ForoScreen';
 import ChildRegistrationScreen from './src/screens/ChildRegistrationScreen';
 import CrearEventoScreen from './src/screens/CrearEventoScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 import * as Notifications from 'expo-notifications';
 import { FamilySelectionProvider, useFamilySelection } from './src/context/FamilySelectionContext';
 
@@ -131,6 +132,7 @@ export default function App() {
           component={CrearEventoScreen} 
           options={{ presentation: 'modal' }} // Se abre como modal nativo deslizable
         />
+        <Stack.Screen name="MiPerfil" component={ProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

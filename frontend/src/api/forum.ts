@@ -7,8 +7,14 @@ export type Role = 'USER' | 'PRO' | 'ADMIN';
 export interface Author {
   id: number;
   name: string;
+  surname: string | null;
   avatarUrl: string | null;
   role: Role;
+  isPediatrician: boolean;
+}
+
+export function authorDisplayName(author: Pick<Author, 'name' | 'surname'>) {
+  return [author.name, author.surname].filter(Boolean).join(' ');
 }
 
 export interface Tag {
@@ -110,5 +116,9 @@ export const forumApi = {
     reporterId: number;
     comment: string;
   }) => request<{ id: number }>('/report', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Resumen del hilo generado con IA. Solo PRO: el backend (ProGuard) lo comprueba con proId
+  getThreadSummary: (id: number, proId: number) =>
+    request<{ summary: string }>(`/thread/${id}/summary${query({ proId })}`, { method: 'POST' }),
 
 };
