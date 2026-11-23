@@ -22,6 +22,8 @@ export async function copyInviteLink(text: string): Promise<'copied' | 'shared'>
 export const QR_PREFIX = 'HC1:';
 export const SHARE_DURATION_MINUTES = 5;
 export const SHARE_DURATION_MS = SHARE_DURATION_MINUTES * 60 * 1000;
+export const SHARE_DURATION_DAYS = 30;
+export const SHARE_DURATION_MS = SHARE_DURATION_DAYS * 24 * 60 * 60 * 1000;
 
 export const CAMERA_PERMISSION_REQUIRED_TITLE = 'Permisos de cámara requeridos';
 export const CAMERA_PERMISSION_REQUIRED_MESSAGE =
@@ -385,9 +387,11 @@ export function decodeChildShareCode(rawInput: string): SharedChildProfile {
 
   if (new Date(expiresAtIso).getTime() <= now) {
     throw new Error('El permiso temporal de este código QR ha caducado (5 minutos).');
+    throw new Error('El permiso temporal de este código QR ha caducado (30 días).');
   }
 
   // Aseguramos caducidad de 5 minutos desde la vinculación o la fecha indicada en el token
+  // Aseguramos caducidad de 30 días desde la vinculación o la fecha indicada en el token
   const effectiveExpiresAt = new Date(
     Math.min(new Date(expiresAtIso).getTime(), now + SHARE_DURATION_MS),
   ).toISOString();
@@ -445,14 +449,18 @@ export function decodeChildShareCode(rawInput: string): SharedChildProfile {
 
 /**
  * Calcula los minutos restantes antes de que caduque el permiso temporal (5 minutos).
+ * Calcula los días restantes antes de que caduque el permiso temporal (30 días).
  */
 export function getRemainingShareMinutes(expiresAt: string): number {
+export function getRemainingShareDays(expiresAt: string): number {
   const diff = new Date(expiresAt).getTime() - Date.now();
   if (diff <= 0) return 0;
   return Math.ceil(diff / (60 * 1000));
+  return Math.ceil(diff / (24 * 60 * 60 * 1000));
 }
 
 // Persistencia local de perfiles compartidos por usuario (con limpieza automática de caducados > 5 minutos)
+// Persistencia local de perfiles compartidos por usuario (con limpieza automática de caducados > 30 días)
 let memorySharedChildren: SharedChildProfile[] = [];
 const STORAGE_KEY = 'pinapp_shared_children_v2';
 
@@ -486,6 +494,7 @@ async function loadAllValidSharedChildren(): Promise<SharedChildProfile[]> {
 
   // Ajustar permisos ya existentes que tuvieran más de 5 minutos (p. ej. 30 días) para que duren como máximo 5 minutos
   // y filtrar los que ya hayan caducado.
+  // Filtrar los perfiles cuyo permiso temporal de 30 días haya caducado y que tengan un usuario destinatario
   const now = Date.now();
   let modified = false;
   const normalized = memorySharedChildren.map((child) => {
@@ -500,6 +509,7 @@ async function loadAllValidSharedChildren(): Promise<SharedChildProfile[]> {
   });
 
   const valid = normalized.filter(
+  const valid = memorySharedChildren.filter(
     (child) =>
       child &&
       child.recipientUserId != null &&
@@ -508,6 +518,7 @@ async function loadAllValidSharedChildren(): Promise<SharedChildProfile[]> {
   );
 
   if (modified || valid.length !== memorySharedChildren.length) {
+  if (valid.length !== memorySharedChildren.length) {
     memorySharedChildren = valid;
     await persistSharedChildren(valid);
   }
