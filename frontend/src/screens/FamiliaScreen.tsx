@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   type ScrollViewInstance,
@@ -17,11 +18,31 @@ import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/nativ
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { CameraView } from 'expo-camera';
 import { API_URL } from '../api/config';
 import { useFamilySelection } from '../context/FamilySelectionContext';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { allergyRecords, type Allergy, type AllergySeverity } from '../utils/allergies';
+import {
+  buildShareInviteLink,
+  CAMERA_PERMISSION_REQUIRED_MESSAGE,
+  CAMERA_PERMISSION_REQUIRED_TITLE,
+  checkCameraPermissions,
+  checkMediaLibraryPermissions,
+  copyInviteLink,
+  decodeChildShareCode,
+  getChildSlug,
+  getRemainingShareMinutes,
+  loadSharedChildren,
+  MEDIA_PERMISSION_REQUIRED_MESSAGE,
+  MEDIA_PERMISSION_REQUIRED_TITLE,
+  pickAndDecodeQrFromGallery,
+  QRCodeSvg,
+  removeSharedChild,
+  saveSharedChild,
+  type SharedChildProfile,
+} from '../utils/qrShare';
 import HealthHistory, { HealthHistoryLocked } from '../components/HealthHistory';
 
 type Child = {
@@ -32,14 +53,25 @@ type Child = {
   birthDate: string;
   bloodGroup?: string | null;
   allergies?: string | null;
+  isShared?: boolean;
+  expiresAt?: string;
+  slug?: string;
 };
 
 type ChildPreview = Child & {
   allergies: string | null;
   vaccines: Vaccine[];
-  conditions: unknown[];
-  diseases: unknown[];
-  medicine: { endDate: string | null }[];
+  conditions: { id: number; desciption?: string | null; description?: string | null; timestamp: string }[];
+  diseases: { id: number; name: string; description: string | null; diagnosticatedAge: string | null }[];
+  medicine: {
+    id: number;
+    name: string;
+    dosage: string;
+    intervalHours: number | null;
+    startDate?: string | null;
+    instructions?: string | null;
+    endDate: string | null;
+  }[];
 };
 
 type Dashboard = Child & {
@@ -191,22 +223,32 @@ function confirmDeleteChild(child: { id: number; name: string }, onDeleted: () =
 
 function ChildCard({
   child,
+  userId,
   onPress,
   onEdit,
+  onShareQr,
   onDeleted,
 }: {
   child: ChildPreview;
+  userId: number | null;
   onPress: () => void;
   onEdit: () => void;
+  onShareQr: () => void;
   onDeleted: () => void;
 }) {
   const pendingVaccines = child.vaccines.filter((vaccine) => !vaccine.appliedAt).length;
   const activeMedicines = child.medicine.filter((medicine) => !medicine.endDate || new Date(medicine.endDate) >= new Date()).length;
   
   const [exporting, setExporting] = useState(false);
+  const fullName = [child.name, child.surname].filter(Boolean).join(' ');
+  const remainingMinutes = child.isShared && child.expiresAt ? getRemainingShareMinutes(child.expiresAt) : null;
 
 
   async function exportData(childId: number) {
+    if (child.isShared) {
+      Alert.alert('Vista compartida', 'La exportación en PDF solo está disponible en el dispositivo del tutor propietario.');
+      return;
+    }
     setExporting(true);
     try {
       if (!FileSystem.cacheDirectory) {
@@ -235,7 +277,21 @@ function ChildCard({
 
 
   const openMenu = () => {
-    Alert.alert(child.name, undefined, [
+    if (child.isShared) {
+      Alert.alert(fullName, `Acceso temporal activo (${remainingMinutes ?? 5} min restantes).`, [
+        {
+          text: 'Dejar de ver ficha',
+          style: 'destructive',
+          onPress: async () => {
+            await removeSharedChild(child.id, userId);
+            onDeleted();
+          },
+        },
+        { text: 'Cancelar', style: 'cancel' },
+      ]);
+      return;
+    }
+    Alert.alert(fullName, undefined, [
       { text: 'Editar hijo', onPress: onEdit },
       { text: 'Eliminar hijo', style: 'destructive', onPress: () => confirmDeleteChild(child, onDeleted) },
       { text: 'Cancelar', style: 'cancel' },
@@ -248,7 +304,7 @@ function ChildCard({
         onPress={openMenu}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         accessibilityRole="button"
-        accessibilityLabel={`Más opciones de ${child.name}`}
+        accessibilityLabel={`Más opciones de ${fullName}`}
         className="absolute right-3 top-3 z-10 h-9 w-9 items-center justify-center rounded-full"
       >
         <Ionicons name="ellipsis-horizontal" size={22} color={palette.muted} />
@@ -256,10 +312,17 @@ function ChildCard({
       <TouchableOpacity onPress={onPress} className="flex-row items-center px-5 pb-4 pt-5">
         <Avatar child={child} size={66} />
         <View className="ml-5 flex-1">
-          <Text style={{ color: palette.text }} className="text-xl font-bold">{child.name}</Text>
+          <Text style={{ color: palette.text }} className="text-xl font-bold">{fullName}</Text>
           <Text style={{ color: palette.muted }} className="mt-1 text-sm">
             {getAge(child.birthDate)} años · Sangre {child.bloodGroup || '—'}
           </Text>
+          {child.isShared && remainingMinutes !== null && (
+            <View className="mt-2 self-start rounded-full bg-[#dce7f1] px-3 py-1">
+              <Text style={{ color: palette.blue }} className="text-xs font-semibold">
+                Acceso temporal · {remainingMinutes} {remainingMinutes === 1 ? 'min restante' : 'min restantes'}
+              </Text>
+            </View>
+          )}
           {allergyRecords(child.allergies).map((allergy) => (
             <View key={allergy.name} className={`mt-2 self-start rounded-full px-3 py-1 ${allergy.severity === 'severa' ? 'bg-[#ffe1dc]' : 'bg-[#fff1ec]'}`}>
               <Text style={{ color: palette.red }} className="text-xs">
@@ -278,19 +341,33 @@ function ChildCard({
       </View>
 
       <View className="flex-row items-center px-5 py-3">
-        <Text style={{ color: palette.muted }} className="flex-1 text-xs">Sin seguimientos registrados</Text>
+        <Text style={{ color: palette.muted }} className="flex-1 text-xs">
+          {child.isShared ? 'Ficha compartida mediante QR (solo lectura)' : 'Sin seguimientos registrados'}
+        </Text>
       </View>
-      <TouchableOpacity
-        onPress={() => exportData(child.id)}
-        className="items-center border-t border-[#ddd2c4] bg-[#f5eee4] py-3"
-        accessibilityRole="button"
-        accessibilityLabel={`Compartir o guardar el PDF de ${child.name}`}
-      >
-        <View className="flex-row items-center">
-          <Ionicons name="share-social-outline" size={18} color={palette.blue} />
-          <Text style={{ color: palette.blue }} className="ml-2 text-sm font-semibold">Compartir o guardar PDF</Text>
+      {!child.isShared && (
+        <View className="flex-row border-t border-[#ddd2c4] bg-[#f5eee4]">
+          <TouchableOpacity
+            onPress={onShareQr}
+            className="flex-1 flex-row items-center justify-center border-r border-[#ddd2c4] py-3.5"
+            accessibilityRole="button"
+            accessibilityLabel={`Compartir QR de ${fullName}`}
+          >
+            <Ionicons name="qr-code-outline" size={18} color={palette.blue} />
+            <Text style={{ color: palette.blue }} className="ml-2 text-sm font-semibold">Compartir QR</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => exportData(child.id)}
+            disabled={exporting}
+            className="flex-1 flex-row items-center justify-center py-3.5"
+            accessibilityRole="button"
+            accessibilityLabel={`Guardar PDF de ${fullName}`}
+          >
+            <Ionicons name="download-outline" size={18} color={palette.blue} />
+            <Text style={{ color: palette.blue }} className="ml-2 text-sm font-semibold">Guardar PDF</Text>
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -308,11 +385,15 @@ function ChildPickerScreen() {
   const navigation = useNavigation<any>();
   const { selectedUserId: userId } = useFamilySelection();
   const [children, setChildren] = useState<ChildPreview[]>([]);
+  const [sharedChildren, setSharedChildren] = useState<SharedChildProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadChildren = useCallback(async () => {
     setLoading(true);
     try {
+      const localShared = await loadSharedChildren(userId);
+      setSharedChildren(localShared);
+
       if (userId === null) {
         setChildren([]);
         return;
@@ -333,30 +414,91 @@ function ChildPickerScreen() {
     }
   }, [userId]);
 
+  useFocusEffect(
+    useCallback(() => {
+      loadChildren();
+      const interval = setInterval(async () => {
+        const localShared = await loadSharedChildren(userId);
+        setSharedChildren(localShared);
+      }, 15000);
+      return () => clearInterval(interval);
+    }, [loadChildren, userId]),
+  );
   useFocusEffect(useCallback(() => { loadChildren(); }, [loadChildren]));
+
+  const combinedChildren: ChildPreview[] = [
+    ...children,
+    ...sharedChildren.filter(
+      (shared) => !children.some((own) => Math.abs(own.id) === Math.abs(shared.id)),
+    ),
+  ];
+
+  const handleOpenScanQr = () => {
+    if (userId === null) {
+      Alert.alert(
+        'Selecciona un usuario',
+        'Debes seleccionar primero un usuario en la pestaña Datos para vincular el menor a su perfil.',
+      );
+      return;
+    }
+    navigation.navigate('ScanQrAccess', { ownChildIds: children.map((c) => c.id) });
+  };
 
   return (
     <Shell>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }}>
-        <View className="mb-6">
-          <Text style={{ color: palette.muted }} className="mb-1 text-sm font-medium">
+      <View className="flex-row items-center justify-between border-b border-[#ded5c8] px-6 pb-4 pt-3">
+        <View className="flex-1 pr-3">
+          <Text style={{ color: palette.muted }} className="mb-0.5 text-sm font-medium">
+            Registro médico
+          </Text>
+          <Text style={{ color: palette.text }} className="text-2xl font-bold">
             Libro de familia
           </Text>
-          <Text style={{ color: palette.text }} className="text-xl font-semibold italic">
-            {userId ? 'Selecciona un niño' : 'Selecciona un usuario'}
-          </Text>
-          <Text style={{ color: palette.muted }} className="mt-3 text-sm">
-            {userId
-              ? 'Elige un niño para consultar su información médica.'
-              : 'Elige un usuario para cargar sus hijos y sus datos médicos.'}
-          </Text>
         </View>
-        {loading ? <ActivityIndicator size="large" color={palette.blue} /> : children.map((child) => (
+        <View className="flex-row items-center gap-3">
+          <TouchableOpacity
+            onPress={handleOpenScanQr}
+            accessibilityRole="button"
+            accessibilityLabel="Leer QR"
+            className="flex-row items-center rounded-full bg-[#e3eaf2] px-4 py-2.5"
+          >
+            <Ionicons name="scan-outline" size={18} color="#4f6785" />
+            <Text style={{ color: '#4f6785' }} className="ml-2 text-sm font-semibold">
+              Leer QR
+            </Text>
+          </TouchableOpacity>
+          <View className="relative h-11 w-11 items-center justify-center rounded-full bg-[#6d83a1]">
+            <Text className="text-base font-bold text-white">
+              {userId ? String(userId) : '?'}
+            </Text>
+            <View className="absolute -bottom-0.5 -right-0.5 rounded-full bg-white p-0.5">
+              <View className="h-3.5 w-3.5 items-center justify-center rounded-full bg-[#6d83a1]">
+                <Ionicons name="person" size={8} color="#ffffff" />
+              </View>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }}>
+        {userId === null && combinedChildren.length === 0 && (
+          <View className="mb-6">
+            <Text style={{ color: palette.text }} className="text-xl font-semibold italic">
+              Selecciona un usuario
+            </Text>
+            <Text style={{ color: palette.muted }} className="mt-2 text-sm">
+              Elige un usuario en la pestaña Datos para cargar sus hijos o vincular temporalmente un menor mediante QR.
+            </Text>
+          </View>
+        )}
+        {loading ? <ActivityIndicator size="large" color={palette.blue} /> : combinedChildren.map((child) => (
           <ChildCard
-            key={child.id}
+            key={`${child.isShared ? 'shared' : 'own'}-${child.id}`}
             child={child}
-            onPress={() => navigation.navigate('ChildProfile', { childId: child.id })}
+            userId={userId}
+            onPress={() => navigation.navigate('ChildProfile', { childId: child.id, sharedChild: child.isShared ? child : undefined })}
             onEdit={() => navigation.navigate('RegistroHijo', { child })}
+            onShareQr={() => navigation.navigate('ShareQrAccess', { child })}
             onDeleted={loadChildren}
           />
         ))}
@@ -371,13 +513,6 @@ function ChildPickerScreen() {
             <Text style={{ color: palette.blue }} className="ml-2 text-base font-semibold">Añadir hijo</Text>
           </TouchableOpacity>
         )}
-        {/* {!loading && children.length === 0 && (
-          <Text className="mt-3 text-sm text-[#8A7F75]">
-            {userId === null
-              ? 'Elige un usuario para cargar sus hijos y sus datos médicos.'
-              : 'Este usuario no tiene hijos registrados.'}
-          </Text>
-        )} */}
       </ScrollView>
     </Shell>
   );
@@ -389,16 +524,18 @@ function Section({
   children,
 }: {
   title: string;
-  onAdd: () => void;
+  onAdd?: () => void;
   children: React.ReactNode;
 }) {
   return (
     <View className="mb-8">
       <View className="mb-3 flex-row items-center justify-between">
         <Text style={{ color: palette.muted }} className="text-base font-bold uppercase tracking-wider">{title}</Text>
-        <TouchableOpacity onPress={onAdd}>
-          <Text style={{ color: palette.blue }} className="text-base font-semibold">+ Añadir</Text>
-        </TouchableOpacity>
+        {onAdd && (
+          <TouchableOpacity onPress={onAdd}>
+            <Text style={{ color: palette.blue }} className="text-base font-semibold">+ Añadir</Text>
+          </TouchableOpacity>
+        )}
       </View>
       {children}
     </View>
@@ -424,10 +561,347 @@ function SimpleCard({ title, subtitle, onPress }: { title: string; subtitle?: st
   );
 }
 
+function ShareQrScreen() {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const child = route.params.child as ChildPreview;
+  const [copied, setCopied] = useState(false);
+
+  const childSlug = getChildSlug(child.name, child.id);
+  const inviteCode = buildShareInviteLink(child);
+
+  const handleCopyInvite = async () => {
+    try {
+      const mode = await copyInviteLink(inviteCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+      if (mode === 'copied') {
+        Alert.alert('Enlace copiado', 'El código de invitación se ha copiado al portapapeles.');
+      }
+    } catch {
+      Alert.alert('Código de invitación', inviteCode);
+    }
+  };
+
+  return (
+    <Shell>
+      <View className="flex-row items-center justify-between border-b border-[#ded5c8] px-6 py-5">
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          className="min-w-[72px]"
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar"
+        >
+          <Text style={{ color: palette.muted }} className="text-lg font-medium">
+            Cerrar
+          </Text>
+        </TouchableOpacity>
+        <Text style={{ color: palette.text }} className="text-xl font-bold">
+          Compartir acceso
+        </Text>
+        <View className="min-w-[72px]" />
+      </View>
+
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 28, paddingBottom: 48 }}>
+        <View className="items-center">
+          <View className="items-center justify-center rounded-3xl border border-[#e2dad0] bg-white p-6 shadow-sm">
+            <QRCodeSvg value={inviteCode} size={230} color="#232323" backgroundColor="#ffffff" />
+          </View>
+        </View>
+
+        <View className="mt-7 rounded-2xl border border-[#ddd2c4] bg-[#ece5d8] px-5 py-4">
+          <Text style={{ color: palette.muted }} className="text-xs font-semibold uppercase tracking-wider">
+            ID DEL MENOR
+          </Text>
+          <Text style={{ color: palette.text }} className="mt-1 text-lg font-bold">
+            {childSlug}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          onPress={handleCopyInvite}
+          accessibilityRole="button"
+          accessibilityLabel="Copiar enlace de invitación"
+          style={{ backgroundColor: palette.blue }}
+          className="mt-4 flex-row items-center justify-center rounded-2xl py-4"
+        >
+          <Ionicons name={copied ? 'checkmark-outline' : 'copy-outline'} size={20} color="#ffffff" />
+          <Text className="ml-2.5 text-base font-semibold text-white">
+            {copied ? 'Enlace copiado' : 'Copiar enlace de invitación'}
+          </Text>
+        </TouchableOpacity>
+
+        <View className="mt-5 flex-row items-start rounded-2xl border border-[#ead9bc] bg-[#fdf5e6] p-4">
+          <Ionicons name="information-circle-outline" size={22} color="#8c6229" style={{ marginTop: 1 }} />
+          <Text style={{ color: '#7d5a2b' }} className="ml-3 flex-1 text-sm leading-5">
+            Demostración local: el QR comparte solo identidad básica. No sincroniza cambios médicos entre dispositivos.
+          </Text>
+        </View>
+      </ScrollView>
+    </Shell>
+  );
+}
+
+function ScanQrScreen() {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const insets = useSafeAreaInsets();
+  const { selectedUserId: userId } = useFamilySelection();
+  const ownChildIds: number[] = Array.isArray(route.params?.ownChildIds) ? route.params.ownChildIds : [];
+  const [codeInput, setCodeInput] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [cameraModalVisible, setCameraModalVisible] = useState(false);
+  const [hasScannedInModal, setHasScannedInModal] = useState(false);
+
+  const linkProfileFromRawCode = async (raw: string) => {
+    if (userId === null) {
+      throw new Error('Debes seleccionar primero un usuario activo para vincular el menor.');
+    }
+    const profile = decodeChildShareCode(raw);
+    if (ownChildIds.some((id) => Math.abs(id) === Math.abs(profile.id))) {
+      throw new Error('Este menor ya pertenece a tu Libro de familia.');
+    }
+    await saveSharedChild(profile, userId);
+    Alert.alert(
+      'Menor vinculado',
+      `Se ha añadido a ${[profile.name, profile.surname].filter(Boolean).join(' ')} con acceso temporal durante 5 minutos.`,
+      [
+        {
+          text: 'Ver en Libro de familia',
+          onPress: () => navigation.navigate('ChildPicker'),
+        },
+      ],
+    );
+  };
+
+  const handleSelectCamera = async () => {
+    const hasPermission = await checkCameraPermissions();
+    if (!hasPermission) {
+      Alert.alert(
+        CAMERA_PERMISSION_REQUIRED_TITLE,
+        CAMERA_PERMISSION_REQUIRED_MESSAGE,
+        [{ text: 'Entendido' }],
+      );
+      return;
+    }
+    setHasScannedInModal(false);
+    setCameraModalVisible(true);
+  };
+
+  const handleSelectGallery = async () => {
+    setScanning(true);
+    try {
+      const hasPermission = await checkMediaLibraryPermissions();
+      if (!hasPermission) {
+        Alert.alert(
+          MEDIA_PERMISSION_REQUIRED_TITLE,
+          MEDIA_PERMISSION_REQUIRED_MESSAGE,
+          [{ text: 'Entendido' }],
+        );
+        return;
+      }
+
+      const { decodedText, cancelled } = await pickAndDecodeQrFromGallery();
+      if (cancelled) return;
+
+      if (!decodedText) {
+        Alert.alert(
+          'No se detectó un QR',
+          'No se pudo encontrar un código QR nítido en la imagen seleccionada. Prueba con otra foto o pega el código HC1... manualmente abajo.',
+        );
+        return;
+      }
+
+      setCodeInput(decodedText);
+      try {
+        await linkProfileFromRawCode(decodedText);
+      } catch (err: any) {
+        Alert.alert('Código leído no válido', err?.message || 'El QR de la imagen no corresponde a una ficha válida.');
+      }
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleOpenCameraOrImage = () => {
+    if (Platform.OS === 'web') {
+      void handleSelectGallery();
+      return;
+    }
+
+    Alert.alert(
+      'Añadir mediante QR',
+      '¿Cómo quieres escanear el código QR compartido por el otro tutor?',
+      [
+        {
+          text: 'Abrir cámara',
+          onPress: () => { void handleSelectCamera(); },
+        },
+        {
+          text: 'Elegir imagen de la galería',
+          onPress: () => { void handleSelectGallery(); },
+        },
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+      ],
+    );
+  };
+
+  const handleBarcodeScanned = async ({ data }: { data: string }) => {
+    if (hasScannedInModal || !data) return;
+    setHasScannedInModal(true);
+    setCameraModalVisible(false);
+    setCodeInput(data);
+    try {
+      await linkProfileFromRawCode(data);
+    } catch (err: any) {
+      Alert.alert('Código QR no válido', err?.message || 'El código escaneado no corresponde a una ficha válida.');
+    }
+  };
+
+  const handleLinkChild = async () => {
+    try {
+      await linkProfileFromRawCode(codeInput);
+    } catch (err: any) {
+      Alert.alert('No se pudo vincular', err?.message || 'El código introducido no es válido.');
+    }
+  };
+
+  const canSubmit = codeInput.trim().length > 0;
+
+  return (
+    <Shell>
+      <Modal
+        visible={cameraModalVisible}
+        animationType="slide"
+        onRequestClose={() => setCameraModalVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: '#000000', paddingTop: insets.top }}>
+          <View className="flex-row items-center justify-between bg-[#302e2c] px-6 py-4">
+            <TouchableOpacity
+              onPress={() => setCameraModalVisible(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar cámara"
+            >
+              <Text className="text-base font-semibold text-white">Cancelar</Text>
+            </TouchableOpacity>
+            <Text className="text-lg font-bold text-white">Escanear código QR</Text>
+            <View className="w-16" />
+          </View>
+
+          <View className="flex-1">
+            <CameraView
+              style={{ flex: 1 }}
+              facing="back"
+              barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+              onBarcodeScanned={hasScannedInModal ? undefined : handleBarcodeScanned}
+            />
+            <View
+              pointerEvents="none"
+              className="absolute inset-0 items-center justify-center"
+            >
+              <View className="h-64 w-64 rounded-3xl border-2 border-white/80 bg-transparent" />
+              <Text className="mt-5 rounded-full bg-black/60 px-4 py-2 text-center text-sm font-medium text-white">
+                Apunta al código QR compartido por el otro tutor
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <View className="flex-row items-center justify-between border-b border-[#ded5c8] px-6 py-5">
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          className="min-w-[72px]"
+          accessibilityRole="button"
+          accessibilityLabel="Cancelar"
+        >
+          <Text style={{ color: palette.muted }} className="text-lg font-medium">
+            Cancelar
+          </Text>
+        </TouchableOpacity>
+        <Text style={{ color: palette.text }} className="text-xl font-bold">
+          Añadir mediante QR
+        </Text>
+        <View className="min-w-[72px]" />
+      </View>
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 28, paddingBottom: 48 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <TouchableOpacity
+            onPress={handleOpenCameraOrImage}
+            disabled={scanning}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir cámara o elegir imagen"
+            className="items-center rounded-3xl border-2 border-dashed border-[#b8afa2] bg-[#ece5d8] px-6 py-10"
+          >
+            <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-[#d6e2ef]">
+              <Ionicons name="qr-code-outline" size={30} color="#4f6785" />
+            </View>
+            <Text style={{ color: palette.text }} className="text-center text-lg font-bold">
+              Abrir cámara o elegir imagen
+            </Text>
+            <Text style={{ color: palette.muted }} className="mt-2 text-center text-sm leading-5">
+              Haz una foto clara del código QR compartido por el otro tutor.
+            </Text>
+          </TouchableOpacity>
+
+          <View className="my-7 flex-row items-center">
+            <View className="h-[1px] flex-1 bg-[#ded5c8]" />
+            <Text style={{ color: palette.muted }} className="mx-4 text-sm">
+              o pega el código
+            </Text>
+            <View className="h-[1px] flex-1 bg-[#ded5c8]" />
+          </View>
+
+          <TextInput
+            value={codeInput}
+            onChangeText={setCodeInput}
+            placeholder="HC1... o enlace de invitación"
+            placeholderTextColor="#91877e"
+            multiline
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={{ color: palette.text, minHeight: 130, textAlignVertical: 'top' }}
+            className="rounded-3xl border border-[#d8cebe] bg-[#ece5d8] px-5 py-4 text-base"
+          />
+
+          <TouchableOpacity
+            onPress={handleLinkChild}
+            disabled={!canSubmit}
+            accessibilityRole="button"
+            accessibilityLabel="Vincular menor"
+            style={{ backgroundColor: canSubmit ? palette.blue : '#cec6b8' }}
+            className="mt-5 items-center justify-center rounded-2xl py-4"
+          >
+            <Text className="text-base font-bold text-white">
+              Vincular menor
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={{ color: palette.muted }} className="mt-4 px-2 text-center text-xs leading-5">
+            Prototipo local: la ficha importada no recibirá futuras actualizaciones del otro dispositivo.
+          </Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Shell>
+  );
+}
+
 function ChildProfileScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const [data, setData] = useState<Dashboard | null>(null);
+  const { selectedUserId: userId } = useFamilySelection();
+  const [data, setData] = useState<(Dashboard & { isShared?: boolean; expiresAt?: string }) | null>(null);
   const [loading, setLoading] = useState(true);
   // El historial médico completo lo ven PRO y ADMIN (igual que ProGuard en el backend);
   // el resto ve una vista previa bloqueada. Se recarga cada vez que se recarga el perfil.
@@ -439,20 +913,54 @@ function ChildProfileScreen() {
     setLoading(true);
     setHistoryKey((key) => key + 1);
     try {
+      if (route.params?.sharedChild) {
+        setData(route.params.sharedChild);
+        return;
+      }
+      if (route.params?.childId < 0) {
+        const sharedList = await loadSharedChildren(userId);
+        const found = sharedList.find((c) => c.id === route.params.childId);
+        if (found) {
+          setData(found);
+          return;
+        }
+      }
       setData(await fetchChildDashboard(route.params.childId));
     } catch {
       Alert.alert('Error', 'No se pudo cargar el perfil del niño.');
     } finally {
       setLoading(false);
     }
-  }, [route.params.childId]);
+  }, [route.params?.childId, route.params?.sharedChild, userId]);
 
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboard();
+      const interval = setInterval(async () => {
+        if (route.params?.sharedChild?.expiresAt || route.params?.childId < 0) {
+          const sharedList = await loadSharedChildren(userId);
+          const targetId = route.params?.sharedChild?.id ?? route.params?.childId;
+          const found = sharedList.find((c) => c.id === targetId);
+          if (!found) {
+            Alert.alert('Permiso caducado', 'El permiso temporal de 5 minutos para ver este perfil ha finalizado.');
+            navigation.navigate('ChildPicker');
+          } else {
+            setData(found);
+          }
+        }
+      }, 15000);
+      return () => clearInterval(interval);
+    }, [loadDashboard, navigation, route.params?.childId, route.params?.sharedChild, userId]),
+  );
   useFocusEffect(useCallback(() => { loadDashboard(); }, [loadDashboard]));
 
   if (loading || !data) {
     return <Shell><ActivityIndicator size="large" color={palette.blue} style={{ flex: 1 }} /></Shell>;
   }
 
+  const isShared = !!data.isShared;
+  const remainingMinutes = isShared && data.expiresAt ? getRemainingShareMinutes(data.expiresAt) : null;
+  const fullName = [data.name, data.surname].filter(Boolean).join(' ');
   const applied = data.vaccines.filter((vaccine) => vaccine.appliedAt).length;
   const vaccinesByRecent = [...data.vaccines].sort((a, b) => {
     const dateA = new Date(a.appliedAt || a.scheduledFor || 0).getTime();
@@ -463,6 +971,7 @@ function ChildProfileScreen() {
 
   // Menú con las acciones de un elemento (alergia, vacuna, condición o medicamento)
   const itemMenu = (title: string, onEdit: () => void, onDelete: () => Promise<void>) => {
+    if (isShared) return;
     Alert.alert(title, undefined, [
       { text: 'Editar', onPress: onEdit },
       {
@@ -527,7 +1036,7 @@ function ChildProfileScreen() {
           <View className="flex-row items-center">
             <Avatar child={data} size={72} />
             <View className="ml-5 flex-1">
-              <Text style={{ color: palette.text }} className="text-2xl font-bold">{data.name}</Text>
+              <Text style={{ color: palette.text }} className="text-2xl font-bold">{fullName}</Text>
               <Text style={{ color: palette.muted }} className="mt-1 text-base">
                 {getAge(data.birthDate)} años · {new Date(data.birthDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
               </Text>
@@ -536,38 +1045,72 @@ function ChildProfileScreen() {
                   Sangre {data.bloodGroup}
                 </Text>
               )}
+              {isShared && remainingMinutes !== null && (
+                <View className="mt-2 self-start rounded-full bg-[#dce7f1] px-3 py-1">
+                  <Text style={{ color: palette.blue }} className="text-xs font-semibold">
+                    Vista compartida (solo lectura · {remainingMinutes} min restantes)
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
-          <View className="mt-5 flex-row gap-3">
-            <TouchableOpacity
-              onPress={editChild}
-              accessibilityRole="button"
-              accessibilityLabel={`Editar a ${data.name}`}
-              className="flex-1 flex-row items-center justify-center rounded-2xl border border-[#ddd2c4] bg-[#f7f3ec] py-3"
-            >
-              <Ionicons name="create-outline" size={18} color={palette.blue} />
-              <Text style={{ color: palette.blue }} className="ml-2 text-base font-semibold">Editar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={deleteChild}
-              accessibilityRole="button"
-              accessibilityLabel={`Eliminar a ${data.name}`}
-              className="flex-1 flex-row items-center justify-center rounded-2xl border border-[#ddd2c4] bg-[#f7f3ec] py-3"
-            >
-              <Ionicons name="trash-outline" size={18} color={palette.red} />
-              <Text style={{ color: palette.red }} className="ml-2 text-base font-semibold">Eliminar</Text>
-            </TouchableOpacity>
-          </View>
+          {!isShared ? (
+            <View className="mt-5 flex-row gap-3">
+              <TouchableOpacity
+                onPress={editChild}
+                accessibilityRole="button"
+                accessibilityLabel={`Editar a ${fullName}`}
+                className="flex-1 flex-row items-center justify-center rounded-2xl border border-[#ddd2c4] bg-[#f7f3ec] py-3"
+              >
+                <Ionicons name="create-outline" size={18} color={palette.blue} />
+                <Text style={{ color: palette.blue }} className="ml-2 text-base font-semibold">Editar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ShareQrAccess', { child: data })}
+                accessibilityRole="button"
+                accessibilityLabel={`Compartir QR de ${fullName}`}
+                className="flex-1 flex-row items-center justify-center rounded-2xl border border-[#ddd2c4] bg-[#f7f3ec] py-3"
+              >
+                <Ionicons name="qr-code-outline" size={18} color={palette.blue} />
+                <Text style={{ color: palette.blue }} className="ml-2 text-base font-semibold">Compartir QR</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={deleteChild}
+                accessibilityRole="button"
+                accessibilityLabel={`Eliminar a ${fullName}`}
+                className="flex-1 flex-row items-center justify-center rounded-2xl border border-[#ddd2c4] bg-[#f7f3ec] py-3"
+              >
+                <Ionicons name="trash-outline" size={18} color={palette.red} />
+                <Text style={{ color: palette.red }} className="ml-2 text-base font-semibold">Eliminar</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View className="mt-5 flex-row gap-3">
+              <TouchableOpacity
+                onPress={async () => {
+                  await removeSharedChild(data.id, userId);
+                  navigation.navigate('ChildPicker');
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Dejar de ver a ${fullName}`}
+                className="flex-1 flex-row items-center justify-center rounded-2xl border border-[#ddd2c4] bg-[#f7f3ec] py-3"
+              >
+                <Ionicons name="close-circle-outline" size={18} color={palette.red} />
+                <Text style={{ color: palette.red }} className="ml-2 text-base font-semibold">Quitar acceso temporal</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         <View className="px-6 pt-7">
-          <Section title={`Alergias · ${allergyRecords(data.allergies).length}`} onAdd={() => openForm('AddAllergy')}>
+          <Section title={`Alergias · ${allergyRecords(data.allergies).length}`} onAdd={isShared ? undefined : () => openForm('AddAllergy')}>
             {allergyRecords(data.allergies).map((allergy) => {
               const isSevere = allergy.severity === 'severa';
               return (
               <TouchableOpacity
                 key={allergy.name}
                 activeOpacity={0.7}
+                disabled={isShared}
                 onPress={() => itemMenu(allergy.name, () => editItem('AddAllergy', allergy), deleteAllergy(allergy.name))}
                 className={`mb-3 flex-row items-center rounded-3xl border p-5 ${isSevere ? 'border-[#c64b3b] bg-[#fff0ec]' : 'border-transparent bg-[#eee5d6]'}`}
                 accessibilityLabel={`${isSevere ? 'Alerta: ' : ''}Alergia ${allergy.name}, gravedad ${allergy.severity}`}
@@ -581,17 +1124,18 @@ function ChildProfileScreen() {
                     {isSevere ? 'ALERTA · Alergia severa' : `Gravedad: ${allergy.severity}`}
                   </Text>
                 </View>
-                <Ionicons name="ellipsis-horizontal" size={18} color={palette.muted} />
+                {!isShared && <Ionicons name="ellipsis-horizontal" size={18} color={palette.muted} />}
               </TouchableOpacity>
               );
             })}
           </Section>
 
-          <Section title={`Vacunas · ${applied}/${data.vaccines.length} aplicadas`} onAdd={() => openForm('AddVaccine')}>
+          <Section title={`Vacunas · ${applied}/${data.vaccines.length} aplicadas`} onAdd={isShared ? undefined : () => openForm('AddVaccine')}>
             {vaccinesByRecent.map((vaccine) => (
               <TouchableOpacity
                 key={vaccine.id}
                 activeOpacity={0.7}
+                disabled={isShared}
                 onPress={() => itemMenu(vaccine.name, () => editItem('AddVaccine', vaccine), deleteRecord('vaccine', vaccine.id))}
                 className="mb-3 flex-row items-center rounded-3xl bg-[#eee5d6] p-5"
               >
@@ -606,12 +1150,12 @@ function ChildProfileScreen() {
                       : `Pendiente${vaccine.scheduledFor ? ` · ${new Date(vaccine.scheduledFor).toLocaleDateString('es-ES')}` : ''}`}
                   </Text>
                 </View>
-                <Ionicons name="ellipsis-horizontal" size={18} color={palette.muted} />
+                {!isShared && <Ionicons name="ellipsis-horizontal" size={18} color={palette.muted} />}
               </TouchableOpacity>
             ))}
           </Section>
 
-          <Section title={`Condiciones · ${data.conditions.length + data.diseases.length}`} onAdd={() => openForm('AddCondition')}>
+          <Section title={`Condiciones · ${data.conditions.length + data.diseases.length}`} onAdd={isShared ? undefined : () => openForm('AddCondition')}>
             {data.conditions.map((condition) => (
               <SimpleCard key={condition.id} title={condition.description || condition.desciption || 'Condición registrada'} subtitle={`Registrada: ${new Date(condition.timestamp).toLocaleDateString('es-ES')}`} />
             ))}
@@ -620,18 +1164,18 @@ function ChildProfileScreen() {
                 key={`disease-${disease.id}`}
                 title={disease.name}
                 subtitle={disease.description || undefined}
-                onPress={() => itemMenu(disease.name, () => editItem('AddCondition', disease), deleteRecord('disease', disease.id))}
+                onPress={isShared ? undefined : () => itemMenu(disease.name, () => editItem('AddCondition', disease), deleteRecord('disease', disease.id))}
               />
             ))}
           </Section>
 
-          <Section title={`Medicamentos · ${data.medicine.length}`} onAdd={() => openForm('AddMedicine')}>
+          <Section title={`Medicamentos · ${data.medicine.length}`} onAdd={isShared ? undefined : () => openForm('AddMedicine')}>
             {data.medicine.map((medicine) => (
               <SimpleCard
                 key={medicine.id}
                 title={medicine.name}
                 subtitle={`${medicine.dosage}${medicine.intervalHours ? ` · cada ${medicine.intervalHours} h` : ''}`}
-                onPress={() => itemMenu(medicine.name, () => editItem('AddMedicine', medicine), deleteRecord('medicine', medicine.id))}
+                onPress={isShared ? undefined : () => itemMenu(medicine.name, () => editItem('AddMedicine', medicine), deleteRecord('medicine', medicine.id))}
               />
             ))}
           </Section>
@@ -1069,6 +1613,8 @@ export default function FamiliaScreen() {
     <Stack.Navigator key={`familia-${selectedUserId ?? 'none'}`} initialRouteName="ChildPicker" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ChildPicker" component={ChildPickerScreen} />
       <Stack.Screen name="ChildProfile" component={ChildProfileScreen} />
+      <Stack.Screen name="ShareQrAccess" component={ShareQrScreen} />
+      <Stack.Screen name="ScanQrAccess" component={ScanQrScreen} />
       <Stack.Screen name="AddVaccine" component={AddVaccineScreen} />
       <Stack.Screen name="AddAllergy" component={AddAllergyScreen} />
       <Stack.Screen name="AddCondition" component={AddConditionScreen} />

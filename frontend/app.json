@@ -31,7 +31,20 @@
           "color": "#6d83a1"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir acceso a la cámara para escanear códigos QR de perfiles compartidos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir acceso a tus fotos para elegir una imagen de código QR compartido.",
+          "cameraPermission": "Permitir acceso a la cámara para hacer una foto del código QR compartido."
+        }
+      ]
       ]
   }
 }
