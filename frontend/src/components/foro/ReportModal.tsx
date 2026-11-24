@@ -43,7 +43,7 @@ export default function ReportModal({
         if (!reporterId) {
             Alert.alert(
                 "Selecciona un usuario",
-                "Elige un usuario en la pestaña Datos para reportar.",
+                "Elige un usuario en la pestaña Inicio para reportar.",
             );
             return;
         }
@@ -88,16 +88,16 @@ export default function ReportModal({
                     <View className="mb-4 flex-row items-center">
                         <Ionicons name="flag-outline" size={22} color="#cc7a66" />
                         <View className="ml-3 flex-1">
-                            <Text className="text-subtitle font-semibold text-nanny-text">
+                            <Text className="text-subtitle font-figtree-semibold text-nanny-text">
                                 Reportar contenido
                             </Text>
-                            <Text className="text-body text-nanny-muted">
+                            <Text className="font-figtree text-body text-nanny-muted">
                                 Cuéntanos por qué quieres reportar este{" "}
                                 {targetType === "THREAD" ? "hilo" : "comentario"}.
                             </Text>
                         </View>
                     </View>
-                    <Text className="mb-1 text-body text-nanny-text">Comentario *</Text>
+                    <Text className="font-figtree mb-1 text-body text-nanny-text">Comentario *</Text>
                     <TextInput
                         value={comment}
                         onChangeText={setComment}
@@ -105,14 +105,14 @@ export default function ReportModal({
                         multiline
                         maxLength={1000}
                         style={{ minHeight: 100, textAlignVertical: "top" }}
-                        className="rounded-2xl bg-nanny-card p-3 text-body text-nanny-text"
+                        className="font-figtree rounded-2xl bg-nanny-card p-3 text-body text-nanny-text"
                     />
                     <View className="mt-4 flex-row gap-3">
                         <TouchableOpacity
                             onPress={close}
                             className="flex-1 items-center rounded-2xl bg-nanny-card py-3"
                         >
-                            <Text className="font-semibold text-nanny-text">Cancelar</Text>
+                            <Text className="font-figtree-semibold text-nanny-text">Cancelar</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={submit}
@@ -122,7 +122,7 @@ export default function ReportModal({
                             {sending ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (
-                                <Text className="font-semibold text-white">Enviar reporte</Text>
+                                <Text className="font-figtree-semibold text-white">Enviar reporte</Text>
                             )}
                         </TouchableOpacity>
                     </View>

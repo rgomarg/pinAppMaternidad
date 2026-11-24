@@ -64,7 +64,7 @@ const STATUS_BADGE: Record<ThreadStatus | UserStatus, { label: string; className
 function StatusBadge({ status }: { status: ThreadStatus | UserStatus }) {
   const badge = STATUS_BADGE[status];
   return (
-    <Text className={`rounded-full px-2 py-0.5 text-caption font-semibold ${badge.className} ${badge.textClassName}`}>
+    <Text className={`rounded-full px-2 py-0.5 text-caption font-figtree-semibold ${badge.className} ${badge.textClassName}`}>
       {badge.label}
     </Text>
   );
@@ -270,10 +270,10 @@ export default function AdminPanelScreen() {
           accessibilityLabel="Volver al foro"
         >
           <Ionicons name="chevron-back" size={18} color="#654875" />
-          <Text className="ml-1 text-body text-nanny-blue">Foro</Text>
+          <Text className="font-figtree ml-1 text-body text-nanny-blue">Foro</Text>
         </TouchableOpacity>
-        <Text className="mb-1 text-body font-medium text-nanny-muted">Administración</Text>
-        <Text className="mb-4 text-title font-bold text-nanny-text">Moderación</Text>
+        <Text className="mb-1 text-body font-figtree-medium text-nanny-muted">Administración</Text>
+        <Text className="mb-4 text-title font-figtree-bold text-nanny-text">Moderación</Text>
 
         <View className="mb-3 flex-row rounded-full bg-nanny-card p-1">
           {(
@@ -290,7 +290,7 @@ export default function AdminPanelScreen() {
               accessibilityRole="tab"
               accessibilityState={{ selected: tab === option.value }}
             >
-              <Text className={`text-body font-semibold ${tab === option.value ? 'text-nanny-text' : 'text-nanny-muted'}`}>
+              <Text className={`text-body font-figtree-semibold ${tab === option.value ? 'text-nanny-text' : 'text-nanny-muted'}`}>
                 {option.label}
               </Text>
             </TouchableOpacity>
@@ -310,7 +310,7 @@ export default function AdminPanelScreen() {
                   : 'Buscar por nombre o email'
             }
             placeholderTextColor="#6E5D78"
-            className="ml-2 flex-1 py-3 text-body text-nanny-text"
+            className="font-figtree ml-2 flex-1 py-3 text-body text-nanny-text"
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
@@ -333,7 +333,7 @@ export default function AdminPanelScreen() {
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
               >
-                <Text className={`text-body font-semibold ${active ? 'text-white' : 'text-nanny-text'}`}>{filter.label}</Text>
+                <Text className={`text-body font-figtree-semibold ${active ? 'text-white' : 'text-nanny-text'}`}>{filter.label}</Text>
               </TouchableOpacity>
             );
           })}
@@ -357,7 +357,7 @@ export default function AdminPanelScreen() {
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}
           refreshControl={refreshControl}
           keyboardShouldPersistTaps="handled"
-          ListEmptyComponent={<Text className="mt-12 text-center text-nanny-muted">{emptyText}</Text>}
+          ListEmptyComponent={<Text className="font-figtree mt-12 text-center text-nanny-muted">{emptyText}</Text>}
         />
       ) : tab === 'reports' ? (
         <FlatList
@@ -374,7 +374,7 @@ export default function AdminPanelScreen() {
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}
           refreshControl={refreshControl}
           keyboardShouldPersistTaps="handled"
-          ListEmptyComponent={<Text className="mt-12 text-center text-nanny-muted">{emptyText}</Text>}
+          ListEmptyComponent={<Text className="font-figtree mt-12 text-center text-nanny-muted">{emptyText}</Text>}
         />
       ) : (
         <FlatList
@@ -391,7 +391,7 @@ export default function AdminPanelScreen() {
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}
           refreshControl={refreshControl}
           keyboardShouldPersistTaps="handled"
-          ListEmptyComponent={<Text className="mt-12 text-center text-nanny-muted">{emptyText}</Text>}
+          ListEmptyComponent={<Text className="font-figtree mt-12 text-center text-nanny-muted">{emptyText}</Text>}
         />
       )}
     </View>
@@ -421,7 +421,7 @@ function ActionButton({
       accessibilityLabel={label}
     >
       {busy ? <ActivityIndicator size="small" color={color} /> : <Ionicons name={icon} size={16} color={color} />}
-      <Text className={`ml-1 text-body font-semibold ${destructive ? 'text-nanny-red' : 'text-nanny-blue'}`}>{label}</Text>
+      <Text className={`ml-1 text-body font-figtree-semibold ${destructive ? 'text-nanny-red' : 'text-nanny-blue'}`}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -445,19 +445,19 @@ function ThreadRow({
         <StatusBadge status={thread.status} />
         {/* Un hilo eliminado cuyo autor también está bloqueado muestra ambas etiquetas */}
         {deleted && thread.owner.blockedAt && <StatusBadge status="AUTHOR_BLOCKED" />}
-        <Text className="ml-auto text-caption text-nanny-muted">{timeAgo(thread.createdAt)}</Text>
+        <Text className="font-figtree ml-auto text-caption text-nanny-muted">{timeAgo(thread.createdAt)}</Text>
       </View>
 
-      <Text className="mb-1 text-subtitle font-semibold text-nanny-text">{thread.title}</Text>
-      <Text className="mb-3 text-body text-nanny-muted">{thread.content}</Text>
+      <Text className="mb-1 text-subtitle font-figtree-semibold text-nanny-text">{thread.title}</Text>
+      <Text className="font-figtree mb-3 text-body text-nanny-muted">{thread.content}</Text>
 
-      <Text className="text-caption text-nanny-muted">
-        Autor: <Text className="font-semibold text-nanny-text">{thread.owner.name}</Text> · {thread.owner.email}
+      <Text className="font-figtree text-caption text-nanny-muted">
+        Autor: <Text className="font-figtree-semibold text-nanny-text">{thread.owner.name}</Text> · {thread.owner.email}
       </Text>
-      <Text className="text-caption text-nanny-muted">
+      <Text className="font-figtree text-caption text-nanny-muted">
         {thread.messageCount} mensajes{thread.tags.length > 0 && ` · ${thread.tags.map((t) => `#${t.name}`).join(' ')}`}
       </Text>
-      {thread.deletedAt && <Text className="text-caption text-nanny-red">Eliminado el {formatDate(thread.deletedAt)}</Text>}
+      {thread.deletedAt && <Text className="font-figtree text-caption text-nanny-red">Eliminado el {formatDate(thread.deletedAt)}</Text>}
 
       <View className="mt-4 flex-row items-center justify-end">
         {thread.messageCount > 0 && (
@@ -468,7 +468,7 @@ function ThreadRow({
             accessibilityLabel={showMessages ? 'Ocultar comentarios' : 'Ver comentarios'}
           >
             <Ionicons name={showMessages ? 'chevron-up' : 'chatbubbles-outline'} size={16} color="#654875" />
-            <Text className="ml-1 text-body font-semibold text-nanny-blue">
+            <Text className="ml-1 text-body font-figtree-semibold text-nanny-blue">
               {showMessages ? 'Ocultar comentarios' : 'Comentarios'}
             </Text>
           </TouchableOpacity>
@@ -530,7 +530,7 @@ function ThreadMessages({ threadId, adminId }: { threadId: number; adminId: numb
     );
   };
 
-  if (error) return <Text className="mt-3 text-body text-nanny-red">{error}</Text>;
+  if (error) return <Text className="font-figtree mt-3 text-body text-nanny-red">{error}</Text>;
   if (!messages) return <ActivityIndicator size="small" color="#654875" style={{ marginTop: 12 }} />;
 
   return (
@@ -542,14 +542,14 @@ function ThreadMessages({ threadId, adminId }: { threadId: number; adminId: numb
             <View className="mb-1 flex-row flex-wrap items-center gap-2">
               <StatusBadge status={message.status} />
               {deleted && message.author.blockedAt && <StatusBadge status="AUTHOR_BLOCKED" />}
-              <Text className="ml-auto text-caption text-nanny-muted">{timeAgo(message.createdAt)}</Text>
+              <Text className="font-figtree ml-auto text-caption text-nanny-muted">{timeAgo(message.createdAt)}</Text>
             </View>
-            <Text className="mb-1 text-body text-nanny-text">{message.content}</Text>
-            <Text className="text-caption text-nanny-muted">
-              Autor: <Text className="font-semibold text-nanny-text">{message.author.name}</Text>
+            <Text className="font-figtree mb-1 text-body text-nanny-text">{message.content}</Text>
+            <Text className="font-figtree text-caption text-nanny-muted">
+              Autor: <Text className="font-figtree-semibold text-nanny-text">{message.author.name}</Text>
             </Text>
             {message.deletedAt && (
-              <Text className="text-caption text-nanny-red">Eliminado el {formatDate(message.deletedAt)}</Text>
+              <Text className="font-figtree text-caption text-nanny-red">Eliminado el {formatDate(message.deletedAt)}</Text>
             )}
             <View className="mt-2 flex-row justify-end">
               <ActionButton
@@ -586,18 +586,18 @@ function UserRow({
       <View className="mb-2 flex-row flex-wrap items-center gap-2">
         <StatusBadge status={user.status} />
         {user.role !== 'USER' && (
-          <Text className="rounded-full bg-nanny-bg px-2 py-0.5 text-caption font-semibold text-nanny-blue">
+          <Text className="rounded-full bg-nanny-bg px-2 py-0.5 text-caption font-figtree-semibold text-nanny-blue">
             {user.role === 'ADMIN' ? 'Admin' : 'Profesional'}
           </Text>
         )}
       </View>
 
-      <Text className="text-subtitle font-semibold text-nanny-text">{user.name}</Text>
-      <Text className="mb-2 text-body text-nanny-muted">{user.email}</Text>
-      <Text className="text-caption text-nanny-muted">
+      <Text className="text-subtitle font-figtree-semibold text-nanny-text">{user.name}</Text>
+      <Text className="font-figtree mb-2 text-body text-nanny-muted">{user.email}</Text>
+      <Text className="font-figtree text-caption text-nanny-muted">
         {user.threadCount} hilos · {user.messageCount} mensajes
       </Text>
-      {user.blockedAt && <Text className="text-caption text-nanny-red">Bloqueado el {formatDate(user.blockedAt)}</Text>}
+      {user.blockedAt && <Text className="font-figtree text-caption text-nanny-red">Bloqueado el {formatDate(user.blockedAt)}</Text>}
 
       {canModerate && (
         <View className="mt-4 flex-row justify-end">
@@ -636,34 +636,34 @@ function ReportRow({
   return (
     <View className="mb-3 rounded-3xl bg-white p-5" style={SHADOWS.card}>
       <View className="mb-2 flex-row flex-wrap items-center gap-2">
-        <Text className={`rounded-full px-2 py-0.5 text-caption font-semibold ${badge.className} ${badge.textClassName}`}>
+        <Text className={`rounded-full px-2 py-0.5 text-caption font-figtree-semibold ${badge.className} ${badge.textClassName}`}>
           {badge.label}
         </Text>
-        <Text className="rounded-full bg-nanny-bg px-2 py-0.5 text-caption font-semibold text-nanny-blue">
+        <Text className="rounded-full bg-nanny-bg px-2 py-0.5 text-caption font-figtree-semibold text-nanny-blue">
           {report.targetType === 'THREAD' ? 'Hilo' : 'Mensaje'}
         </Text>
         {target?.isHidden && (
-          <Text className="rounded-full bg-nanny-card px-2 py-0.5 text-caption font-semibold text-nanny-muted">Oculto</Text>
+          <Text className="rounded-full bg-nanny-card px-2 py-0.5 text-caption font-figtree-semibold text-nanny-muted">Oculto</Text>
         )}
-        <Text className="ml-auto text-caption text-nanny-muted">{timeAgo(report.createdAt)}</Text>
+        <Text className="font-figtree ml-auto text-caption text-nanny-muted">{timeAgo(report.createdAt)}</Text>
       </View>
 
-      <Text className="mb-1 text-caption font-semibold uppercase text-nanny-muted">Motivo</Text>
-      <Text className="mb-3 text-body text-nanny-text">{report.reason}</Text>
+      <Text className="mb-1 text-caption font-figtree-semibold uppercase text-nanny-muted">Motivo</Text>
+      <Text className="font-figtree mb-3 text-body text-nanny-text">{report.reason}</Text>
 
-      <Text className="mb-1 text-caption font-semibold uppercase text-nanny-muted">Contenido reportado</Text>
+      <Text className="mb-1 text-caption font-figtree-semibold uppercase text-nanny-muted">Contenido reportado</Text>
       {target ? (
         <>
-          {target.title && <Text className="text-body font-semibold text-nanny-text">{target.title}</Text>}
-          <Text className="text-body text-nanny-muted">{target.content}</Text>
-          <Text className="mt-1 text-caption text-nanny-muted">
-            Autor: <Text className="font-semibold text-nanny-text">{target.author.name}</Text>
+          {target.title && <Text className="text-body font-figtree-semibold text-nanny-text">{target.title}</Text>}
+          <Text className="font-figtree text-body text-nanny-muted">{target.content}</Text>
+          <Text className="font-figtree mt-1 text-caption text-nanny-muted">
+            Autor: <Text className="font-figtree-semibold text-nanny-text">{target.author.name}</Text>
           </Text>
         </>
       ) : (
-        <Text className="text-body text-nanny-muted">El contenido ya no existe.</Text>
+        <Text className="font-figtree text-body text-nanny-muted">El contenido ya no existe.</Text>
       )}
-      <Text className="mt-1 text-caption text-nanny-muted">Reportado por {report.reporter.name}</Text>
+      <Text className="font-figtree mt-1 text-caption text-nanny-muted">Reportado por {report.reporter.name}</Text>
 
       {report.status === 'PENDING' && target && (
         <View className="mt-4 flex-row justify-end gap-2">

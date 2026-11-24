@@ -37,8 +37,9 @@ import {
   useThreadSummary,
 } from "../../components/foro/ThreadSummary";
 import ScreenBackground from '../../components/ScreenBackground';
+import { COLORS, SHADOWS } from '../../theme';
 
-const SCREEN_PADDING = 24;
+const SCREEN_PADDING = 16;
 
 export default function ThreadDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -175,57 +176,59 @@ export default function ThreadDetailScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1, paddingTop: insets.top }}
-      className="bg-nanny-bg"
+      style={{ flex: 1, paddingTop: insets.top, backgroundColor: COLORS.background }}
     >
       <ScreenBackground />
-      <View className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 py-3">
+      {/* La zona de la barra de estado continúa la cabecera blanca */}
+      <View style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top, backgroundColor: COLORS.surface }} />
+      <View className="flex-row items-center justify-between bg-nanny-card px-5 pb-4 pt-3">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          className="flex-row items-center"
+          className="min-w-[96px] flex-row items-center"
           accessibilityRole="button"
           accessibilityLabel="Volver al foro"
         >
-          <Ionicons name="chevron-back" size={18} color="#654875" />
-          <Text className="ml-1 text-body text-nanny-blue">Foro</Text>
+          <Ionicons name="chevron-back" size={20} color={COLORS.primary} />
+          <Text className="ml-1 font-figtree-medium text-[16px] text-nanny-blue">Foro</Text>
         </TouchableOpacity>
-        {thread && thread.owner.id === selectedUserId ? (
-          <TouchableOpacity
-            onPress={deleteThread}
-            accessibilityRole="button"
-            accessibilityLabel="Eliminar hilo"
-          >
-            <Ionicons name="trash-outline" size={20} color="#cc7a66" />
-          </TouchableOpacity>
-        ) : (
-          thread &&
-          isAdmin && (
+        <Text className="font-figtree-semibold text-[17px] text-nanny-text">Conversación</Text>
+        <View className="min-w-[96px] items-end">
+          {thread && thread.owner.id === selectedUserId ? (
             <TouchableOpacity
-              onPress={moderateThread}
-              className="flex-row items-center"
+              onPress={deleteThread}
               accessibilityRole="button"
-              accessibilityLabel="Eliminar hilo como administrador"
+              accessibilityLabel="Eliminar hilo"
             >
-              <Ionicons name="shield-outline" size={18} color="#cc7a66" />
-              <Text className="ml-1 text-body font-semibold text-nanny-red">
-                Eliminar
-              </Text>
+              <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
             </TouchableOpacity>
-          )
-        )}
+          ) : (
+            thread &&
+            isAdmin && (
+              <TouchableOpacity
+                onPress={moderateThread}
+                className="flex-row items-center"
+                accessibilityRole="button"
+                accessibilityLabel="Eliminar hilo como administrador"
+              >
+                <Ionicons name="shield-outline" size={18} color={COLORS.danger} />
+                <Text className="ml-1 font-figtree-medium text-[16px] text-nanny-danger">Eliminar</Text>
+              </TouchableOpacity>
+            )
+          )}
+        </View>
       </View>
 
       {loading ? (
         <ActivityIndicator
           size="large"
-          color="#654875"
+          color={COLORS.primary}
           style={{ marginTop: 48 }}
         />
       ) : !thread ? (
-        <Text className="mt-12 px-6 text-center text-nanny-muted">{error}</Text>
+        <Text className="mt-12 px-6 text-center font-figtree text-nanny-muted">{error}</Text>
       ) : (
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: SCREEN_PADDING, paddingBottom: 48 }}
+          contentContainerStyle={{ paddingHorizontal: SCREEN_PADDING, paddingTop: 16, paddingBottom: 32 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -236,43 +239,43 @@ export default function ThreadDetailScreen() {
             />
           }
         >
-          <View className="mb-6">
+          {/* Tarjeta del hilo */}
+          <View className="mb-7 rounded-[28px] bg-nanny-card p-5" style={SHADOWS.card}>
             {/* Al bloquear al autor el hilo deja de ser público, así que se vuelve al listado */}
             <ModeratableAuthor
               author={thread.owner}
               onBlocked={() => navigation.goBack()}
-              className="mb-3 flex-row items-center self-start"
+              className="mb-5 flex-row items-center self-start"
             >
-              <AuthorAvatar author={thread.owner} />
+              <AuthorAvatar author={thread.owner} size={44} />
               <View className="ml-3">
                 <View className="flex-row items-center">
-                  <Text className="text-body font-semibold text-nanny-text">
+                  <Text className="font-figtree-medium text-[16px] text-nanny-text">
                     {thread.owner.name}
                   </Text>
                   <ProBadge author={thread.owner} />
                 </View>
-                <Text className="text-caption text-nanny-muted">
+                <Text className="font-figtree text-[13px] text-nanny-subtle">
                   {timeAgo(thread.createdAt)}
                 </Text>
               </View>
             </ModeratableAuthor>
-            <Text className="mb-2 text-title font-bold text-nanny-text">
+            <Text className="font-figtree-medium text-[22px] leading-[29px] text-nanny-text">
               {thread.title}
             </Text>
-            <Text className="text-body leading-6 text-nanny-text">
+            <Text className="mt-4 font-figtree text-[15px] leading-[24px] text-nanny-muted">
               {thread.content}
             </Text>
-            <View className="mt-3 flex-row flex-wrap gap-2">
-              {thread.tags.map((tag) => (
-                <Text
-                  key={tag.id}
-                  className="rounded-full bg-nanny-card px-3 py-1 text-caption text-nanny-blue"
-                >
-                  #{tag.name}
-                </Text>
-              ))}
-            </View>
-            <View className="mt-4 flex-row flex-wrap items-center gap-2">
+            {thread.tags.length > 0 && (
+              <View className="mt-4 flex-row flex-wrap gap-2">
+                {thread.tags.map((tag) => (
+                  <View key={tag.id} className="rounded-full bg-nanny-soft px-2.5 py-0.5">
+                    <Text className="font-figtree text-[12px] text-nanny-primary-dark">#{tag.name}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            <View className="mt-4 flex-row items-center justify-between border-t border-nanny-border pt-4">
               <SummaryButton state={summary} />
               {thread.owner.id !== selectedUserId && (
                 <TouchableOpacity
@@ -280,16 +283,19 @@ export default function ThreadDetailScreen() {
                     setReportTarget({ type: "THREAD", id: thread.id })
                   }
                   disabled={thread.reportedByMe}
-                  className="flex-row items-center rounded-full bg-nanny-card px-4 py-2"
+                  className="flex-row items-center px-1 py-2"
                   accessibilityRole="button"
                   accessibilityLabel={thread.reportedByMe ? "Hilo ya reportado" : "Reportar hilo"}
                 >
                   <Ionicons
                     name={thread.reportedByMe ? "flag" : "flag-outline"}
-                    size={14}
-                    color={thread.reportedByMe ? "#cc7a66" : "#6E5D78"}
+                    size={18}
+                    color={thread.reportedByMe ? COLORS.danger : COLORS.text}
                   />
-                  <Text className="ml-1 text-body font-semibold text-nanny-muted">
+                  <Text
+                    style={{ color: thread.reportedByMe ? COLORS.danger : COLORS.text }}
+                    className="ml-2 font-figtree text-[16px]"
+                  >
                     {thread.reportedByMe ? "Reportado" : "Reportar"}
                   </Text>
                 </TouchableOpacity>
@@ -298,15 +304,16 @@ export default function ThreadDetailScreen() {
             <SummaryCard state={summary} />
           </View>
 
-          <Text className="mb-3 text-body font-semibold uppercase tracking-wider text-nanny-muted">
-            {thread.messageCount === 1
-              ? "1 respuesta"
-              : `${thread.messageCount} respuestas`}
-          </Text>
+          <View className="mb-3 ml-1 flex-row items-baseline">
+            <Text className="font-figtree-medium text-[16px] text-nanny-text">Respuestas</Text>
+            <Text className="ml-1.5 font-figtree text-[14px] text-nanny-subtle">· {thread.messageCount}</Text>
+          </View>
           {thread.messages.length === 0 ? (
-            <Text className="text-nanny-muted">
-              Nadie ha respondido todavía.
-            </Text>
+            <View className="items-center rounded-[22px] bg-nanny-card px-5 py-6" style={SHADOWS.card}>
+              <Text className="text-center font-figtree text-[14px] text-nanny-muted">
+                Nadie ha respondido todavía. ¡Escribe la primera respuesta!
+              </Text>
+            </View>
           ) : (
             // Cada conversación (mensaje de primer nivel + sus respuestas) tiene su propio
             // scroll horizontal: si la sangría la saca de la pantalla se desplaza sin mover las demás
@@ -336,8 +343,8 @@ export default function ThreadDetailScreen() {
             onSend={sendReply}
           />
         ) : (
-          <Text className="border-t border-nanny-card bg-white px-6 py-4 text-center text-body text-nanny-muted">
-            Elige un usuario en la pestaña Datos para poder responder.
+          <Text className="bg-white px-6 py-4 text-center font-figtree text-body text-nanny-muted">
+            Elige un usuario en la pestaña Inicio para poder responder.
           </Text>
         ))}
       {reportTarget && (

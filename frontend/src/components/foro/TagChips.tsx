@@ -25,11 +25,11 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
   return (
     <TouchableOpacity
       onPress={onPress}
-      className={`rounded-full px-4 py-2 ${active ? 'bg-nanny-blue' : 'bg-nanny-card'}`}
+      className={`rounded-full px-4 py-2 ${active ? 'bg-nanny-blue' : 'bg-white/70'}`}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
     >
-      <Text className={`text-body font-semibold ${active ? 'text-white' : 'text-nanny-text'}`}>{label}</Text>
+      <Text className={`font-figtree text-[16px] ${active ? 'text-white' : 'text-nanny-text'}`}>{label}</Text>
     </TouchableOpacity>
   );
 }

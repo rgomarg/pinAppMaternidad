@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { forumApi, type LikeState, type MessageNode } from '../../api/forum';
+import { COLORS } from '../../theme';
 
 type Props = {
   message: MessageNode;
@@ -19,7 +20,7 @@ export default function LikeButton({ message, userId }: Props) {
 
   const toggle = async () => {
     if (!userId) {
-      Alert.alert('Selecciona un usuario', 'Elige un usuario en la pestaña Datos para dar me gusta.');
+      Alert.alert('Selecciona un usuario', 'Elige un usuario en la pestaña Inicio para dar me gusta.');
       return;
     }
     if (pending) return;
@@ -55,9 +56,9 @@ export default function LikeButton({ message, userId }: Props) {
       <Ionicons
         name={state.likedByMe ? 'heart' : 'heart-outline'}
         size={16}
-        color={state.likedByMe ? '#cc7a66' : '#6E5D78'}
+        color={state.likedByMe ? COLORS.danger : COLORS.muted}
       />
-      <Text className={`ml-1 text-body ${state.likedByMe ? 'text-nanny-red' : 'text-nanny-muted'}`}>
+      <Text className={`ml-1.5 font-figtree-medium text-[14px] ${state.likedByMe ? 'text-nanny-danger' : 'text-nanny-muted'}`}>
         {state.likesCount}
       </Text>
     </TouchableOpacity>

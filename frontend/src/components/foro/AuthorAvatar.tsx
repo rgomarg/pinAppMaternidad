@@ -24,20 +24,21 @@ export default function AuthorAvatar({ author, size = 36 }: { author: Author; si
       {author.avatarUrl ? (
         <Image source={{ uri: author.avatarUrl }} style={{ width: size, height: size, borderRadius: size / 2 }} />
       ) : (
-        <Text style={{ fontSize: size * 0.38 }} className="font-bold text-white">{initials}</Text>
+        <Text style={{ fontSize: size * 0.36 }} className="font-figtree-medium text-white">{initials}</Text>
       )}
     </View>
   );
 }
 
+// "Ahora", "Hace 50m", "Hace 2h", "Hace 1d"; a partir de una semana, la fecha ("3 nov")
 export function timeAgo(date: string) {
   const minutes = Math.floor((Date.now() - new Date(date).getTime()) / 60000);
-  if (minutes < 1) return 'ahora';
-  if (minutes < 60) return `hace ${minutes} min`;
+  if (minutes < 1) return 'Ahora';
+  if (minutes < 60) return `Hace ${minutes}m`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `hace ${hours} h`;
+  if (hours < 24) return `Hace ${hours}h`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `hace ${days} d`;
+  if (days < 7) return `Hace ${days}d`;
   return new Date(date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
@@ -45,7 +46,7 @@ export function timeAgo(date: string) {
 export function ProBadge({ author }: { author: Author }) {
   if (!author.isPediatrician) return null;
   return (
-    <Text className="ml-2 rounded-full bg-nanny-green/15 px-2 py-0.5 text-caption font-semibold text-nanny-green">
+    <Text className="ml-2 rounded-full bg-nanny-green/15 px-2 py-0.5 font-figtree-semibold text-[11px] text-nanny-green">
       Pediatra
     </Text>
   );
