@@ -835,7 +835,7 @@ async function main() {
   });
 
   // Hilo de un usuario bloqueado: se oculta del público aunque el hilo en sí no esté eliminado
-  await prisma.thread.create({
+  const hiloSpam = await prisma.thread.create({
     data: {
       title: '¡Gana dinero desde casa mientras cuidas a tu bebé!',
       content: 'Entra en mi web y descubre cómo ganar 3000€ al mes sin salir de casa.',
@@ -869,6 +869,326 @@ async function main() {
   await prisma.thread.update({
     where: { id: hiloPolemico.id },
     data: { isHidden: true },
+  });
+
+  // ------------------------------------------------------
+  // 7B. DATOS PARA LA DEMO (fechas alrededor de noviembre de 2026)
+  // Rellena a todos los niños con crecimiento, vacunas, checklist, medicación y citas,
+  // y deja casos de moderación pendientes para enseñar el panel de administración.
+  // ------------------------------------------------------
+  console.log('Añadiendo datos de demo (crecimiento, vacunas, avisos, moderación)...');
+
+  const d = (fecha: string, hora = '10:00') => new Date(`${fecha}T${hora}:00.000Z`);
+  const hijoDe = (parentId: number, name: string) => prisma.child.findFirstOrThrow({ where: { parentId, name } });
+
+  const leo = await hijoDe(laura.id, 'Leo');
+  const sofiaBebe = await hijoDe(carlos.id, 'Sofía');
+  const mateo = await hijoDe(elena.id, 'Mateo');
+  const lucia = await hijoDe(marta.id, 'Lucía');
+  const pablo = await hijoDe(marta.id, 'Pablo');
+  const martina = await hijoDe(sofia.id, 'Martina');
+
+  // 7B.1 Curvas de crecimiento (OMS): sin mediciones las gráficas salen vacías
+  await prisma.measurement.createMany({
+    data: [
+      // Leo: el seed solo llegaba a noviembre de 2025
+      { childId: leo.id, date: d('2026-01-15'), weight: 7.4, height: 66 },
+      { childId: leo.id, date: d('2026-03-15'), weight: 8.2, height: 70 },
+      { childId: leo.id, date: d('2026-06-15'), weight: 8.9, height: 73 },
+      { childId: leo.id, date: d('2026-09-15'), weight: 9.6, height: 76 },
+      // Sofía (hija de Carlos, 10 meses)
+      { childId: sofiaBebe.id, date: d('2026-01-10', '08:30'), weight: 3.3, height: 50 },
+      { childId: sofiaBebe.id, date: d('2026-03-10'), weight: 5.3, height: 57 },
+      { childId: sofiaBebe.id, date: d('2026-05-10'), weight: 6.5, height: 63 },
+      { childId: sofiaBebe.id, date: d('2026-07-10'), weight: 7.4, height: 66 },
+      { childId: sofiaBebe.id, date: d('2026-09-10'), weight: 8.0, height: 69 },
+      { childId: sofiaBebe.id, date: d('2026-11-10'), weight: 8.6, height: 72 },
+      // Mateo (5 años, con historial desde el nacimiento)
+      { childId: mateo.id, date: d('2021-03-22', '16:00'), weight: 3.4, height: 50 },
+      { childId: mateo.id, date: d('2022-03-22'), weight: 10.2, height: 76 },
+      { childId: mateo.id, date: d('2023-03-22'), weight: 12.4, height: 89 },
+      { childId: mateo.id, date: d('2024-03-22'), weight: 14.2, height: 97 },
+      { childId: mateo.id, date: d('2025-03-22'), weight: 16.3, height: 104 },
+      { childId: mateo.id, date: d('2026-03-22'), weight: 18.4, height: 110 },
+      // Lucía (4 años)
+      { childId: lucia.id, date: d('2022-05-03', '07:00'), weight: 3.2, height: 49 },
+      { childId: lucia.id, date: d('2022-11-03'), weight: 7.3, height: 66 },
+      { childId: lucia.id, date: d('2023-05-03'), weight: 8.9, height: 74 },
+      { childId: lucia.id, date: d('2024-05-03'), weight: 12.2, height: 86 },
+      { childId: lucia.id, date: d('2025-05-03'), weight: 14.6, height: 96 },
+      { childId: lucia.id, date: d('2026-05-03'), weight: 16.4, height: 102 },
+      // Pablo: medición de hoy (12 meses)
+      { childId: pablo.id, date: d('2026-11-20'), weight: 9.2, height: 74 },
+      // Inés (3 años y medio)
+      { childId: ines.id, date: d('2023-04-12', '08:00'), weight: 3.2, height: 49 },
+      { childId: ines.id, date: d('2023-10-12'), weight: 7.3, height: 67 },
+      { childId: ines.id, date: d('2024-04-12'), weight: 9.0, height: 74 },
+      { childId: ines.id, date: d('2025-04-12'), weight: 11.9, height: 86 },
+      { childId: ines.id, date: d('2026-04-12'), weight: 14.5, height: 96 },
+      // Martina (10 meses en la guardería, hija de Sofía Navarro)
+      { childId: martina.id, date: d('2025-02-10', '08:00'), weight: 3.3, height: 50 },
+      { childId: martina.id, date: d('2025-05-10'), weight: 6.0, height: 62 },
+      { childId: martina.id, date: d('2025-08-10'), weight: 7.4, height: 67 },
+      { childId: martina.id, date: d('2025-11-10'), weight: 8.4, height: 71 },
+      { childId: martina.id, date: d('2026-02-10'), weight: 9.3, height: 74 },
+      { childId: martina.id, date: d('2026-05-10'), weight: 10.2, height: 78 },
+    ],
+  });
+
+  // 7B.2 Cartillas de vacunación: aplicadas (appliedAt) y pendientes (sin appliedAt)
+  const v = (childId: number, name: string, scheduledFor: string, appliedAt: string | null = null, notification = false) => ({
+    childId,
+    name,
+    scheduledFor: d(scheduledFor),
+    appliedAt: appliedAt ? d(appliedAt) : null,
+    notification,
+  });
+  await prisma.vaccine.createMany({
+    data: [
+      // Leo
+      v(leo.id, 'Hexavalente (4 meses)', '2025-12-15', '2025-12-18'),
+      v(leo.id, 'Gripe 2026-2027', '2026-10-15', '2026-10-20'),
+      v(leo.id, 'Triple vírica (12 meses)', '2026-08-15', null, true), // pendiente y pasada: para ver el aviso
+      // Sofía (Carlos)
+      v(sofiaBebe.id, 'Hepatitis B (nacimiento)', '2026-01-10', '2026-01-11'),
+      v(sofiaBebe.id, 'Hexavalente (2 meses)', '2026-03-10', '2026-03-12'),
+      v(sofiaBebe.id, 'Neumococo (2 meses)', '2026-03-10', '2026-03-12'),
+      v(sofiaBebe.id, 'Rotavirus (2 meses)', '2026-03-10', '2026-03-12'),
+      v(sofiaBebe.id, 'Hexavalente (4 meses)', '2026-05-10', '2026-05-11'),
+      v(sofiaBebe.id, 'Hexavalente (11 meses)', '2026-12-10', null, true),
+      // Mateo
+      v(mateo.id, 'Hepatitis B (nacimiento)', '2021-03-22', '2021-03-23'),
+      v(mateo.id, 'Hexavalente (2 meses)', '2021-05-22', '2021-05-24'),
+      v(mateo.id, 'Triple vírica (12 meses)', '2022-03-22', '2022-03-29'),
+      v(mateo.id, 'Varicela (15 meses)', '2022-06-22', '2022-06-22'),
+      v(mateo.id, 'Tetravírica (2 años)', '2023-03-22', '2023-03-28'),
+      v(mateo.id, 'Gripe 2026-2027', '2026-10-15', '2026-10-16'),
+      v(mateo.id, 'Difteria-tétanos-tos ferina (6 años)', '2027-03-22', null, true),
+      // Inés
+      v(ines.id, 'Hepatitis B (nacimiento)', '2023-04-12', '2023-04-13'),
+      v(ines.id, 'Hexavalente (2 meses)', '2023-06-12', '2023-06-14'),
+      v(ines.id, 'Triple vírica (12 meses)', '2024-04-12', '2024-04-20'),
+      v(ines.id, 'Varicela (15 meses)', '2024-07-12', '2024-07-15'),
+      v(ines.id, 'Tetravírica (2 años)', '2025-04-12', '2025-04-14'),
+      v(ines.id, 'Gripe 2026-2027', '2026-10-15', null, true),
+      // Lucía
+      v(lucia.id, 'Gripe 2025-2026', '2025-10-15', '2025-10-17'),
+      v(lucia.id, 'Varicela 2ª dosis (4 años)', '2026-05-03', '2026-05-10'),
+      // Martina (guardería)
+      v(martina.id, 'Hepatitis B (nacimiento)', '2025-02-10', '2025-02-11'),
+      v(martina.id, 'Hexavalente (2 meses)', '2025-04-10', '2025-04-12'),
+      v(martina.id, 'Neumococo (2 meses)', '2025-04-10', '2025-04-12'),
+      v(martina.id, 'Hexavalente (4 meses)', '2025-06-10', '2025-06-10'),
+      v(martina.id, 'Triple vírica (12 meses)', '2026-02-10', '2026-02-16'),
+      v(martina.id, 'Varicela (15 meses)', '2026-05-10', '2026-05-12'),
+      v(martina.id, 'Meningococo B (12 meses)', '2026-02-10', null, true),
+    ],
+  });
+
+  // 7B.3 Checklist de hitos por niño
+  await prisma.checklistItem.createMany({
+    data: [
+      { childId: ines.id, title: 'Programar revisión de los 3 años', isCompleted: true, completedAt: d('2026-04-13') },
+      { childId: ines.id, title: 'Llevar la cartilla de vacunas a la revisión', isCompleted: false },
+      { childId: sofiaBebe.id, title: 'Empezar la papilla de frutas y verduras', isCompleted: true, completedAt: d('2026-06-12') },
+      { childId: sofiaBebe.id, title: 'Programar revisión de los 10 meses', isCompleted: true, completedAt: d('2026-11-01') },
+      { childId: sofiaBebe.id, title: 'Preguntar al pediatra por la dentición', isCompleted: false },
+      { childId: mateo.id, title: 'Revisión dental anual', isCompleted: true, completedAt: d('2026-06-01') },
+      { childId: mateo.id, title: 'Renovar la receta del inhalador', isCompleted: false },
+      { childId: lucia.id, title: 'Pedir cita con dermatología', isCompleted: true, completedAt: d('2026-09-20') },
+      { childId: lucia.id, title: 'Revisión anual de oftalmología', isCompleted: false },
+      { childId: pablo.id, title: 'Revisión del niño sano a los 12 meses', isCompleted: false },
+      { childId: martina.id, title: 'Adaptación a la guardería', isCompleted: true, completedAt: d('2026-09-01') },
+      { childId: martina.id, title: 'Revisión de los 2 años', isCompleted: false },
+    ],
+  });
+
+  // 7B.4 Síntomas y medicación ligada a ellos (Condition + Medicine)
+  const feverLeo = await prisma.condition.create({
+    data: { tag: [TagCondition.FEVER, TagCondition.RUNNY_NOSE], desciption: 'Mocos y fiebre por la noche', notes: '38.1ºC a las 22:00', timestamp: d('2026-11-18', '22:00'), childId: leo.id },
+  });
+  await prisma.medicine.create({
+    data: {
+      name: 'Paracetamol 120mg/5ml',
+      dosage: '5 ml',
+      intervalHours: 6,
+      startDate: d('2026-11-18', '22:30'),
+      endDate: d('2026-11-21', '22:30'),
+      instructions: 'Solo si la fiebre supera los 38.5ºC',
+      childId: leo.id,
+      conditionId: feverLeo.id,
+    },
+  });
+
+  const feverSofia = await prisma.condition.create({
+    data: { tag: [TagCondition.FEVER, TagCondition.IRRITABILITY], notes: 'Dentición: babea, se muerde las manos y no duerme bien', timestamp: d('2026-11-20', '20:00'), childId: sofiaBebe.id },
+  });
+  await prisma.medicine.create({
+    data: {
+      name: 'Ibuprofeno 2%',
+      dosage: '2.5 ml',
+      intervalHours: 8,
+      startDate: d('2026-11-20', '20:30'),
+      endDate: d('2026-11-23', '20:30'),
+      instructions: 'Dar siempre con comida. No dar más de 3 tomas al día',
+      childId: sofiaBebe.id,
+      conditionId: feverSofia.id,
+    },
+  });
+
+  await prisma.condition.createMany({
+    data: [
+      { childId: lucia.id, tag: [TagCondition.STOMACHACHE], notes: 'Dolor de tripa después de comer', timestamp: d('2026-11-10', '14:00') },
+      { childId: martina.id, tag: [TagCondition.COUGH, TagCondition.RUNNY_NOSE], desciption: 'Primeros resfriados de la guardería', timestamp: d('2026-10-05', '19:00') },
+    ],
+  });
+  await prisma.medicine.create({
+    data: {
+      name: 'Suero fisiológico (lavados nasales)',
+      dosage: '2 gotas en cada fosa nasal',
+      intervalHours: 8,
+      startDate: d('2026-10-05', '20:00'),
+      endDate: d('2026-10-12', '20:00'),
+      instructions: 'Antes de las tomas, para que pueda respirar mejor',
+      childId: martina.id,
+    },
+  });
+
+  // 7B.5 Citas próximas (para que el calendario tenga movimiento esta semana)
+  const citaSofia = await prisma.event.create({
+    data: {
+      childId: sofiaBebe.id,
+      title: 'Revisión de los 10 meses',
+      description: 'Peso, talla, perímetro craneal y desarrollo motor.',
+      date: d('2026-11-26'),
+      notification: true,
+      type: EventType.MEDICAL_APPOINTMENT,
+    },
+  });
+  await prisma.event.create({
+    data: {
+      childId: leo.id,
+      title: 'Taller de porteo en el centro cívico',
+      description: 'Taller gratuito para familias con bebés.',
+      date: d('2026-11-28', '17:00'),
+      notification: false,
+      type: EventType.GENERAL,
+    },
+  });
+  await prisma.event.create({
+    data: {
+      childId: lucia.id,
+      title: 'Oftalmología',
+      description: 'Control de graduación.',
+      date: d('2026-11-30', '09:00'),
+      notification: true,
+      type: EventType.MEDICAL_APPOINTMENT,
+    },
+  });
+  await prisma.event.create({
+    data: {
+      childId: martina.id,
+      title: 'Vacunación Meningococo B',
+      description: 'Llevar cartilla de vacunas.',
+      date: d('2026-12-01', '09:30'),
+      notification: true,
+      type: EventType.VACCINE,
+    },
+  });
+  await prisma.event.create({
+    data: {
+      childId: mateo.id,
+      title: 'Fiesta de fin de curso',
+      description: 'En el colegio, a las 17:00.',
+      date: d('2026-12-18', '17:00'),
+      notification: false,
+      type: EventType.GENERAL,
+    },
+  });
+
+  // 7B.6 Avisos (Notification): unos ya enviados y otros pendientes para la demo de notificaciones
+  const amoxicilina = await prisma.medicine.findFirstOrThrow({ where: { name: 'Amoxicilina 250mg' } });
+  await prisma.notification.createMany({
+    data: [
+      {
+        type: NotificationType.EVENT,
+        title: 'Recordatorio: Revisión de los 10 meses de Sofía',
+        body: 'Mañana a las 10:00 revisión de Sofía. Lleva la cartilla.',
+        scheduledAt: d('2026-11-25', '09:00'),
+        status: NotificationStatus.PENDING,
+        userId: carlos.id,
+        eventId: citaSofia.id,
+        data: { screen: 'Calendario', eventId: citaSofia.id, childName: 'Sofía' },
+      },
+      {
+        type: NotificationType.MEDICINE,
+        title: 'Toma de medicación: Amoxicilina',
+        body: 'Toca suministrar 4 ml de Amoxicilina 250mg a Lucía.',
+        scheduledAt: d('2026-11-24', '16:00'),
+        status: NotificationStatus.PENDING,
+        userId: marta.id,
+        medicineId: amoxicilina.id,
+        data: { screen: 'MedicineDetail', medicineId: amoxicilina.id },
+      },
+      {
+        type: NotificationType.VACCINE,
+        title: 'Vacuna próxima: Meningococo B de Martina',
+        body: 'Martina tiene la vacuna Meningococo B pendiente. Pásate por el pediatra antes de diciembre.',
+        scheduledAt: d('2026-11-23', '09:00'),
+        status: NotificationStatus.SENT,
+        sentAt: d('2026-11-23', '09:00'),
+        userId: sofia.id,
+        vaccineId: (await prisma.vaccine.findFirstOrThrow({ where: { childId: martina.id, name: 'Meningococo B (12 meses)' } })).id,
+        data: { screen: 'Vaccines' },
+      },
+      {
+        type: NotificationType.COMMUNITY,
+        title: 'Nuevas respuestas en tu hilo del foro',
+        body: 'Elena, Marta y Laura han respondido a "Empezamos la guardería en septiembre".',
+        scheduledAt: d('2026-11-23', '18:00'),
+        sentAt: d('2026-11-23', '18:00'),
+        status: NotificationStatus.SENT,
+        userId: sofia.id,
+        data: { screen: 'Foro', threadId: hiloGuarderia.id },
+      },
+      {
+        type: NotificationType.SYSTEM,
+        title: 'Tu cuenta PRO está activa',
+        body: 'Ya puedes usar el resumen con IA de los hilos del foro y el historial de salud de tus hijos.',
+        scheduledAt: d('2026-09-01', '09:00'),
+        sentAt: d('2026-09-01', '09:00'),
+        status: NotificationStatus.SENT,
+        userId: sofia.id,
+        data: { screen: 'Home' },
+      },
+    ],
+  });
+
+  // 7B.7 Moderación: reportes en distintos estados para enseñar el panel de administración
+  await prisma.report.createMany({
+    data: [
+      {
+        reason: 'Publicidad de un negocio que pide dinero por adelantado. Posible estafa.',
+        status: ReportStatus.PENDING,
+        targetType: EntityType.THREAD,
+        targetId: hiloSpam.id,
+        reporterId: laura.id,
+      },
+      {
+        reason: 'Cuenta que publica spam en el foro.',
+        status: ReportStatus.RESOLVED,
+        targetType: EntityType.USER,
+        targetId: usuarioBloqueado.id,
+        reporterId: carlos.id,
+      },
+      {
+        reason: 'No estoy de acuerdo con la opinión, pero no incumple las normas.',
+        status: ReportStatus.DISMISSED,
+        targetType: EntityType.MESSAGE,
+        targetId: gEscaparse.id,
+        reporterId: elena.id,
+      },
+    ],
   });
 
   // ------------------------------------------------------
