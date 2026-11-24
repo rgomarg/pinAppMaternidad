@@ -23,7 +23,6 @@ export const QR_PREFIX = 'HC1:';
 export const SHARE_DURATION_MINUTES = 5;
 export const SHARE_DURATION_MS = SHARE_DURATION_MINUTES * 60 * 1000;
 export const SHARE_DURATION_DAYS = 30;
-export const SHARE_DURATION_MS = SHARE_DURATION_DAYS * 24 * 60 * 60 * 1000;
 
 export const CAMERA_PERMISSION_REQUIRED_TITLE = 'Permisos de cámara requeridos';
 export const CAMERA_PERMISSION_REQUIRED_MESSAGE =
@@ -452,10 +451,14 @@ export function decodeChildShareCode(rawInput: string): SharedChildProfile {
  * Calcula los días restantes antes de que caduque el permiso temporal (30 días).
  */
 export function getRemainingShareMinutes(expiresAt: string): number {
-export function getRemainingShareDays(expiresAt: string): number {
   const diff = new Date(expiresAt).getTime() - Date.now();
   if (diff <= 0) return 0;
   return Math.ceil(diff / (60 * 1000));
+}
+
+export function getRemainingShareDays(expiresAt: string): number {
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (diff <= 0) return 0;
   return Math.ceil(diff / (24 * 60 * 60 * 1000));
 }
 
@@ -509,7 +512,6 @@ async function loadAllValidSharedChildren(): Promise<SharedChildProfile[]> {
   });
 
   const valid = normalized.filter(
-  const valid = memorySharedChildren.filter(
     (child) =>
       child &&
       child.recipientUserId != null &&
@@ -518,7 +520,6 @@ async function loadAllValidSharedChildren(): Promise<SharedChildProfile[]> {
   );
 
   if (modified || valid.length !== memorySharedChildren.length) {
-  if (valid.length !== memorySharedChildren.length) {
     memorySharedChildren = valid;
     await persistSharedChildren(valid);
   }

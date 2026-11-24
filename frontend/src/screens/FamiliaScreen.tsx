@@ -34,7 +34,6 @@ import {
   decodeChildShareCode,
   getChildSlug,
   getRemainingShareMinutes,
-  getRemainingShareDays,
   loadSharedChildren,
   MEDIA_PERMISSION_REQUIRED_MESSAGE,
   MEDIA_PERMISSION_REQUIRED_TITLE,
@@ -243,7 +242,6 @@ function ChildCard({
   const [exporting, setExporting] = useState(false);
   const fullName = [child.name, child.surname].filter(Boolean).join(' ');
   const remainingMinutes = child.isShared && child.expiresAt ? getRemainingShareMinutes(child.expiresAt) : null;
-  const remainingDays = child.isShared && child.expiresAt ? getRemainingShareDays(child.expiresAt) : null;
 
 
   async function exportData(childId: number) {
@@ -281,7 +279,6 @@ function ChildCard({
   const openMenu = () => {
     if (child.isShared) {
       Alert.alert(fullName, `Acceso temporal activo (${remainingMinutes ?? 5} min restantes).`, [
-      Alert.alert(fullName, `Acceso temporal activo (${remainingDays ?? 30} días restantes).`, [
         {
           text: 'Dejar de ver ficha',
           style: 'destructive',
@@ -320,11 +317,9 @@ function ChildCard({
             {getAge(child.birthDate)} años · Sangre {child.bloodGroup || '—'}
           </Text>
           {child.isShared && remainingMinutes !== null && (
-          {child.isShared && remainingDays !== null && (
             <View className="mt-2 self-start rounded-full bg-[#dce7f1] px-3 py-1">
               <Text style={{ color: palette.blue }} className="text-xs font-semibold">
                 Acceso temporal · {remainingMinutes} {remainingMinutes === 1 ? 'min restante' : 'min restantes'}
-                Acceso temporal · {remainingDays} {remainingDays === 1 ? 'día restante' : 'días restantes'}
               </Text>
             </View>
           )}
@@ -670,7 +665,6 @@ function ScanQrScreen() {
     Alert.alert(
       'Menor vinculado',
       `Se ha añadido a ${[profile.name, profile.surname].filter(Boolean).join(' ')} con acceso temporal durante 5 minutos.`,
-      `Se ha añadido a ${[profile.name, profile.surname].filter(Boolean).join(' ')} con acceso temporal durante 30 días.`,
       [
         {
           text: 'Ver en Libro de familia',
@@ -966,7 +960,6 @@ function ChildProfileScreen() {
 
   const isShared = !!data.isShared;
   const remainingMinutes = isShared && data.expiresAt ? getRemainingShareMinutes(data.expiresAt) : null;
-  const remainingDays = isShared && data.expiresAt ? getRemainingShareDays(data.expiresAt) : null;
   const fullName = [data.name, data.surname].filter(Boolean).join(' ');
   const applied = data.vaccines.filter((vaccine) => vaccine.appliedAt).length;
   const vaccinesByRecent = [...data.vaccines].sort((a, b) => {
@@ -1053,11 +1046,9 @@ function ChildProfileScreen() {
                 </Text>
               )}
               {isShared && remainingMinutes !== null && (
-              {isShared && remainingDays !== null && (
                 <View className="mt-2 self-start rounded-full bg-[#dce7f1] px-3 py-1">
                   <Text style={{ color: palette.blue }} className="text-xs font-semibold">
                     Vista compartida (solo lectura · {remainingMinutes} min restantes)
-                    Vista compartida (solo lectura · {remainingDays}d restantes)
                   </Text>
                 </View>
               )}
