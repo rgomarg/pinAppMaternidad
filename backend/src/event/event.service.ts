@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -7,9 +7,17 @@ import { getDateRange } from '../common/date-range';
 
 @Injectable()
 export class EventService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(createEventDto: CreateEventDto) {
+    // PA-06: el menor tiene que existir
+    const child = await this.prisma.child.findUnique({ where: { id: createEventDto.childId } });
+    if (!child) throw new NotFoundException(`No existe el menor con id ${createEventDto.childId}`);
+
+    // PA-05: no se puede programar un recordatorio en el pasado
+    if (createEventDto.notification && createEventDto.date <= new Date()) {
+      throw new BadRequestException('No se puede programar un recordatorio en una fecha pasada');
+    }
     return this.prisma.event.create({
       data: {
         title: createEventDto.title.trim(),
