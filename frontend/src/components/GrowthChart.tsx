@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Pressable, ActivityIndicator, LayoutChang
 import Svg, { Path, Line, Circle, Text as SvgText } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { GrowthData, GrowthSeries, Metric, Sex } from '../api/growth';
-import { COLORS as THEME } from '../theme';
+import { COLORS as THEME, SHADOWS } from '../theme';
 
 // Colores de tailwind.config.js (las props de SVG no aceptan className)
 const COLORS = {
@@ -49,7 +49,7 @@ export default function GrowthChart({ data, loading, error, onSelectSex, onAddMe
   const series = data?.[metric] ?? null;
 
   return (
-    <View className="bg-nanny-card p-4 rounded-2xl min-h-[250px] flex-col mb-6">
+    <View className="bg-nanny-card p-4 rounded-3xl min-h-[250px] flex-col mb-6" style={SHADOWS.card}>
       <View className="flex-row justify-between items-center mb-3">
         <Text className="font-semibold text-subtitle text-nanny-text">Curva de crecimiento</Text>
         <View className="flex-row bg-white rounded-full overflow-hidden">

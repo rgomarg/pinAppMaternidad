@@ -36,6 +36,7 @@ import {
   SummaryCard,
   useThreadSummary,
 } from "../../components/foro/ThreadSummary";
+import ScreenBackground from '../../components/ScreenBackground';
 
 const SCREEN_PADDING = 24;
 
@@ -177,7 +178,8 @@ export default function ThreadDetailScreen() {
       style={{ flex: 1, paddingTop: insets.top }}
       className="bg-nanny-bg"
     >
-      <View className="flex-row items-center justify-between px-6 py-3">
+      <ScreenBackground />
+      <View className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 py-3">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           className="flex-row items-center"

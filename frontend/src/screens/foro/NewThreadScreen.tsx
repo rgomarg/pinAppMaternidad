@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { forumApi, type Tag } from '../../api/forum';
 import { useFamilySelection } from '../../context/FamilySelectionContext';
 import TagChips from '../../components/foro/TagChips';
+import ScreenBackground from '../../components/ScreenBackground';
 
 // Mismos límites que CreateThreadDto en el backend
 const MAX_TITLE = 150;
@@ -72,7 +73,8 @@ export default function NewThreadScreen() {
       style={{ flex: 1, paddingTop: insets.top }}
       className="bg-nanny-bg"
     >
-      <View className="flex-row items-center justify-between px-6 py-3">
+      <ScreenBackground />
+      <View className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 py-3">
         <TouchableOpacity onPress={() => navigation.goBack()} accessibilityRole="button">
           <Text className="text-body text-nanny-blue">Cancelar</Text>
         </TouchableOpacity>

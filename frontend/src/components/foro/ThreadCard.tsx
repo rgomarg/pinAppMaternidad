@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { ThreadSummary } from '../../api/forum';
 import AuthorAvatar, { ProBadge, timeAgo } from './AuthorAvatar';
 import ModeratableAuthor from './ModeratableAuthor';
+import { SHADOWS } from '../../theme';
 
 type Props = {
   thread: ThreadSummary;
@@ -14,7 +15,7 @@ type Props = {
 
 export default function ThreadCard({ thread, onPress, onAuthorBlocked }: Props) {
   return (
-    <TouchableOpacity onPress={onPress} className="mb-3 rounded-3xl bg-white p-5" accessibilityRole="button">
+    <TouchableOpacity onPress={onPress} className="mb-3 rounded-3xl bg-white p-5" style={SHADOWS.card} accessibilityRole="button">
       <View className="mb-3 flex-row items-center">
         <ModeratableAuthor author={thread.owner} onBlocked={onAuthorBlocked} className="flex-row items-center">
           <AuthorAvatar author={thread.owner} size={32} />

@@ -14,6 +14,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { API_URL } from "../api/config";
 import { allergyRecords, type Allergy } from "../utils/allergies";
+import ScreenBackground from '../components/ScreenBackground';
 
 // Datos del hijo que recibe el modo edición (los devuelve GET /child/:id).
 type EditableChild = {
@@ -286,8 +287,9 @@ export default function ChildRegistrationScreen() {
 
     return (
         <View className="flex-1 bg-nanny-bg" style={{ paddingTop: insets.top }}>
+            <ScreenBackground />
             {/* Cabecera */}
-            <View className="flex-row items-center justify-between px-6 py-4 border-b border-nanny-card">
+            <View className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 py-4">
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Text className="text-body text-nanny-muted">Cancelar</Text>
                 </TouchableOpacity>

@@ -23,6 +23,8 @@ import {
   NOTIFICATION_PERMISSION_REQUIRED_TITLE,
   NOTIFICATION_PERMISSION_REQUIRED_MESSAGE,
 } from '../services/notificationService';
+import ScreenBackground from '../components/ScreenBackground';
+import { COLORS, SHADOWS } from '../theme';
 
 type Child = {
   id: number;
@@ -495,9 +497,10 @@ export default function CrearEventoScreen() {
     `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8EFF5' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <ScreenBackground />
       {/* Cabecera superior idéntica al diseño */}
-      <View className="flex-row items-center justify-between border-b border-nanny-border px-6 py-4">
+      <View className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 py-4">
         <TouchableOpacity onPress={() => navigation.goBack()} disabled={saving}>
           <Text className="text-body font-medium text-nanny-muted">Cancelar</Text>
         </TouchableOpacity>
@@ -513,7 +516,7 @@ export default function CrearEventoScreen() {
 
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         {/* Tarjeta de selección de hijo */}
-        <View className="mb-6 rounded-3xl border border-nanny-border bg-nanny-card p-4">
+        <View className="mb-6 rounded-3xl border border-nanny-border bg-nanny-card p-4" style={SHADOWS.card}>
           <View className="flex-row items-center">
             <View className="mr-3.5 h-12 w-12 items-center justify-center rounded-full bg-nanny-blue/20">
               <Text className="text-subtitle font-semibold text-nanny-blue">
@@ -1059,7 +1062,7 @@ export default function CrearEventoScreen() {
 
         {/* Control de Notificaciones (No disponible para Síntomas) */}
         {eventType !== 'CONDITION' && (
-          <View className="mb-8 rounded-3xl border border-nanny-border bg-nanny-card p-5">
+          <View className="mb-8 rounded-3xl border border-nanny-border bg-nanny-card p-5" style={SHADOWS.card}>
             <View className="flex-row items-center justify-between">
               <View className="flex-1 pr-3">
                 <Text className="text-body font-semibold text-nanny-text">Recordatorio</Text>

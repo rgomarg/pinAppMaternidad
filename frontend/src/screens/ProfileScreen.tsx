@@ -19,7 +19,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getUser, updateUser, type ProfileUpdate, type ProfileUser } from '../api/user';
 import { applyNotificationPreferences } from '../services/notificationService';
-import { COLORS, TYPOGRAPHY } from '../theme';
+import { COLORS, TYPOGRAPHY, SHADOWS } from '../theme';
+import ScreenBackground from '../components/ScreenBackground';
 
 const BLUE = COLORS.primary;
 const MUTED = COLORS.muted;
@@ -188,6 +189,7 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <View className="flex-1 justify-center bg-nanny-bg">
+        <ScreenBackground />
         <ActivityIndicator color={BLUE} />
       </View>
     );
@@ -195,10 +197,11 @@ export default function ProfileScreen() {
 
   return (
     <KeyboardAvoidingView className="flex-1 bg-nanny-bg" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScreenBackground />
       {/* Cabecera */}
       <View
         style={{ paddingTop: insets.top + 12 }}
-        className="flex-row items-center justify-between border-b border-nanny-border px-6 pb-4"
+        className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 pb-4"
       >
         <Pressable onPress={cancel} className="w-20 flex-row items-center" accessibilityRole="button" accessibilityLabel="Volver sin guardar">
           <Ionicons name="chevron-back" size={20} color={BLUE} />
@@ -341,8 +344,10 @@ function SectionLabel({ children, spaced = false }: { children: string; spaced?:
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <View style={{ borderColor: BORDER }} className="overflow-hidden rounded-3xl border bg-nanny-card">
+    <View style={SHADOWS.card} className="rounded-3xl bg-nanny-card">
+      <View style={{ borderColor: BORDER }} className="overflow-hidden rounded-3xl border bg-nanny-card">
       {children}
+    </View>
     </View>
   );
 }

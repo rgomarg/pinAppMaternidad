@@ -44,7 +44,8 @@ import {
   type SharedChildProfile,
 } from '../utils/qrShare';
 import HealthHistory, { HealthHistoryLocked } from '../components/HealthHistory';
-import { COLORS } from '../theme';
+import { COLORS, SHADOWS } from '../theme';
+import ScreenBackground from '../components/ScreenBackground';
 
 type Child = {
   id: number;
@@ -140,6 +141,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1, backgroundColor: palette.background, paddingTop: insets.top }}>
+      <ScreenBackground />
       {children}
     </View>
   );
@@ -155,7 +157,7 @@ function Header({
   action?: React.ReactNode;
 }) {
   return (
-    <View className="flex-row items-center justify-between border-b border-nanny-border px-6 py-5">
+    <View className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 py-4">
       <TouchableOpacity onPress={onBack} disabled={!onBack} className="min-w-[72px]">
         {onBack && (
           <View className="flex-row items-center">
@@ -300,7 +302,8 @@ function ChildCard({
   };
 
   return (
-    <View className="mb-5 overflow-hidden rounded-3xl border border-nanny-border bg-nanny-surface">
+    <View className="mb-5 rounded-3xl bg-nanny-card" style={SHADOWS.card}>
+    <View className="overflow-hidden rounded-3xl border border-nanny-border bg-nanny-card">
       <TouchableOpacity
         onPress={openMenu}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -369,6 +372,7 @@ function ChildCard({
           </TouchableOpacity>
         </View>
       )}
+    </View>
     </View>
   );
 }
@@ -447,7 +451,7 @@ function ChildPickerScreen() {
 
   return (
     <Shell>
-      <View className="flex-row items-center justify-between border-b border-nanny-border px-6 pb-4 pt-3">
+      <View className="flex-row items-center justify-between px-6 pb-2 pt-3">
         <View className="flex-1 pr-3">
           <Text style={{ color: palette.muted }} className="mb-0.5 text-body font-medium">
             Registro médico
@@ -461,12 +465,10 @@ function ChildPickerScreen() {
             onPress={handleOpenScanQr}
             accessibilityRole="button"
             accessibilityLabel="Leer QR"
-            className="flex-row items-center rounded-full bg-nanny-soft px-4 py-2.5"
+            className="h-11 w-11 items-center justify-center rounded-full bg-nanny-card"
+            style={SHADOWS.card}
           >
-            <Ionicons name="scan-outline" size={18} color="#654875" />
-            <Text style={{ color: '#654875' }} className="ml-2 text-body font-semibold">
-              Leer QR
-            </Text>
+            <Ionicons name="scan-outline" size={20} color={palette.blue} />
           </TouchableOpacity>
           <View className="relative h-11 w-11 items-center justify-center rounded-full bg-nanny-blue">
             <Text className="text-body font-semibold text-white">
@@ -484,7 +486,7 @@ function ChildPickerScreen() {
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }}>
         {userId === null && combinedChildren.length === 0 && (
           <View className="mb-6">
-            <Text style={{ color: palette.text }} className="text-subtitle font-semibold italic">
+            <Text style={{ color: palette.text }} className="text-subtitle font-semibold">
               Selecciona un usuario
             </Text>
             <Text style={{ color: palette.muted }} className="mt-2 text-body">
@@ -551,7 +553,8 @@ function SimpleCard({ title, subtitle, onPress }: { title: string; subtitle?: st
       activeOpacity={0.7}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={onPress ? `${title}. Toca para editar o eliminar` : undefined}
-      className="mb-3 flex-row items-center rounded-3xl bg-nanny-surface p-5"
+      className="mb-3 flex-row items-center rounded-3xl bg-nanny-card p-5"
+      style={SHADOWS.card}
     >
       <View className="flex-1">
         <Text style={{ color: palette.text }} className="text-body">{title}</Text>
@@ -586,7 +589,7 @@ function ShareQrScreen() {
 
   return (
     <Shell>
-      <View className="flex-row items-center justify-between border-b border-nanny-border px-6 py-5">
+      <View className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 py-4">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           className="min-w-[72px]"
@@ -605,7 +608,7 @@ function ShareQrScreen() {
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 28, paddingBottom: 48 }}>
         <View className="items-center">
-          <View className="items-center justify-center rounded-3xl border border-nanny-border bg-white p-6 shadow-sm">
+          <View className="items-center justify-center rounded-3xl border border-nanny-border bg-white p-6" style={SHADOWS.card}>
             <QRCodeSvg value={inviteCode} size={230} color="#2D1E36" backgroundColor="#ffffff" />
           </View>
         </View>
@@ -812,7 +815,7 @@ function ScanQrScreen() {
         </View>
       </Modal>
 
-      <View className="flex-row items-center justify-between border-b border-nanny-border px-6 py-5">
+      <View className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 py-4">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           className="min-w-[72px]"
@@ -843,7 +846,7 @@ function ScanQrScreen() {
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel="Abrir cámara o elegir imagen"
-            className="items-center rounded-3xl border-2 border-dashed border-nanny-border-strong bg-nanny-surface px-6 py-10"
+            className="items-center rounded-3xl border-2 border-dashed border-nanny-border-strong bg-white/40 px-6 py-10"
           >
             <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-nanny-soft">
               <Ionicons name="qr-code-outline" size={30} color="#654875" />
@@ -873,7 +876,7 @@ function ScanQrScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             style={{ color: palette.text, minHeight: 130, textAlignVertical: 'top' }}
-            className="rounded-3xl border border-nanny-border-strong bg-nanny-surface px-5 py-4 text-body"
+            className="rounded-3xl border border-nanny-border-strong bg-nanny-card px-5 py-4 text-body"
           />
 
           <TouchableOpacity
@@ -1024,7 +1027,7 @@ function ChildProfileScreen() {
   return (
     <Shell>
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
-        <View className="bg-nanny-surface px-6 pb-7 pt-4">
+        <View className="bg-nanny-card px-6 pb-7 pt-4">
           <TouchableOpacity
             onPress={() => navigation.navigate('ChildPicker')}
             className="mb-5 flex-row items-center self-start"
@@ -1113,7 +1116,7 @@ function ChildProfileScreen() {
                 activeOpacity={0.7}
                 disabled={isShared}
                 onPress={() => itemMenu(allergy.name, () => editItem('AddAllergy', allergy), deleteAllergy(allergy.name))}
-                className={`mb-3 flex-row items-center rounded-3xl border p-5 ${isSevere ? 'border-[#c64b3b] bg-[#fff0ec]' : 'border-transparent bg-nanny-surface'}`}
+                className={`mb-3 flex-row items-center rounded-3xl border p-5 ${isSevere ? 'border-[#c64b3b] bg-[#fff0ec]' : 'border-transparent bg-nanny-card'}`}
                 accessibilityLabel={`${isSevere ? 'Alerta: ' : ''}Alergia ${allergy.name}, gravedad ${allergy.severity}`}
               >
                 <View className={`mr-4 h-10 w-10 items-center justify-center rounded-full ${isSevere ? 'bg-[#c64b3b]' : 'bg-[#fff1ec]'}`}>
@@ -1138,7 +1141,8 @@ function ChildProfileScreen() {
                 activeOpacity={0.7}
                 disabled={isShared}
                 onPress={() => itemMenu(vaccine.name, () => editItem('AddVaccine', vaccine), deleteRecord('vaccine', vaccine.id))}
-                className="mb-3 flex-row items-center rounded-3xl bg-nanny-surface p-5"
+                className="mb-3 flex-row items-center rounded-3xl bg-nanny-card p-5"
+                style={SHADOWS.card}
               >
                 <View className={`mr-4 h-9 w-9 items-center justify-center rounded-full ${vaccine.appliedAt ? 'bg-[#e5f1e9]' : 'bg-[#fff0d8]'}`}>
                   <Ionicons name={vaccine.appliedAt ? 'checkmark' : 'time-outline'} size={18} color={vaccine.appliedAt ? palette.green : '#bd7110'} />
@@ -1196,7 +1200,7 @@ function ChildProfileScreen() {
 
 function ChildBanner({ child }: { child: Child }) {
   return (
-    <View className="mx-6 mb-7 flex-row items-center rounded-3xl bg-nanny-surface p-6">
+    <View className="mx-6 mb-7 flex-row items-center rounded-3xl bg-nanny-card p-6" style={SHADOWS.card}>
       <Avatar child={child} size={66} />
       <View className="ml-5 flex-1">
         <Text style={{ color: palette.text }} className="text-title font-bold">{child.name}</Text>
@@ -1258,7 +1262,7 @@ function Field({
           }
         }}
         style={{ color: palette.text, minHeight: multiline ? 140 : undefined, textAlignVertical: multiline ? 'top' : 'center' }}
-        className="rounded-3xl border border-nanny-border bg-nanny-surface px-6 py-4 text-body"
+        className="rounded-3xl border border-nanny-border bg-nanny-card px-6 py-4 text-body"
       />
       {tooltip && showTip && (
         <View className="mt-2 rounded-xl bg-nanny-text px-3 py-2">
@@ -1284,7 +1288,7 @@ function DateField({
   return (
     <View className="mb-6">
       <Text style={{ color: palette.muted }} className="mb-2 text-body">{label}</Text>
-      <TouchableOpacity onPress={() => setOpen(true)} className="flex-row items-center justify-between rounded-3xl border border-nanny-border bg-nanny-surface px-6 py-4">
+      <TouchableOpacity onPress={() => setOpen(true)} className="flex-row items-center justify-between rounded-3xl border border-nanny-border bg-nanny-card px-6 py-4">
         <Text style={{ color: value ? palette.text : '#8F8296' }} className="text-body">{value ? value.toLocaleDateString('es-ES') : 'dd/mm/aaaa'}</Text>
         <Ionicons name="calendar-outline" size={22} color={palette.text} />
       </TouchableOpacity>

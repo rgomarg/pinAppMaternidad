@@ -1,6 +1,6 @@
 import './global.css';
 import React, { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -61,21 +61,25 @@ function MainTabs() {
               iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
             }
 
-            return <Ionicons name={iconName as any} size={size} color={color} />;
+            return <TabIcon name={iconName as any} focused={focused} size={size} color={color} />;
           },
           tabBarActiveTintColor: COLORS.primary,
           tabBarInactiveTintColor: COLORS.muted,
           tabBarStyle: {
             backgroundColor: COLORS.surface,
-            borderTopColor: COLORS.border,
-            borderTopWidth: 1,
+            borderTopWidth: 0,
             height: 70,
             paddingBottom: 10,
             paddingTop: 10,
+            shadowColor: COLORS.primary,
+            shadowOffset: { width: 0, height: -6 },
+            shadowOpacity: 0.06,
+            shadowRadius: 12,
+            elevation: 12,
           },
           tabBarLabelStyle: {
             fontSize: TYPOGRAPHY.caption.fontSize,
-            fontWeight: '600',
+            fontWeight: '700',
           }
         })}
         >
@@ -92,8 +96,22 @@ function MainTabs() {
 }
 
 const adminHomeIcon = ({ focused, color, size }: { focused: boolean; color: string; size: number }) => (
-  <Ionicons name={focused ? 'shield-checkmark' : 'shield-checkmark-outline'} size={size} color={color} />
+  <TabIcon name={focused ? 'shield-checkmark' : 'shield-checkmark-outline'} focused={focused} size={size} color={color} />
 );
+
+// Icono de pestaña con una pequeña barra encima cuando está activa (solo estético)
+function TabIcon({ name, focused, size, color }: { name: React.ComponentProps<typeof Ionicons>['name']; focused: boolean; size: number; color: string }) {
+  return (
+    <View style={{ alignItems: 'center' }}>
+      {focused && (
+        <View
+          style={{ position: 'absolute', top: -10, width: 28, height: 3, borderRadius: 2, backgroundColor: COLORS.primary }}
+        />
+      )}
+      <Ionicons name={name} size={size} color={color} />
+    </View>
+  );
+}
 
 export default function App() {
   useEffect(() => {

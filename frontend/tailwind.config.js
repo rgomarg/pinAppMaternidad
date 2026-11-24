@@ -10,7 +10,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'nanny-bg': '#F8EFF5',          // fondo de las pantallas
+        'nanny-bg': '#F8EFF5',          // campos y chips dentro de tarjetas (el fondo de pantalla es un degradado)
         'nanny-card': '#FFFFFF',        // tarjetas y superficies
         'nanny-surface': '#F4ECF6',     // campos, chips y paneles dentro de una tarjeta
         'nanny-text': '#2D1E36',        // texto principal

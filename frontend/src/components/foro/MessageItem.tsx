@@ -5,6 +5,7 @@ import type { MessageNode } from '../../api/forum';
 import AuthorAvatar, { ProBadge, timeAgo } from './AuthorAvatar';
 import LikeButton from './LikeButton';
 import ModeratableAuthor from './ModeratableAuthor';
+import { SHADOWS } from '../../theme';
 
 // Sangría de cada nivel de respuestas: margen + padding + línea guía a la izquierda
 const INDENT_MARGIN = 16;
@@ -37,7 +38,7 @@ export default function MessageItem({ message, depth = 0, availableWidth, userId
 
   return (
     <View>
-      <View style={{ width: cardWidth }} className="mb-3 rounded-3xl bg-white p-4">
+      <View style={[{ width: cardWidth }, SHADOWS.card]} className="mb-3 rounded-3xl bg-white p-4">
         <View className="mb-2 flex-row items-center">
           <ModeratableAuthor author={message.author} onBlocked={onAuthorBlocked} className="flex-row items-center">
             <AuthorAvatar author={message.author} size={28} />

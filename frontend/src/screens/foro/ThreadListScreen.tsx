@@ -7,6 +7,7 @@ import { forumApi, type Tag, type ThreadSummary } from '../../api/forum';
 import { useFamilySelection } from '../../context/FamilySelectionContext';
 import TagChips from '../../components/foro/TagChips';
 import ThreadCard from '../../components/foro/ThreadCard';
+import ScreenBackground from '../../components/ScreenBackground';
 
 const PAGE_SIZE = 20;
 
@@ -80,6 +81,7 @@ export default function ThreadListScreen() {
 
   return (
     <View style={{ flex: 1, paddingTop: insets.top }} className="bg-nanny-bg">
+      <ScreenBackground />
       <View className="px-6 pb-4 pt-2">
         <View className="mb-4 flex-row items-end justify-between">
           <View>

@@ -17,6 +17,8 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import ScreenBackground from '../components/ScreenBackground';
+import { COLORS, SHADOWS } from '../theme';
 
 
 
@@ -484,8 +486,9 @@ export default function HomeScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: '#F8EFF5', paddingTop: insets.top }}
+      style={{ flex: 1, backgroundColor: COLORS.background, paddingTop: insets.top }}
     >
+      <ScreenBackground />
       <ScrollView
         ref={scrollViewRef}
         contentContainerStyle={{ padding: 24, paddingBottom: 260 }}
@@ -505,7 +508,7 @@ export default function HomeScreen() {
             ) : activeChild ? (
               <Text className="text-title font-bold text-nanny-text">{activeChild.name}</Text>
             ) : (
-              <Text className="text-subtitle font-semibold text-nanny-text italic">Selecciona un usuario</Text>
+              <Text className="text-title font-bold text-nanny-text">Selecciona un usuario</Text>
             )}
           </View>
           
@@ -547,10 +550,10 @@ export default function HomeScreen() {
                         activeChildId === child.id ? 'bg-nanny-blue' : 'bg-nanny-card'
                       }`}
                     >
-                      <View className="w-6 h-6 rounded-full bg-orange-200 items-center justify-center overflow-hidden">
-                        <Text className="text-caption font-semibold text-black">{child?.name?.charAt(0) || '?'}</Text>
+                      <View className="w-6 h-6 rounded-full bg-nanny-soft items-center justify-center overflow-hidden">
+                        <Text className="text-caption font-semibold text-nanny-blue">{child?.name?.charAt(0) || '?'}</Text>
                       </View>
-                      <Text className={`font-semibold ${activeChildId === child.id ? 'text-white' : 'text-nanny-text'}`}>
+                      <Text className={`text-body font-semibold ${activeChildId === child.id ? 'text-white' : 'text-nanny-text'}`}>
                         {child.name}
                       </Text>
                     </TouchableOpacity>
@@ -563,10 +566,10 @@ export default function HomeScreen() {
             {activeChild && (
               <View className="flex-row gap-4 mb-6">
                 {/* Peso */}
-                <View className="flex-1 bg-nanny-card p-4 rounded-2xl relative">
+                <View className="flex-1 bg-nanny-card p-4 rounded-3xl relative" style={SHADOWS.card}>
                   <TouchableOpacity 
                     onPress={() => setModalPesoVisible(true)}
-                    className="absolute top-4 right-4 w-10 h-10 bg-blue-100 rounded-full items-center justify-center">                    
+                    className="absolute top-4 right-4 w-10 h-10 bg-nanny-soft rounded-full items-center justify-center">                    
                     <Ionicons name="add" size={16} color="#654875" />
                   </TouchableOpacity>
                   <Text className="text-nanny-muted text-body font-medium mb-2">Peso actual</Text>
@@ -590,10 +593,10 @@ export default function HomeScreen() {
                 </View>
 
                 {/* Altura */}
-                <View className="flex-1 bg-nanny-card p-4 rounded-2xl relative">
+                <View className="flex-1 bg-nanny-card p-4 rounded-3xl relative" style={SHADOWS.card}>
                   <TouchableOpacity 
                     onPress={() => setModalAlturaVisible(true)}
-                    className="absolute top-4 right-4 w-10 h-10 bg-blue-100 rounded-full items-center justify-center">
+                    className="absolute top-4 right-4 w-10 h-10 bg-nanny-soft rounded-full items-center justify-center">
                     <Ionicons name="add" size={16} color="#654875" />
                   </TouchableOpacity>
                   <Text className="text-nanny-muted text-body font-medium mb-2">Altura actual</Text>
@@ -628,7 +631,8 @@ export default function HomeScreen() {
             />
 
             {/* Checklist */}
-            <View className="bg-nanny-card rounded-2xl mb-6 overflow-hidden">
+            <View className="mb-6 rounded-3xl bg-nanny-card" style={SHADOWS.card}>
+            <View className="overflow-hidden rounded-3xl">
               <Text className="font-semibold text-subtitle text-nanny-text px-4 pt-4 pb-3">ToDoList</Text>
               <View className="mx-4 mb-3 flex-row rounded-2xl bg-nanny-soft p-1">
                 <TouchableOpacity
@@ -650,7 +654,7 @@ export default function HomeScreen() {
                   onChangeText={setNewTaskTitle}
                   placeholder="Añadir una tarea..."
                   placeholderTextColor="#8F8296"
-                  className="flex-1 rounded-2xl border border-nanny-border bg-nanny-bg px-4 py-2 text-body text-nanny-text"
+                  className="min-w-0 flex-1 rounded-2xl border border-nanny-border bg-nanny-bg px-4 py-2 text-body text-nanny-text"
                   onSubmitEditing={addChecklistItem}
                   onFocus={focusChecklistInput}
                   returnKeyType="done"
@@ -703,8 +707,10 @@ export default function HomeScreen() {
                 </View>
               ))}
             </View>
+            </View>
             {/* Recomendaciones */}
-            <View className="bg-nanny-card rounded-2xl mb-6 overflow-hidden">
+            <View className="mb-6 rounded-3xl bg-nanny-card" style={SHADOWS.card}>
+            <View className="overflow-hidden rounded-3xl">
               <View className="flex-row items-center justify-between px-4 pt-4 pb-3">
                 <Text className="font-semibold text-subtitle text-nanny-text">Recomendaciones</Text>
                 {activeUser?.role !== 'PRO' && (
@@ -993,6 +999,7 @@ export default function HomeScreen() {
                 </View>
               )}
             </View>
+            </View>
           </>
         )}
       </ScrollView>
@@ -1013,7 +1020,7 @@ export default function HomeScreen() {
                   setIsUserModalVisible(false);
                   navigation.navigate('MiPerfil', { userId: activeUserId });
                 }}
-                className="mb-4 flex-row items-center rounded-2xl bg-nanny-card px-4 py-3"
+                className="mb-4 flex-row items-center rounded-2xl bg-nanny-bg px-4 py-3"
               >
                 <Ionicons name="person-circle-outline" size={24} color="#654875" />
                 <Text className="ml-3 text-body font-semibold text-nanny-text">Editar mi perfil</Text>
@@ -1030,7 +1037,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               </View>
             ) : users.length === 0 ? (
-              <Text className="text-center text-body text-gray-500">No hay usuarios disponibles.</Text>
+              <Text className="text-center text-body text-nanny-muted">No hay usuarios disponibles.</Text>
             ) : (
               <FlatList
                 data={users}
@@ -1038,7 +1045,7 @@ export default function HomeScreen() {
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     onPress={() => handleSelectUser(item.id, item.role)}
-                    className="flex-row items-center justify-between border-b border-gray-100 p-4"
+                    className="flex-row items-center justify-between border-b border-nanny-border p-4"
                   >
                     <View className="flex-row items-center">
                       <Text className="text-body">{[item.name, item.surname].filter(Boolean).join(' ')}</Text>

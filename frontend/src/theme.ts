@@ -10,8 +10,13 @@
  */
 
 export const COLORS = {
-  /** Fondo de las pantallas */
-  background: '#F8EFF5',
+  /** Fondo de respaldo de las pantallas (debajo del degradado) */
+  background: '#F0C6D4',
+  /** Degradado del fondo de pantalla: arriba (rosa) → abajo (lila) */
+  gradientStart: '#F7A9B8',
+  gradientEnd: '#E9DDF7',
+  /** Campos y chips dentro de las tarjetas blancas */
+  field: '#F8EFF5',
   /** Tarjetas y superficies principales */
   surface: '#FFFFFF',
   /** Campos, chips y paneles dentro de una tarjeta */
@@ -47,4 +52,25 @@ export const TYPOGRAPHY = {
   subtitle: { fontSize: 18, lineHeight: 24, fontWeight: '600' as const },
   body: { fontSize: 15, lineHeight: 21, fontWeight: '400' as const },
   caption: { fontSize: 12, lineHeight: 16, fontWeight: '400' as const },
+} as const;
+
+/**
+ * Sombras suaves teñidas de morado para tarjetas y botones flotantes.
+ * Se aplican con style={SHADOWS.card}.
+ */
+export const SHADOWS = {
+  card: {
+    shadowColor: '#654875',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 3,
+  },
+  floating: {
+    shadowColor: '#654875',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
 } as const;

@@ -3,6 +3,7 @@ import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { adminApi, type AdminReport, type AdminThread, type AdminUser } from '../../api/admin';
+import { SHADOWS } from '../../theme';
 
 type Summary = { users: AdminUser[]; threads: AdminThread[]; reports: AdminReport[] };
 
@@ -99,7 +100,7 @@ function StatTile({
 }) {
   const highlighted = alert && value > 0;
   return (
-    <View style={{ width: '47%' }} className="rounded-2xl bg-nanny-card p-4">
+    <View style={[{ width: '47%' }, SHADOWS.card]} className="rounded-3xl bg-nanny-card p-4">
       <Ionicons name={icon} size={18} color={highlighted ? '#cc7a66' : '#654875'} />
       <Text className={`mt-2 text-title font-bold ${highlighted ? 'text-nanny-red' : 'text-nanny-text'}`}>{value}</Text>
       <Text className="text-body font-medium text-nanny-muted">{label}</Text>
@@ -121,7 +122,7 @@ function ShortcutButton({
   return (
     <TouchableOpacity
       onPress={onPress}
-      className="mb-3 flex-row items-center rounded-3xl bg-white p-5"
+      className="mb-3 flex-row items-center rounded-3xl bg-white p-5" style={SHADOWS.card}
       accessibilityRole="button"
     >
       <View className="h-10 w-10 items-center justify-center rounded-full bg-nanny-blue/15">

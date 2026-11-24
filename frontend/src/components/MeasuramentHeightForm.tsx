@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { API_URL } from '../api/config';
+import { SHADOWS } from '../theme';
 
 // Configuración de idioma español para el calendario
 const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -177,7 +178,7 @@ export default function ActualizarAlturaModal({
           className="bg-white rounded-t-[32px] pt-6 pb-8 px-6 max-h-[92%]"
         >
           {/* Cabecera */}
-          <View className="flex-row justify-between items-center pb-4 border-b border-gray-200 mb-4">
+          <View className="flex-row justify-between items-center pb-4 border-b border-nanny-border mb-4">
             <TouchableOpacity onPress={onClose} disabled={guardando}>
               <Text className="text-nanny-muted text-body font-medium">Cancelar</Text>
             </TouchableOpacity>
@@ -188,7 +189,7 @@ export default function ActualizarAlturaModal({
               onPress={handleGuardar}
               disabled={guardando || !isValid}
             >
-              <Text className={`text-body font-semibold ${isValid && !guardando ? 'text-nanny-blue' : 'text-gray-300'}`}>
+              <Text className={`text-body font-semibold ${isValid && !guardando ? 'text-nanny-blue' : 'text-nanny-subtle'}`}>
                 {guardando ? 'Guardando...' : 'Guardar'}
               </Text>
             </TouchableOpacity>
@@ -196,8 +197,8 @@ export default function ActualizarAlturaModal({
 
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {/* Tarjeta de perfil (Niño) */}
-            <View className="flex-row items-center bg-nanny-card p-4 rounded-2xl mb-5">
-              <View className="w-12 h-12 bg-gray-300 rounded-full mr-4 overflow-hidden items-center justify-center">
+            <View className="flex-row items-center bg-nanny-card p-4 rounded-3xl mb-5" style={SHADOWS.card}>
+              <View className="w-12 h-12 bg-nanny-soft rounded-full mr-4 overflow-hidden items-center justify-center">
                 <Ionicons name="person" size={24} color="#6E5D78" />
               </View>
               <View>
@@ -266,14 +267,14 @@ export default function ActualizarAlturaModal({
               </TouchableOpacity>
 
               {showDatePicker && (
-                <View className="mt-2 bg-white rounded-2xl p-3 border border-gray-200 shadow-sm">
-                  <View className="flex-row justify-between items-center pb-2 mb-2 border-b border-gray-100">
+                <View className="mt-2 bg-white rounded-2xl p-3 border border-nanny-border shadow-sm">
+                  <View className="flex-row justify-between items-center pb-2 mb-2 border-b border-nanny-border">
                     <Text className="text-caption font-semibold text-nanny-muted uppercase">
                       Seleccionar fecha
                     </Text>
                     <TouchableOpacity 
                       onPress={() => setShowDatePicker(false)}
-                      className="px-2 py-1 bg-gray-100 rounded-lg"
+                      className="px-2 py-1 bg-nanny-soft rounded-lg"
                     >
                       <Text className="text-caption font-medium text-nanny-text">Cerrar</Text>
                     </TouchableOpacity>

@@ -22,6 +22,8 @@ import {
   NOTIFICATION_PERMISSION_REQUIRED_TITLE,
   NOTIFICATION_PERMISSION_REQUIRED_MESSAGE,
 } from '../services/notificationService';
+import ScreenBackground from '../components/ScreenBackground';
+import { COLORS, SHADOWS, TYPOGRAPHY } from '../theme';
 
 
 
@@ -500,13 +502,14 @@ export default function CalendarioScreen() {
 
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8EFF5'}}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <ScreenBackground />
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }} style={{ flex: 1 }}>
 
         <View className="flex-row justify-between items-start mb-6">
           <View>
             <Text className="text-body font-medium text-nanny-muted mb-1">Calendario de salud</Text>
-            <Text className="text-subtitle font-semibold text-nanny-text italic">
+            <Text className="text-title font-bold text-nanny-text">
               {guardianName || (userId ? 'Tu calendario' : 'Selecciona un usuario')}
             </Text>
             {/* Lista de hijos */}
@@ -536,7 +539,7 @@ export default function CalendarioScreen() {
                       className={`mr-2 flex-row items-center rounded-full border px-3 py-1 ${
                         active
                           ? 'border-nanny-blue bg-nanny-blue'
-                          : 'border-nanny-border bg-nanny-bg'
+                          : 'border-white bg-white'
                       }`}
                     >
                       <View
@@ -573,53 +576,60 @@ export default function CalendarioScreen() {
           
         </View>
 
-        <View className="mb-4 mt-1 flex-row flex-wrap items-center justify-center">
-          {[
-            { type: 'MEDICINE', label: 'Medicamento' },
-            { type: 'MEDICAL_APPOINTMENT', label: 'Cita médica' },
-            { type: 'GENERAL', label: 'General' },
-            { type: 'VACCINE', label: 'Vacuna' },
-            { type: 'CONDITION', label: 'Síntoma' },
-          ].map(({ type, label }) => (
-            <View key={type} className="mx-2 my-1 flex-row items-center">
-              <View className="mr-1.5 h-2.5 w-2.5 rounded-full" style={{ backgroundColor: EVENT_COLORS[type as keyof typeof EVENT_COLORS] }} />
-              <Text className="text-caption text-nanny-muted">{label}</Text>
-            </View>
-          ))}
+        {/* Calendario dentro de una tarjeta blanca, con la leyenda al pie */}
+        <View className="rounded-3xl bg-nanny-card px-3 pb-4 pt-2" style={SHADOWS.card}>
+          <Calendar
+            firstDay={1}
+            markingType="multi-dot"
+            onDayPress={(day) => {
+              setSelectedDate(day.dateString);
+              if (day.dateString.slice(0, 7) !== visibleMonth.slice(0, 7)) {
+                setVisibleMonth(day.dateString);
+              }
+            }}
+            onMonthChange={(month) => setVisibleMonth(month.dateString)}
+            current={visibleMonth}
+            style={{ backgroundColor: 'transparent'}}
+            theme={{
+              calendarBackground: 'transparent',
+              textMonthFontSize: TYPOGRAPHY.subtitle.fontSize,
+              textDayFontSize: TYPOGRAPHY.body.fontSize,
+              textDayHeaderFontSize: TYPOGRAPHY.caption.fontSize,
+              textSectionTitleColor: COLORS.subtle,
+              dayTextColor: COLORS.text,
+              textDisabledColor: COLORS.borderStrong,
+              todayTextColor: COLORS.primary,
+              selectedDayTextColor: '#FFFFFF',
+              arrowColor: COLORS.primary }}
+            renderHeader={(date) => (
+              <Text className="text-subtitle font-semibold text-nanny-text">
+                {MONTHS[date.getMonth()]} {date.getFullYear()}
+              </Text>
+            )}
+            renderArrow={(direction: 'left' | 'right') => (
+              <Ionicons name={direction === 'left' ? 'chevron-back' : 'chevron-forward'} size={22} color="#654875" />
+            )}
+            markedDates={markedDates}
+          />
+
+          <View className="mt-3 flex-row flex-wrap items-center justify-center border-t border-nanny-border pt-3">
+            {[
+              { type: 'MEDICINE', label: 'Medicamento' },
+              { type: 'MEDICAL_APPOINTMENT', label: 'Cita médica' },
+              { type: 'GENERAL', label: 'General' },
+              { type: 'VACCINE', label: 'Vacuna' },
+              { type: 'CONDITION', label: 'Síntoma' },
+            ].map(({ type, label }) => (
+              <View key={type} className="mx-2 my-1 flex-row items-center">
+                <View className="mr-1.5 h-2.5 w-2.5 rounded-full" style={{ backgroundColor: EVENT_COLORS[type as keyof typeof EVENT_COLORS] }} />
+                <Text className="text-caption text-nanny-muted">{label}</Text>
+              </View>
+            ))}
+          </View>
         </View>
 
-        <Calendar
-          firstDay={1}
-          markingType="multi-dot"
-          onDayPress={(day) => {
-            setSelectedDate(day.dateString);
-            if (day.dateString.slice(0, 7) !== visibleMonth.slice(0, 7)) {
-              setVisibleMonth(day.dateString);
-            }
-          }}
-          onMonthChange={(month) => setVisibleMonth(month.dateString)}
-          current={visibleMonth}
-          style={{ backgroundColor: 'transparent'}}
-          theme={{ 
-            calendarBackground: 'transparent', 
-            textMonthFontSize: 18, 
-            textDayFontSize: 18,
-            textDayHeaderFontSize: 15 }}
-          renderHeader={(date) => (
-            <Text className="text-title font-bold text-nanny-text">
-              {MONTHS[date.getMonth()]} {date.getFullYear()}
-            </Text>
-          )}
-          renderArrow={(direction: 'left' | 'right') => (
-            <Ionicons name={direction === 'left' ? 'chevron-back' : 'chevron-forward'} size={22} color="#654875" />
-          )}
-          markedDates={markedDates}
-        />
-
-        <View className="h-px bg-nanny-border mt-2" />
-
-        <View className="px-6 mt-6">
-          <Text className="text-body text-nanny-muted">{formatLongDate(selectedDate)}</Text>
+        <View className="px-1 mt-6">
+          <Text className="text-body font-semibold text-nanny-muted">{formatLongDate(selectedDate)}</Text>
           {loadingEvents ? (
             <ActivityIndicator className="mt-6" color="#654875" />
           ) : eventsError ? (
@@ -726,14 +736,10 @@ export default function CalendarioScreen() {
           width: 56,
           height: 56,
           borderRadius: 28,
-          backgroundColor: '#654875',
+          backgroundColor: COLORS.primary,
           alignItems: 'center',
           justifyContent: 'center',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 4.65,
-          elevation: 8,
+          ...SHADOWS.floating,
         }}
       >
         <Ionicons name="add" size={32} color="#ffffff" />

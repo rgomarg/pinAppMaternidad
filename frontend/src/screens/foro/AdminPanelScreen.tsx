@@ -25,6 +25,8 @@ import {
 } from '../../api/admin';
 import { useFamilySelection } from '../../context/FamilySelectionContext';
 import { timeAgo } from '../../components/foro/AuthorAvatar';
+import ScreenBackground from '../../components/ScreenBackground';
+import { SHADOWS } from '../../theme';
 
 type Tab = 'threads' | 'users' | 'reports';
 
@@ -259,6 +261,7 @@ export default function AdminPanelScreen() {
 
   return (
     <View style={{ flex: 1, paddingTop: insets.top }} className="bg-nanny-bg">
+      <ScreenBackground />
       <View className="px-6 pb-3 pt-2">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -437,7 +440,7 @@ function ThreadRow({
   const deleted = thread.status === 'DELETED';
   const [showMessages, setShowMessages] = useState(false);
   return (
-    <View className="mb-3 rounded-3xl bg-white p-5">
+    <View className="mb-3 rounded-3xl bg-white p-5" style={SHADOWS.card}>
       <View className="mb-2 flex-row flex-wrap items-center gap-2">
         <StatusBadge status={thread.status} />
         {/* Un hilo eliminado cuyo autor también está bloqueado muestra ambas etiquetas */}
@@ -579,7 +582,7 @@ function UserRow({
   // Los administradores no se pueden bloquear (tampoco a sí mismos)
   const canModerate = user.role !== 'ADMIN' && !isSelf;
   return (
-    <View className="mb-3 rounded-3xl bg-white p-5">
+    <View className="mb-3 rounded-3xl bg-white p-5" style={SHADOWS.card}>
       <View className="mb-2 flex-row flex-wrap items-center gap-2">
         <StatusBadge status={user.status} />
         {user.role !== 'USER' && (
@@ -631,7 +634,7 @@ function ReportRow({
   const badge = REPORT_BADGE[report.status];
   const { target } = report;
   return (
-    <View className="mb-3 rounded-3xl bg-white p-5">
+    <View className="mb-3 rounded-3xl bg-white p-5" style={SHADOWS.card}>
       <View className="mb-2 flex-row flex-wrap items-center gap-2">
         <Text className={`rounded-full px-2 py-0.5 text-caption font-semibold ${badge.className} ${badge.textClassName}`}>
           {badge.label}
