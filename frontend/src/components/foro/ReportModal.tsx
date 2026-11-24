@@ -88,16 +88,16 @@ export default function ReportModal({
                     <View className="mb-4 flex-row items-center">
                         <Ionicons name="flag-outline" size={22} color="#cc7a66" />
                         <View className="ml-3 flex-1">
-                            <Text className="text-lg font-semibold text-nanny-text">
+                            <Text className="text-subtitle font-semibold text-nanny-text">
                                 Reportar contenido
                             </Text>
-                            <Text className="text-sm text-nanny-muted">
+                            <Text className="text-body text-nanny-muted">
                                 Cuéntanos por qué quieres reportar este{" "}
                                 {targetType === "THREAD" ? "hilo" : "comentario"}.
                             </Text>
                         </View>
                     </View>
-                    <Text className="mb-1 text-sm text-nanny-text">Comentario *</Text>
+                    <Text className="mb-1 text-body text-nanny-text">Comentario *</Text>
                     <TextInput
                         value={comment}
                         onChangeText={setComment}
@@ -105,7 +105,7 @@ export default function ReportModal({
                         multiline
                         maxLength={1000}
                         style={{ minHeight: 100, textAlignVertical: "top" }}
-                        className="rounded-2xl bg-nanny-card p-3 text-base text-nanny-text"
+                        className="rounded-2xl bg-nanny-card p-3 text-body text-nanny-text"
                     />
                     <View className="mt-4 flex-row gap-3">
                         <TouchableOpacity

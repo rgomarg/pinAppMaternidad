@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, Text, View } from 'react-native';
 import type { Author } from '../../api/forum';
 
-const COLORS = ['#6d83a1', '#65a882', '#cc7a66', '#a38b6d', '#8a76a8'];
+const COLORS = ['#654875', '#65a882', '#cc7a66', '#a38b6d', '#8a76a8'];
 
 export default function AuthorAvatar({ author, size = 36 }: { author: Author; size?: number }) {
   const initials = author.name
@@ -45,7 +45,7 @@ export function timeAgo(date: string) {
 export function ProBadge({ author }: { author: Author }) {
   if (!author.isPediatrician) return null;
   return (
-    <Text className="ml-2 rounded-full bg-nanny-green/15 px-2 py-0.5 text-xs font-semibold text-nanny-green">
+    <Text className="ml-2 rounded-full bg-nanny-green/15 px-2 py-0.5 text-caption font-semibold text-nanny-green">
       Pediatra
     </Text>
   );

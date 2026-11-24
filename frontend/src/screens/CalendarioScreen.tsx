@@ -327,7 +327,7 @@ export default function CalendarioScreen() {
           .map((type) => ({ key: type, color: EVENT_COLORS[type] })),
       };
     });
-    marked[selectedDate] = { ...marked[selectedDate], selected: true, selectedColor: '#77a2ff' };
+    marked[selectedDate] = { ...marked[selectedDate], selected: true, selectedColor: '#654875' };
     return marked;
   }, [events, selectedChildId, selectedDate, visibleMonth]);
 
@@ -500,13 +500,13 @@ export default function CalendarioScreen() {
 
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f7f3ec'}}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8EFF5'}}>
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }} style={{ flex: 1 }}>
 
         <View className="flex-row justify-between items-start mb-6">
           <View>
-            <Text className="text-sm font-medium text-nanny-muted mb-1">Calendario de salud</Text>
-            <Text className="text-xl font-semibold text-nanny-text italic">
+            <Text className="text-body font-medium text-nanny-muted mb-1">Calendario de salud</Text>
+            <Text className="text-subtitle font-semibold text-nanny-text italic">
               {guardianName || (userId ? 'Tu calendario' : 'Selecciona un usuario')}
             </Text>
             {/* Lista de hijos */}
@@ -514,10 +514,10 @@ export default function CalendarioScreen() {
             {loadingChildren ? (
             <ActivityIndicator
               className="mt-7 self-start"
-              color="#7385A3"
+              color="#654875"
             />
           ) : childrenError ? (
-            <Text className="mt-5 text-sm text-[#C0705A]">
+            <Text className="mt-5 text-body text-[#C0705A]">
               {childrenError}
             </Text>
           ) : children.length > 0 ? (
@@ -535,26 +535,26 @@ export default function CalendarioScreen() {
                       onPress={() => setSelectedChildId(child.id)}
                       className={`mr-2 flex-row items-center rounded-full border px-3 py-1 ${
                         active
-                          ? 'border-[#7385A3] bg-[#7385A3]'
-                          : 'border-[#DDD5C6] bg-[#EFEAE0]'
+                          ? 'border-nanny-blue bg-nanny-blue'
+                          : 'border-nanny-border bg-nanny-bg'
                       }`}
                     >
                       <View
                         className={`mr-1.5 h-7 w-7 items-center justify-center overflow-hidden rounded-full ${
-                          active ? 'bg-white/20' : 'bg-[#D8CDBD]'
+                          active ? 'bg-white/20' : 'bg-nanny-border-strong'
                         }`}
                       >
                         <Text
-                          className={`text-sm font-semibold ${
-                            active ? 'text-white' : 'text-[#5B5149]'
+                          className={`text-body font-semibold ${
+                            active ? 'text-white' : 'text-nanny-muted'
                           }`}
                         >
                           {child.name.charAt(0).toUpperCase()}
                         </Text>
                       </View>
                       <Text
-                        className={`text-sm font-semibold ${
-                          active ? 'text-white' : 'text-[#2B2B2B]'
+                        className={`text-body font-semibold ${
+                          active ? 'text-white' : 'text-nanny-text'
                         }`}
                       >
                         {child.name}
@@ -565,9 +565,9 @@ export default function CalendarioScreen() {
               </View>
             </ScrollView>
               ) : userId ? (
-                <Text className="mt-3 text-sm text-[#8A7F75]">Este usuario no tiene hijos registrados.</Text>
+                <Text className="mt-3 text-body text-nanny-muted">Este usuario no tiene hijos registrados.</Text>
               ) : (
-                <Text className="mt-3 text-sm text-[#8A7F75]">Elige un usuario para cargar sus hijos y eventos.</Text>
+                <Text className="mt-3 text-body text-nanny-muted">Elige un usuario para cargar sus hijos y eventos.</Text>
               )}
           </View>
           
@@ -583,7 +583,7 @@ export default function CalendarioScreen() {
           ].map(({ type, label }) => (
             <View key={type} className="mx-2 my-1 flex-row items-center">
               <View className="mr-1.5 h-2.5 w-2.5 rounded-full" style={{ backgroundColor: EVENT_COLORS[type as keyof typeof EVENT_COLORS] }} />
-              <Text className="text-xs text-[#6F665F]">{label}</Text>
+              <Text className="text-caption text-nanny-muted">{label}</Text>
             </View>
           ))}
         </View>
@@ -606,26 +606,26 @@ export default function CalendarioScreen() {
             textDayFontSize: 18,
             textDayHeaderFontSize: 15 }}
           renderHeader={(date) => (
-            <Text className="text-2xl font-semibold text-[#2B2B2B]">
+            <Text className="text-title font-bold text-nanny-text">
               {MONTHS[date.getMonth()]} {date.getFullYear()}
             </Text>
           )}
           renderArrow={(direction: 'left' | 'right') => (
-            <Ionicons name={direction === 'left' ? 'chevron-back' : 'chevron-forward'} size={22} color="#7385A3" />
+            <Ionicons name={direction === 'left' ? 'chevron-back' : 'chevron-forward'} size={22} color="#654875" />
           )}
           markedDates={markedDates}
         />
 
-        <View className="h-px bg-[#E6E0D8] mt-2" />
+        <View className="h-px bg-nanny-border mt-2" />
 
         <View className="px-6 mt-6">
-          <Text className="text-base text-[#8A7F75]">{formatLongDate(selectedDate)}</Text>
+          <Text className="text-body text-nanny-muted">{formatLongDate(selectedDate)}</Text>
           {loadingEvents ? (
-            <ActivityIndicator className="mt-6" color="#7385A3" />
+            <ActivityIndicator className="mt-6" color="#654875" />
           ) : eventsError ? (
-            <Text className="mt-5 text-center text-[#8A7F75]">{eventsError}</Text>
+            <Text className="mt-5 text-center text-nanny-muted">{eventsError}</Text>
           ) : eventsForSelectedChild.length === 0 ? (
-            <Text className="mt-6 text-center italic text-[#8A7F75]">
+            <Text className="mt-6 text-center italic text-nanny-muted">
               {userId ? 'No hay eventos para este día.' : 'Selecciona un usuario para consultar sus eventos.'}
             </Text>
           ) : (
@@ -647,7 +647,7 @@ export default function CalendarioScreen() {
                         <Text
                           numberOfLines={1}
                           style={{ color: visuals.color }}
-                          className="ml-2 text-sm font-semibold"
+                          className="ml-2 text-body font-semibold"
                         >
                           {event.child?.name ?? 'Hijo'} • {visuals.badge}
                         </Text>
@@ -659,16 +659,16 @@ export default function CalendarioScreen() {
                           color={visuals.color}
                           style={{ marginRight: 4 }}
                         />
-                        <Text style={{ color: visuals.color }} className="text-xs font-bold">
+                        <Text style={{ color: visuals.color }} className="text-caption font-semibold">
                           {timeStr}
                         </Text>
                       </View>
                     </View>
-                    <Text className="mt-2 text-base font-semibold text-[#2B2B2B]">
+                    <Text className="mt-2 text-body font-semibold text-nanny-text">
                       {event.title}
                     </Text>
                     {!!event.description && (
-                      <Text className="mt-1 text-sm text-[#7A726A]">{event.description}</Text>
+                      <Text className="mt-1 text-body text-nanny-muted">{event.description}</Text>
                     )}
                   </View>
 
@@ -684,9 +684,9 @@ export default function CalendarioScreen() {
                       borderRadius: 22,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      backgroundColor: hasNotification ? '#e5edf7' : '#ece6d9',
+                      backgroundColor: hasNotification ? '#EAE0F2' : '#FFFFFF',
                       borderWidth: 1.5,
-                      borderColor: hasNotification ? '#6d83a1' : '#ded6c7',
+                      borderColor: hasNotification ? '#654875' : '#E7DAEA',
                       shadowColor: '#000',
                       shadowOffset: { width: 0, height: 1 },
                       shadowOpacity: 0.08,
@@ -701,12 +701,12 @@ export default function CalendarioScreen() {
                     }
                   >
                     {isToggling ? (
-                      <ActivityIndicator size="small" color="#6d83a1" />
+                      <ActivityIndicator size="small" color="#654875" />
                     ) : (
                       <Ionicons
                         name={hasNotification ? 'notifications' : 'notifications-off-outline'}
                         size={20}
-                        color={hasNotification ? '#4a678f' : '#8A7F75'}
+                        color={hasNotification ? '#654875' : '#6E5D78'}
                       />
                     )}
                   </TouchableOpacity>}
@@ -726,7 +726,7 @@ export default function CalendarioScreen() {
           width: 56,
           height: 56,
           borderRadius: 28,
-          backgroundColor: '#6d83a1',
+          backgroundColor: '#654875',
           alignItems: 'center',
           justifyContent: 'center',
           shadowColor: '#000',

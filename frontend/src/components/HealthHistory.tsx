@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { fetchHistory, type HistoryItem, type HistoryKind } from '../api/history';
 import { useFamilySelection } from '../context/FamilySelectionContext';
+import { COLORS } from '../theme';
 
 // Historial médico cronológico de un niño (solo usuarios PRO).
 // Línea de tiempo con tarjetas por tipo, filtros por tipo y fecha, y paginación por cursor.
@@ -11,12 +12,12 @@ import { useFamilySelection } from '../context/FamilySelectionContext';
 const PAGE_SIZE = 20;
 
 const palette = {
-  text: '#302e2c',
-  muted: '#91877e',
-  blue: '#6d83a1',
-  line: '#e2d9cc',
-  chip: '#eee5d6',
-  chipBorder: '#ddd2c4',
+  text: COLORS.text,
+  muted: COLORS.muted,
+  blue: COLORS.primary,
+  line: COLORS.border,
+  chip: COLORS.surfaceAlt,
+  chipBorder: COLORS.border,
 };
 
 type KindStyle = { label: string; emoji: string; color: string; bg: string; border: string };
@@ -88,14 +89,14 @@ function HistoryCard({ item }: { item: HistoryItem }) {
       >
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
-            <Text className="mr-2 text-base">{style.emoji}</Text>
-            <Text style={{ color: style.color }} className="text-sm font-semibold">{style.label}</Text>
+            <Text className="mr-2 text-body">{style.emoji}</Text>
+            <Text style={{ color: style.color }} className="text-body font-semibold">{style.label}</Text>
           </View>
-          <Text style={{ color: palette.muted }} className="text-sm">{formatDate(item.date)}</Text>
+          <Text style={{ color: palette.muted }} className="text-body">{formatDate(item.date)}</Text>
         </View>
-        <Text style={{ color: palette.text }} className="mt-2 text-lg font-semibold">{itemTitle(item)}</Text>
+        <Text style={{ color: palette.text }} className="mt-2 text-subtitle font-semibold">{itemTitle(item)}</Text>
         {item.subtitle ? (
-          <Text style={{ color: palette.muted }} className="mt-1 text-sm">{item.subtitle}</Text>
+          <Text style={{ color: palette.muted }} className="mt-1 text-body">{item.subtitle}</Text>
         ) : null}
       </View>
     </View>
@@ -126,7 +127,7 @@ function Chip({
       style={{ backgroundColor: bg, borderColor: border }}
       className="mr-2 flex-row items-center rounded-full border px-4 py-2"
     >
-      <Text style={{ color }} className="text-sm font-semibold">{label}</Text>
+      <Text style={{ color }} className="text-body font-semibold">{label}</Text>
       {onClear && (
         <TouchableOpacity onPress={onClear} hitSlop={8} accessibilityLabel={`Quitar ${label}`} className="ml-2">
           <Ionicons name="close" size={14} color={color} />
@@ -151,8 +152,8 @@ function BlurredCard({ kind, titleWidth, subtitleWidth }: { kind: HistoryKind; t
       <View style={{ backgroundColor: style.bg, borderColor: style.border }} className="mb-4 ml-4 flex-1 rounded-2xl border p-4">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
-            <Text className="mr-2 text-base">{style.emoji}</Text>
-            <Text style={{ color: style.color }} className="text-sm font-semibold">{style.label}</Text>
+            <Text className="mr-2 text-body">{style.emoji}</Text>
+            <Text style={{ color: style.color }} className="text-body font-semibold">{style.label}</Text>
           </View>
           <View style={{ backgroundColor: style.border }} className="h-3 w-16 rounded-full" />
         </View>
@@ -168,12 +169,12 @@ export function HealthHistoryLocked({ onUpgrade }: { onUpgrade?: () => void }) {
   return (
     <View className="mb-8">
       <View className="mb-3 flex-row items-center">
-        <Text style={{ color: palette.muted }} className="text-base font-bold uppercase tracking-wider">
+        <Text style={{ color: palette.muted }} className="text-body font-semibold uppercase tracking-wider">
           Historial médico
         </Text>
         <View className="ml-2 flex-row items-center rounded-full bg-[#efeaf8] px-2 py-0.5">
           <Ionicons name="star" size={11} color="#8a6cc4" />
-          <Text style={{ color: '#8a6cc4' }} className="ml-1 text-xs font-bold">PRO</Text>
+          <Text style={{ color: '#8a6cc4' }} className="ml-1 text-caption font-semibold">PRO</Text>
         </View>
       </View>
 
@@ -191,14 +192,14 @@ export function HealthHistoryLocked({ onUpgrade }: { onUpgrade?: () => void }) {
           style={{ backgroundColor: 'rgba(247, 243, 236, 0.55)' }}
           className="absolute inset-0 items-center justify-center px-6"
         >
-          <View className="items-center rounded-3xl border border-[#ddd2c4] bg-[#f7f3ec] px-6 py-6">
+          <View className="items-center rounded-3xl border border-nanny-border bg-nanny-bg px-6 py-6">
             <View className="mb-3 h-12 w-12 items-center justify-center rounded-full bg-[#efeaf8]">
               <Ionicons name="lock-closed" size={22} color="#8a6cc4" />
             </View>
-            <Text style={{ color: palette.text }} className="text-center text-lg font-bold">
+            <Text style={{ color: palette.text }} className="text-center text-subtitle font-semibold">
               Función exclusiva para usuarios PRO
             </Text>
-            <Text style={{ color: palette.muted }} className="mt-2 text-center text-sm">
+            <Text style={{ color: palette.muted }} className="mt-2 text-center text-body">
               Actualiza a PRO para ver el historial médico completo: visitas, diagnósticos y tratamientos, con filtros por tipo y fecha.
             </Text>
             <TouchableOpacity
@@ -208,7 +209,7 @@ export function HealthHistoryLocked({ onUpgrade }: { onUpgrade?: () => void }) {
               className="mt-4 flex-row items-center rounded-full bg-[#8a6cc4] px-5 py-3"
             >
               <Ionicons name="star" size={16} color="#ffffff" />
-              <Text className="ml-2 text-base font-semibold text-white">Mejorar a PRO</Text>
+              <Text className="ml-2 text-body font-semibold text-white">Mejorar a PRO</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -290,7 +291,7 @@ export default function HealthHistory({ childId }: { childId: number }) {
 
   return (
     <View className="mb-8">
-      <Text style={{ color: palette.muted }} className="mb-3 text-base font-bold uppercase tracking-wider">
+      <Text style={{ color: palette.muted }} className="mb-3 text-body font-semibold uppercase tracking-wider">
         Historial médico
       </Text>
 
@@ -338,15 +339,15 @@ export default function HealthHistory({ childId }: { childId: number }) {
       {loading ? (
         <ActivityIndicator size="large" color={palette.blue} className="my-6" />
       ) : error && items.length === 0 ? (
-        <View className="items-center rounded-2xl bg-[#eee5d6] p-6">
-          <Text style={{ color: palette.muted }} className="text-base">No se pudo cargar el historial.</Text>
+        <View className="items-center rounded-2xl bg-nanny-surface p-6">
+          <Text style={{ color: palette.muted }} className="text-body">No se pudo cargar el historial.</Text>
           <TouchableOpacity onPress={loadFirstPage} className="mt-3">
-            <Text style={{ color: palette.blue }} className="text-base font-semibold">Reintentar</Text>
+            <Text style={{ color: palette.blue }} className="text-body font-semibold">Reintentar</Text>
           </TouchableOpacity>
         </View>
       ) : items.length === 0 ? (
-        <View className="items-center rounded-2xl bg-[#eee5d6] p-6">
-          <Text style={{ color: palette.muted }} className="text-base">No hay registros con estos filtros.</Text>
+        <View className="items-center rounded-2xl bg-nanny-surface p-6">
+          <Text style={{ color: palette.muted }} className="text-body">No hay registros con estos filtros.</Text>
         </View>
       ) : (
         <View>
@@ -361,15 +362,15 @@ export default function HealthHistory({ childId }: { childId: number }) {
             <TouchableOpacity
               onPress={loadMore}
               disabled={loadingMore}
-              className="ml-7 items-center rounded-2xl border border-[#ddd2c4] bg-[#f7f3ec] py-3"
+              className="ml-7 items-center rounded-2xl border border-nanny-border bg-nanny-bg py-3"
             >
               {loadingMore
                 ? <ActivityIndicator color={palette.blue} />
-                : <Text style={{ color: palette.blue }} className="text-base font-semibold">Cargar más</Text>}
+                : <Text style={{ color: palette.blue }} className="text-body font-semibold">Cargar más</Text>}
             </TouchableOpacity>
           )}
           {error && items.length > 0 && (
-            <Text style={{ color: palette.muted }} className="mt-2 text-center text-sm">
+            <Text style={{ color: palette.muted }} className="mt-2 text-center text-body">
               No se pudieron cargar más registros.
             </Text>
           )}

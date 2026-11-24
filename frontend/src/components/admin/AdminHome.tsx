@@ -30,14 +30,14 @@ export default function AdminHome({ adminId }: { adminId: number }) {
     navigation.navigate('Foro', { screen: 'AdminPanel', params: { tab }, initial: false });
 
   if (error) return <Text className="mt-12 text-center text-nanny-muted">{error}</Text>;
-  if (!summary) return <ActivityIndicator size="large" color="#6d83a1" style={{ marginTop: 48 }} />;
+  if (!summary) return <ActivityIndicator size="large" color="#654875" style={{ marginTop: 48 }} />;
 
   const count = <T extends { status: string }>(items: T[], status: string) =>
     items.filter((item) => item.status === status).length;
 
   return (
     <View>
-      <Text className="mb-3 text-base font-bold uppercase tracking-wider text-nanny-muted">Foro</Text>
+      <Text className="mb-3 text-body font-semibold uppercase tracking-wider text-nanny-muted">Foro</Text>
       <View className="mb-6 flex-row flex-wrap gap-3">
         <StatTile label="Hilos visibles" value={count(summary.threads, 'VISIBLE')} icon="chatbubbles-outline" />
         <StatTile label="Hilos eliminados" value={count(summary.threads, 'DELETED')} icon="trash-outline" alert />
@@ -51,13 +51,13 @@ export default function AdminHome({ adminId }: { adminId: number }) {
         <StatTile label="Reportes pendientes" value={count(summary.reports, 'PENDING')} icon="alert-circle-outline" alert />
       </View>
 
-      <Text className="mb-3 text-base font-bold uppercase tracking-wider text-nanny-muted">Usuarios</Text>
+      <Text className="mb-3 text-body font-semibold uppercase tracking-wider text-nanny-muted">Usuarios</Text>
       <View className="mb-6 flex-row flex-wrap gap-3">
         <StatTile label="Usuarios activos" value={count(summary.users, 'ACTIVE')} icon="people-outline" />
         <StatTile label="Usuarios bloqueados" value={count(summary.users, 'BLOCKED')} icon="ban-outline" alert />
       </View>
 
-      <Text className="mb-3 text-base font-bold uppercase tracking-wider text-nanny-muted">Acciones</Text>
+      <Text className="mb-3 text-body font-semibold uppercase tracking-wider text-nanny-muted">Acciones</Text>
       <ShortcutButton
         icon="shield-checkmark-outline"
         title="Moderar hilos"
@@ -100,9 +100,9 @@ function StatTile({
   const highlighted = alert && value > 0;
   return (
     <View style={{ width: '47%' }} className="rounded-2xl bg-nanny-card p-4">
-      <Ionicons name={icon} size={18} color={highlighted ? '#cc7a66' : '#6d83a1'} />
-      <Text className={`mt-2 text-3xl font-bold ${highlighted ? 'text-nanny-red' : 'text-nanny-text'}`}>{value}</Text>
-      <Text className="text-sm font-medium text-nanny-muted">{label}</Text>
+      <Ionicons name={icon} size={18} color={highlighted ? '#cc7a66' : '#654875'} />
+      <Text className={`mt-2 text-title font-bold ${highlighted ? 'text-nanny-red' : 'text-nanny-text'}`}>{value}</Text>
+      <Text className="text-body font-medium text-nanny-muted">{label}</Text>
     </View>
   );
 }
@@ -125,13 +125,13 @@ function ShortcutButton({
       accessibilityRole="button"
     >
       <View className="h-10 w-10 items-center justify-center rounded-full bg-nanny-blue/15">
-        <Ionicons name={icon} size={20} color="#6d83a1" />
+        <Ionicons name={icon} size={20} color="#654875" />
       </View>
       <View className="ml-4 flex-1">
-        <Text className="text-base font-semibold text-nanny-text">{title}</Text>
-        <Text className="text-sm text-nanny-muted">{subtitle}</Text>
+        <Text className="text-body font-semibold text-nanny-text">{title}</Text>
+        <Text className="text-body text-nanny-muted">{subtitle}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color="#808080" />
+      <Ionicons name="chevron-forward" size={18} color="#6E5D78" />
     </TouchableOpacity>
   );
 }

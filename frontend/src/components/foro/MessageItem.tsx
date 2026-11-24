@@ -41,17 +41,17 @@ export default function MessageItem({ message, depth = 0, availableWidth, userId
         <View className="mb-2 flex-row items-center">
           <ModeratableAuthor author={message.author} onBlocked={onAuthorBlocked} className="flex-row items-center">
             <AuthorAvatar author={message.author} size={28} />
-            <Text className="ml-2 text-sm font-semibold text-nanny-text">{message.author.name}</Text>
+            <Text className="ml-2 text-body font-semibold text-nanny-text">{message.author.name}</Text>
             <ProBadge author={message.author} />
           </ModeratableAuthor>
-          <Text className="ml-auto text-xs text-nanny-muted">{timeAgo(message.createdAt)}</Text>
+          <Text className="ml-auto text-caption text-nanny-muted">{timeAgo(message.createdAt)}</Text>
         </View>
-        <Text className="text-base leading-6 text-nanny-text">{message.content}</Text>
+        <Text className="text-body leading-6 text-nanny-text">{message.content}</Text>
         <View className="mt-3 flex-row items-center">
           <LikeButton message={message} userId={userId} />
           <TouchableOpacity onPress={() => onReply(message)} className="ml-5 flex-row items-center" accessibilityRole="button">
-            <Ionicons name="return-down-forward" size={16} color="#6d83a1" />
-            <Text className="ml-1 text-sm text-nanny-blue">Responder</Text>
+            <Ionicons name="return-down-forward" size={16} color="#654875" />
+            <Text className="ml-1 text-body text-nanny-blue">Responder</Text>
           </TouchableOpacity>
           {message.author.id !== userId && (
             <TouchableOpacity
@@ -64,7 +64,7 @@ export default function MessageItem({ message, depth = 0, availableWidth, userId
               <Ionicons
                 name={message.reportedByMe ? "flag" : "flag-outline"}
                 size={16}
-                color={message.reportedByMe ? "#cc7a66" : "#808080"}
+                color={message.reportedByMe ? "#cc7a66" : "#6E5D78"}
               />
             </TouchableOpacity>
           )}
@@ -85,7 +85,7 @@ export default function MessageItem({ message, depth = 0, availableWidth, userId
               accessibilityRole="button"
               accessibilityLabel="Eliminar mensaje"
             >
-              <Ionicons name="trash-outline" size={16} color="#808080" />
+              <Ionicons name="trash-outline" size={16} color="#6E5D78" />
             </TouchableOpacity>
           )}
         </View>

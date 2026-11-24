@@ -18,27 +18,27 @@ export default function ThreadCard({ thread, onPress, onAuthorBlocked }: Props) 
       <View className="mb-3 flex-row items-center">
         <ModeratableAuthor author={thread.owner} onBlocked={onAuthorBlocked} className="flex-row items-center">
           <AuthorAvatar author={thread.owner} size={32} />
-          <Text className="ml-2 text-sm font-semibold text-nanny-text">{thread.owner.name}</Text>
+          <Text className="ml-2 text-body font-semibold text-nanny-text">{thread.owner.name}</Text>
           <ProBadge author={thread.owner} />
         </ModeratableAuthor>
-        <Text className="ml-auto text-xs text-nanny-muted">{timeAgo(thread.createdAt)}</Text>
+        <Text className="ml-auto text-caption text-nanny-muted">{timeAgo(thread.createdAt)}</Text>
       </View>
 
-      <Text className="mb-1 text-lg font-semibold text-nanny-text">{thread.title}</Text>
-      <Text className="text-sm text-nanny-muted" numberOfLines={2}>
+      <Text className="mb-1 text-subtitle font-semibold text-nanny-text">{thread.title}</Text>
+      <Text className="text-body text-nanny-muted" numberOfLines={2}>
         {thread.content}
       </Text>
 
       <View className="mt-4 flex-row items-center">
         <View className="flex-1 flex-row flex-wrap gap-2">
           {thread.tags.map((tag) => (
-            <Text key={tag.id} className="rounded-full bg-nanny-bg px-3 py-1 text-xs text-nanny-blue">
+            <Text key={tag.id} className="rounded-full bg-nanny-bg px-3 py-1 text-caption text-nanny-blue">
               #{tag.name}
             </Text>
           ))}
         </View>
-        <Ionicons name="chatbubble-outline" size={16} color="#808080" />
-        <Text className="ml-1 text-sm text-nanny-muted">{thread.messageCount}</Text>
+        <Ionicons name="chatbubble-outline" size={16} color="#6E5D78" />
+        <Text className="ml-1 text-body text-nanny-muted">{thread.messageCount}</Text>
       </View>
     </TouchableOpacity>
   );

@@ -19,11 +19,12 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getUser, updateUser, type ProfileUpdate, type ProfileUser } from '../api/user';
 import { applyNotificationPreferences } from '../services/notificationService';
+import { COLORS, TYPOGRAPHY } from '../theme';
 
-const BLUE = '#6d83a1';
-const MUTED = '#8a7f75';
-const RED = '#cc7a66';
-const BORDER = '#ddd2c4';
+const BLUE = COLORS.primary;
+const MUTED = COLORS.muted;
+const RED = COLORS.red;
+const BORDER = COLORS.border;
 
 // Solo números y símbolos telefónicos (+ ( ) - espacios), con entre 9 y 15 dígitos (máximo del estándar E.164)
 const PHONE_PATTERN = /^[0-9+()\s-]+$/;
@@ -197,15 +198,15 @@ export default function ProfileScreen() {
       {/* Cabecera */}
       <View
         style={{ paddingTop: insets.top + 12 }}
-        className="flex-row items-center justify-between border-b border-[#ded6ca] px-6 pb-4"
+        className="flex-row items-center justify-between border-b border-nanny-border px-6 pb-4"
       >
         <Pressable onPress={cancel} className="w-20 flex-row items-center" accessibilityRole="button" accessibilityLabel="Volver sin guardar">
           <Ionicons name="chevron-back" size={20} color={BLUE} />
-          <Text className="ml-1 text-base text-nanny-blue">Volver</Text>
+          <Text className="ml-1 text-body text-nanny-blue">Volver</Text>
         </Pressable>
-        <Text className="text-lg font-semibold text-nanny-text">Mi perfil</Text>
+        <Text className="text-subtitle font-semibold text-nanny-text">Mi perfil</Text>
         <Pressable onPress={save} disabled={saving || !form} className="w-20 items-end" accessibilityRole="button">
-          {saving ? <ActivityIndicator size="small" color="#65a882" /> : <Text className="text-base font-semibold text-nanny-green">Guardar</Text>}
+          {saving ? <ActivityIndicator size="small" color="#65a882" /> : <Text className="text-body font-semibold text-nanny-green">Guardar</Text>}
         </Pressable>
       </View>
 
@@ -213,12 +214,12 @@ export default function ProfileScreen() {
         {savedMessage && (
           <View className="mb-4 flex-row items-center rounded-2xl bg-nanny-green/15 px-4 py-3">
             <Ionicons name="checkmark-circle" size={18} color="#65a882" />
-            <Text className="ml-2 text-sm font-semibold text-nanny-green">Perfil actualizado correctamente</Text>
+            <Text className="ml-2 text-body font-semibold text-nanny-green">Perfil actualizado correctamente</Text>
           </View>
         )}
         {errors.form && (
           <View className="mb-4 rounded-2xl bg-nanny-red/15 px-4 py-3">
-            <Text className="text-sm text-nanny-red">{errors.form}</Text>
+            <Text className="text-body text-nanny-red">{errors.form}</Text>
           </View>
         )}
 
@@ -268,7 +269,7 @@ export default function ProfileScreen() {
                     accessibilityRole="radio"
                     accessibilityState={{ selected }}
                   >
-                    <Text className={`text-base font-semibold ${selected ? 'text-white' : 'text-nanny-blue'}`}>{label}</Text>
+                    <Text className={`text-body font-semibold ${selected ? 'text-white' : 'text-nanny-blue'}`}>{label}</Text>
                   </Pressable>
                 );
               })}
@@ -297,13 +298,13 @@ export default function ProfileScreen() {
                   {index > 0 && <Divider />}
                   <View className="flex-row items-center px-5 py-4">
                     <View className="flex-1 pr-3">
-                      <Text className="text-base font-medium text-nanny-text">{option.title}</Text>
-                      <Text style={{ color: MUTED }} className="mt-0.5 text-xs">{option.subtitle}</Text>
+                      <Text className="text-body font-medium text-nanny-text">{option.title}</Text>
+                      <Text style={{ color: MUTED }} className="mt-0.5 text-caption">{option.subtitle}</Text>
                     </View>
                     <Switch
                       value={form[option.key]}
                       onValueChange={(v) => setField(option.key, v)}
-                      trackColor={{ false: '#ded6c7', true: BLUE }}
+                      trackColor={{ false: '#E7DAEA', true: BLUE }}
                       accessibilityLabel={option.title}
                     />
                   </View>
@@ -319,7 +320,7 @@ export default function ProfileScreen() {
           className="mt-8 items-center rounded-2xl border bg-nanny-card py-4"
           accessibilityRole="button"
         >
-          <Text style={{ color: MUTED }} className="text-base font-medium">Cancelar cambios</Text>
+          <Text style={{ color: MUTED }} className="text-body font-medium">Cancelar cambios</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -330,7 +331,7 @@ export default function ProfileScreen() {
 function SectionLabel({ children, spaced = false }: { children: string; spaced?: boolean }) {
   return (
     <Text
-      style={{ color: MUTED, fontSize: 13, fontWeight: '700', letterSpacing: 0.8 }}
+      style={{ color: MUTED, fontSize: TYPOGRAPHY.caption.fontSize, fontWeight: '600', letterSpacing: 0.8 }}
       className={`mb-2 uppercase ${spaced ? 'mt-6' : 'mt-2'}`}
     >
       {children}
@@ -358,10 +359,10 @@ function TextField({ label, value, onChangeText, error }: { label: string; value
         value={value}
         onChangeText={onChangeText}
         style={{ borderColor: error ? RED : BORDER }}
-        className="rounded-2xl border bg-nanny-card px-4 py-3 text-base text-nanny-text"
+        className="rounded-2xl border bg-nanny-card px-4 py-3 text-body text-nanny-text"
         accessibilityLabel={label}
       />
-      {error && <Text className="mt-1 text-xs text-nanny-red">{error}</Text>}
+      {error && <Text className="mt-1 text-caption text-nanny-red">{error}</Text>}
     </View>
   );
 }
@@ -387,17 +388,17 @@ function ContactRow({
     <View className="flex-row items-center px-5 py-4">
       <Ionicons name={icon} size={22} color={editable ? BLUE : MUTED} />
       <View className="ml-4 flex-1">
-        <Text style={{ color: MUTED }} className="text-xs">{label}</Text>
+        <Text style={{ color: MUTED }} className="text-caption">{label}</Text>
         <TextInput
           value={value}
           onChangeText={onChangeText}
           editable={editable}
           keyboardType={keyboardType}
           style={{ borderBottomWidth: 1, borderBottomColor: error ? RED : editable ? BLUE : BORDER, paddingVertical: 4 }}
-          className={`text-base ${editable ? 'text-nanny-text' : 'text-nanny-muted'}`}
+          className={`text-body ${editable ? 'text-nanny-text' : 'text-nanny-muted'}`}
           accessibilityLabel={label}
         />
-        {error && <Text className="mt-1 text-xs text-nanny-red">{error}</Text>}
+        {error && <Text className="mt-1 text-caption text-nanny-red">{error}</Text>}
       </View>
     </View>
   );

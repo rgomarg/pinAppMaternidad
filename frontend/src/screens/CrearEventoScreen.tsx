@@ -495,55 +495,55 @@ export default function CrearEventoScreen() {
     `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f7f3ec' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8EFF5' }}>
       {/* Cabecera superior idéntica al diseño */}
-      <View className="flex-row items-center justify-between border-b border-[#e0d9c9] px-6 py-4">
+      <View className="flex-row items-center justify-between border-b border-nanny-border px-6 py-4">
         <TouchableOpacity onPress={() => navigation.goBack()} disabled={saving}>
-          <Text className="text-base font-medium text-[#8A7F75]">Cancelar</Text>
+          <Text className="text-body font-medium text-nanny-muted">Cancelar</Text>
         </TouchableOpacity>
-        <Text className="text-lg font-bold text-[#2B2B2B]">Añadir evento</Text>
+        <Text className="text-subtitle font-semibold text-nanny-text">Añadir evento</Text>
         <TouchableOpacity onPress={handleSave} disabled={saving}>
           {saving ? (
-            <ActivityIndicator size="small" color="#6d83a1" />
+            <ActivityIndicator size="small" color="#654875" />
           ) : (
-            <Text className="text-base font-semibold text-[#6d83a1]">Guardar</Text>
+            <Text className="text-body font-semibold text-nanny-blue">Guardar</Text>
           )}
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         {/* Tarjeta de selección de hijo */}
-        <View className="mb-6 rounded-3xl border border-[#e0d9c9] bg-[#ece6d9] p-4">
+        <View className="mb-6 rounded-3xl border border-nanny-border bg-nanny-card p-4">
           <View className="flex-row items-center">
-            <View className="mr-3.5 h-12 w-12 items-center justify-center rounded-full bg-[#6d83a1]/20">
-              <Text className="text-xl font-bold text-[#6d83a1]">
+            <View className="mr-3.5 h-12 w-12 items-center justify-center rounded-full bg-nanny-blue/20">
+              <Text className="text-subtitle font-semibold text-nanny-blue">
                 {selectedChild?.name ? selectedChild.name.charAt(0).toUpperCase() : '?'}
               </Text>
             </View>
             <View className="flex-1">
-              <Text className="text-base font-bold text-[#2B2B2B]">
+              <Text className="text-body font-semibold text-nanny-text">
                 {selectedChild?.name ?? 'Selecciona un hijo/a'}
               </Text>
-              <Text className="text-xs text-[#8A7F75]">El evento se añadirá a su calendario de salud.</Text>
+              <Text className="text-caption text-nanny-muted">El evento se añadirá a su calendario de salud.</Text>
             </View>
           </View>
 
           {/* Selector de hijos si hay más de 1 */}
           {children.length > 1 && (
-            <View className="mt-3 flex-row flex-wrap gap-2 border-t border-[#ded6c7] pt-3">
+            <View className="mt-3 flex-row flex-wrap gap-2 border-t border-nanny-border pt-3">
               {children.map((c) => (
                 <TouchableOpacity
                   key={c.id}
                   onPress={() => setSelectedChildId(c.id)}
                   className={`rounded-full px-3 py-1 border ${
                     selectedChildId === c.id
-                      ? 'border-[#6d83a1] bg-[#6d83a1]'
-                      : 'border-[#ddd5c6] bg-[#f7f3ec]'
+                      ? 'border-nanny-blue bg-nanny-blue'
+                      : 'border-nanny-border bg-nanny-bg'
                   }`}
                 >
                   <Text
-                    className={`text-xs font-semibold ${
-                      selectedChildId === c.id ? 'text-white' : 'text-[#5B5149]'
+                    className={`text-caption font-semibold ${
+                      selectedChildId === c.id ? 'text-white' : 'text-nanny-muted'
                     }`}
                   >
                     {c.name}
@@ -555,7 +555,7 @@ export default function CrearEventoScreen() {
         </View>
 
         {/* Tipo de evento (Cuadrícula 2x2 como en la imagen) */}
-        <Text className="mb-2.5 text-sm font-semibold text-[#8A7F75]">Tipo de evento *</Text>
+        <Text className="mb-2.5 text-body font-semibold text-nanny-muted">Tipo de evento *</Text>
         <View className="mb-6 flex-row flex-wrap justify-between gap-y-3">
           {EVENT_TYPES.map((t) => {
             const isSelected = eventType === t.id;
@@ -566,13 +566,13 @@ export default function CrearEventoScreen() {
                 className={`w-[48%] flex-row items-center rounded-2xl border p-4 ${
                   isSelected
                     ? 'border-[#cc7a66] bg-[#faece7]'
-                    : 'border-[#e0d9c9] bg-[#ece6d9]'
+                    : 'border-nanny-border bg-nanny-card'
                 }`}
               >
-                <Text className="mr-2.5 text-xl">{t.emoji}</Text>
+                <Text className="mr-2.5 text-body">{t.emoji}</Text>
                 <Text
-                  className={`text-base ${
-                    isSelected ? 'font-bold text-[#cc7a66]' : 'font-medium text-[#5B5149]'
+                  className={`text-body ${
+                    isSelected ? 'font-semibold text-[#cc7a66]' : ' text-nanny-muted'
                   }`}
                 >
                   {t.label}
@@ -585,23 +585,23 @@ export default function CrearEventoScreen() {
         {/* Selector Desplegable de Síntomas (Solo cuando es CONDITION) */}
         {eventType === 'CONDITION' && (
           <View className="mb-6">
-            <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">
+            <Text className="mb-2 text-body font-semibold text-nanny-muted">
               Síntomas del niño/a *
             </Text>
 
             {/* Botón que despliega la lista */}
             <TouchableOpacity
               onPress={() => setIsSymptomsDropdownOpen((prev) => !prev)}
-              className="flex-row items-center justify-between rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5"
+              className="flex-row items-center justify-between rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5"
             >
               <View className="flex-row items-center flex-1 pr-2">
-                <Text className="text-xl mr-2.5">🤒</Text>
+                <Text className="text-body mr-2.5">🤒</Text>
                 <Text
                   numberOfLines={1}
-                  className={`text-base ${
+                  className={`text-body ${
                     selectedSymptoms.length > 0
-                      ? 'font-semibold text-[#2B2B2B]'
-                      : 'text-[#9a928b]'
+                      ? 'font-semibold text-nanny-text'
+                      : 'text-nanny-subtle'
                   }`}
                 >
                   {selectedSymptoms.length > 0
@@ -614,26 +614,26 @@ export default function CrearEventoScreen() {
               <Ionicons
                 name={isSymptomsDropdownOpen ? 'chevron-up' : 'chevron-down'}
                 size={22}
-                color="#5B5149"
+                color="#6E5D78"
               />
             </TouchableOpacity>
 
             {/* Menú desplegable con lista scrolleable y buscador */}
             {isSymptomsDropdownOpen && (
-              <View className="mt-2 rounded-2xl border border-[#ded5c5] bg-[#fbf8f3] p-3 shadow-sm">
+              <View className="mt-2 rounded-2xl border border-nanny-border bg-nanny-bg p-3 shadow-sm">
                 {/* Buscador rápido de síntomas */}
-                <View className="mb-2.5 flex-row items-center rounded-xl border border-[#e0d9c9] bg-[#ece6d9] px-3 py-2">
-                  <Ionicons name="search" size={16} color="#8A7F75" style={{ marginRight: 6 }} />
+                <View className="mb-2.5 flex-row items-center rounded-xl border border-nanny-border bg-nanny-card px-3 py-2">
+                  <Ionicons name="search" size={16} color="#6E5D78" style={{ marginRight: 6 }} />
                   <TextInput
                     value={symptomSearch}
                     onChangeText={setSymptomSearch}
                     placeholder="Buscar síntoma (ej. fiebre, tos...)"
-                    placeholderTextColor="#9a928b"
-                    className="flex-1 text-sm text-[#2B2B2B] p-0"
+                    placeholderTextColor="#8F8296"
+                    className="flex-1 text-body text-nanny-text p-0"
                   />
                   {symptomSearch.length > 0 && (
                     <TouchableOpacity onPress={() => setSymptomSearch('')}>
-                      <Ionicons name="close-circle" size={16} color="#8A7F75" />
+                      <Ionicons name="close-circle" size={16} color="#6E5D78" />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -657,10 +657,10 @@ export default function CrearEventoScreen() {
                         }`}
                       >
                         <View className="flex-row items-center flex-1 pr-2">
-                          <Text className="mr-2 text-lg">{s.emoji}</Text>
+                          <Text className="mr-2 text-body">{s.emoji}</Text>
                           <Text
-                            className={`text-sm ${
-                              isSel ? 'font-bold text-[#cc7a66]' : 'text-[#2B2B2B]'
+                            className={`text-body ${
+                              isSel ? 'font-semibold text-[#cc7a66]' : 'text-nanny-text'
                             }`}
                           >
                             {s.label}
@@ -669,7 +669,7 @@ export default function CrearEventoScreen() {
                         {isSel ? (
                           <Ionicons name="checkmark-circle" size={20} color="#cc7a66" />
                         ) : (
-                          <Ionicons name="add-circle-outline" size={20} color="#b4a99a" />
+                          <Ionicons name="add-circle-outline" size={20} color="#D5C3DD" />
                         )}
                       </TouchableOpacity>
                     );
@@ -681,12 +681,12 @@ export default function CrearEventoScreen() {
             {/* SECCIÓN ABAJO: Síntomas seleccionados */}
             <View className="mt-4">
               <View className="mb-2 flex-row items-center justify-between">
-                <Text className="text-xs font-semibold uppercase tracking-wider text-[#8A7F75]">
+                <Text className="text-caption font-semibold uppercase tracking-wider text-nanny-muted">
                   Síntomas seleccionados ({selectedSymptoms.length})
                 </Text>
                 {selectedSymptoms.length > 0 && (
                   <TouchableOpacity onPress={() => setSelectedSymptoms([])}>
-                    <Text className="text-xs font-medium text-[#cc7a66]">
+                    <Text className="text-caption font-medium text-[#cc7a66]">
                       Borrar todos
                     </Text>
                   </TouchableOpacity>
@@ -694,8 +694,8 @@ export default function CrearEventoScreen() {
               </View>
 
               {selectedSymptoms.length === 0 ? (
-                <View className="rounded-2xl border border-dashed border-[#d8cfbe] bg-[#f2ecdf]/50 p-4 items-center">
-                  <Text className="text-xs text-[#8A7F75] text-center">
+                <View className="rounded-2xl border border-dashed border-nanny-border-strong bg-nanny-bg/50 p-4 items-center">
+                  <Text className="text-caption text-nanny-muted text-center">
                     Ningún síntoma seleccionado todavía. Toca la lista desplegable de arriba para elegir.
                   </Text>
                 </View>
@@ -709,8 +709,8 @@ export default function CrearEventoScreen() {
                         key={item.id}
                         className="flex-row items-center rounded-2xl border border-[#cc7a66] bg-[#faece7] pl-3 pr-2 py-1.5"
                       >
-                        <Text className="mr-1.5 text-base">{item.emoji}</Text>
-                        <Text className="mr-2 text-sm font-bold text-[#cc7a66]">
+                        <Text className="mr-1.5 text-body">{item.emoji}</Text>
+                        <Text className="mr-2 text-body font-semibold text-[#cc7a66]">
                           {item.label}
                         </Text>
                         <TouchableOpacity
@@ -731,7 +731,7 @@ export default function CrearEventoScreen() {
         {/* Campo Título / Nombre (No necesario en Síntoma porque se eligen de la lista) */}
         {eventType !== 'CONDITION' && (
           <>
-            <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">
+            <Text className="mb-2 text-body font-semibold text-nanny-muted">
               {eventType === 'MEDICINE'
                 ? 'Nombre del medicamento *'
                 : eventType === 'VACCINE'
@@ -750,8 +750,8 @@ export default function CrearEventoScreen() {
                   ? 'Ej. Revisión de los 6 meses'
                   : 'Ej. Resfriado común'
               }
-              placeholderTextColor="#9a928b"
-              className="mb-6 rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5 text-base text-[#2B2B2B]"
+              placeholderTextColor="#8F8296"
+              className="mb-6 rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5 text-body text-nanny-text"
             />
           </>
         )}
@@ -759,7 +759,7 @@ export default function CrearEventoScreen() {
         {/* Campos adicionales para VACUNA */}
         {eventType === 'VACCINE' && (
           <View className="mb-6">
-            <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">Estado de la vacuna *</Text>
+            <Text className="mb-2 text-body font-semibold text-nanny-muted">Estado de la vacuna *</Text>
             <View className="flex-row gap-3">
               {[false, true].map((applied) => {
                 const selected = vaccineApplied === applied;
@@ -777,13 +777,13 @@ export default function CrearEventoScreen() {
                     }}
                     className={`flex-1 items-center rounded-2xl border py-3 ${
                       selected
-                        ? 'border-[#6d83a1] bg-[#dce7f1]'
-                        : 'border-[#e0d9c9] bg-[#ece6d9]'
+                        ? 'border-nanny-blue bg-nanny-soft'
+                        : 'border-nanny-border bg-nanny-card'
                     }`}
                   >
                     <Text
-                      className={`text-sm font-semibold ${
-                        selected ? 'text-[#6d83a1]' : 'text-[#8A7F75]'
+                      className={`text-body font-semibold ${
+                        selected ? 'text-nanny-blue' : 'text-nanny-muted'
                       }`}
                     >
                       {applied ? 'Ya aplicada' : 'Pendiente'}
@@ -801,13 +801,13 @@ export default function CrearEventoScreen() {
             <View className="mb-6 flex-row gap-3">
               <View className="flex-1">
                 <View className="mb-2 flex-row items-center">
-                  <Text className="text-sm font-semibold text-[#8A7F75]">Dosis *</Text>
+                  <Text className="text-body font-semibold text-nanny-muted">Dosis *</Text>
                   <TouchableOpacity
                     onPress={() => setShowDoseTip((v) => !v)}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     className="ml-1.5"
                   >
-                    <Ionicons name="information-circle-outline" size={18} color="#8A7F75" />
+                    <Ionicons name="information-circle-outline" size={18} color="#6E5D78" />
                   </TouchableOpacity>
                 </View>
                 <TextInput
@@ -817,26 +817,26 @@ export default function CrearEventoScreen() {
                     setShowDoseTip(false);
                   }}
                   placeholder="Ej. 2.5 ml"
-                  placeholderTextColor="#9a928b"
-                  className="rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5 text-base text-[#2B2B2B]"
+                  placeholderTextColor="#8F8296"
+                  className="rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5 text-body text-nanny-text"
                 />
                 {showDoseTip && (
-                  <View className="mt-2 rounded-xl bg-[#2B2B2B] px-3 py-2">
-                    <Text className="text-xs text-white">
+                  <View className="mt-2 rounded-xl bg-nanny-text px-3 py-2">
+                    <Text className="text-caption text-white">
                       Indica la cantidad por toma, con su unidad. Ej: 2.5 ml, 1 comprimido, 5 gotas.
                     </Text>
                   </View>
                 )}
               </View>
               <View className="flex-1">
-                <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">Intervalo (horas)</Text>
+                <Text className="mb-2 text-body font-semibold text-nanny-muted">Intervalo (horas)</Text>
                 <TextInput
                   value={intervalHours}
                   onChangeText={setIntervalHours}
                   keyboardType="numeric"
                   placeholder="Ej. 8"
-                  placeholderTextColor="#9a928b"
-                  className="rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5 text-base text-[#2B2B2B]"
+                  placeholderTextColor="#8F8296"
+                  className="rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5 text-body text-nanny-text"
                 />
               </View>
             </View>
@@ -846,7 +846,7 @@ export default function CrearEventoScreen() {
         {/* Fila Fecha y Hora (igual a la imagen) */}
         <View className="mb-6 flex-row gap-3">
           <View className="flex-1">
-            <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">
+            <Text className="mb-2 text-body font-semibold text-nanny-muted">
               {eventType === 'MEDICINE'
                 ? 'Fecha de inicio *'
                 : eventType === 'VACCINE'
@@ -865,24 +865,24 @@ export default function CrearEventoScreen() {
                     : undefined;
                 openDateModal(date, 'date', handleDateChange, setShowDatePicker, maxDate);
               }}
-              className="flex-row items-center justify-between rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5"
+              className="flex-row items-center justify-between rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5"
             >
-              <Text className="text-base text-[#2B2B2B]">{formatDateStr(date)}</Text>
-              <Ionicons name="calendar-outline" size={20} color="#2B2B2B" />
+              <Text className="text-body text-nanny-text">{formatDateStr(date)}</Text>
+              <Ionicons name="calendar-outline" size={20} color="#2D1E36" />
             </TouchableOpacity>
           </View>
 
           <View className="flex-1">
-            <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">Hora</Text>
+            <Text className="mb-2 text-body font-semibold text-nanny-muted">Hora</Text>
             <TouchableOpacity
               onPress={() => {
                 const maxDate = eventType === 'VACCINE' && vaccineApplied ? new Date() : undefined;
                 openDateModal(date, 'time', handleTimeChange, setShowTimePicker, maxDate);
               }}
-              className="flex-row items-center justify-between rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5"
+              className="flex-row items-center justify-between rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5"
             >
-              <Text className="text-base text-[#2B2B2B]">{formatTimeStr(date)}</Text>
-              <Ionicons name="time-outline" size={20} color="#2B2B2B" />
+              <Text className="text-body text-nanny-text">{formatTimeStr(date)}</Text>
+              <Ionicons name="time-outline" size={20} color="#2D1E36" />
             </TouchableOpacity>
           </View>
         </View>
@@ -921,7 +921,7 @@ export default function CrearEventoScreen() {
         {eventType === 'MEDICINE' && (
           <View className="mb-6">
             <View className="mb-2 flex-row items-center justify-between">
-              <Text className="text-sm font-semibold text-[#8A7F75]">
+              <Text className="text-body font-semibold text-nanny-muted">
                 Fecha y hora de fin (opcional)
               </Text>
               
@@ -938,11 +938,11 @@ export default function CrearEventoScreen() {
                       setShowEndDatePicker,
                     )
                   }
-                  className="flex-row items-center justify-between rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5"
+                  className="flex-row items-center justify-between rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5"
                 >
                   <Text
-                    className={`text-base ${
-                      endDate ? 'text-[#2B2B2B]' : 'text-[#9a928b]'
+                    className={`text-body ${
+                      endDate ? 'text-nanny-text' : 'text-nanny-subtle'
                     }`}
                   >
                     {endDate ? formatDateStr(endDate) : 'dd/mm/aaaa'}
@@ -950,7 +950,7 @@ export default function CrearEventoScreen() {
                   <Ionicons
                     name="calendar-outline"
                     size={20}
-                    color={endDate ? '#2B2B2B' : '#9a928b'}
+                    color={endDate ? '#2D1E36' : '#8F8296'}
                   />
                 </TouchableOpacity>
               </View>
@@ -965,11 +965,11 @@ export default function CrearEventoScreen() {
                       setShowEndTimePicker,
                     )
                   }
-                  className="flex-row items-center justify-between rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3.5"
+                  className="flex-row items-center justify-between rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5"
                 >
                   <Text
-                    className={`text-base ${
-                      endDate ? 'text-[#2B2B2B]' : 'text-[#9a928b]'
+                    className={`text-body ${
+                      endDate ? 'text-nanny-text' : 'text-nanny-subtle'
                     }`}
                   >
                     {endDate ? formatTimeStr(endDate) : '--:--'}
@@ -977,12 +977,12 @@ export default function CrearEventoScreen() {
                   <Ionicons
                     name="time-outline"
                     size={20}
-                    color={endDate ? '#2B2B2B' : '#9a928b'}
+                    color={endDate ? '#2D1E36' : '#8F8296'}
                   />
                 </TouchableOpacity>
               </View>
             </View>
-            <Text className="mt-1.5 text-xs text-[#8A7F75]">
+            <Text className="mt-1.5 text-caption text-nanny-muted">
               Déjalo en blanco si se trata de un tratamiento continuo o crónico.
             </Text>
 
@@ -1015,55 +1015,55 @@ export default function CrearEventoScreen() {
         {/* Notas para Evento / Instrucciones para Medicamento / Notas para Síntoma */}
         {eventType === 'MEDICINE' ? (
           <View className="mb-6">
-            <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">Instrucciones</Text>
+            <Text className="mb-2 text-body font-semibold text-nanny-muted">Instrucciones</Text>
             <TextInput
               value={instructions}
               onChangeText={setInstructions}
               placeholder="Ej. Tomar después de las comidas o con abundante agua"
-              placeholderTextColor="#9a928b"
+              placeholderTextColor="#8F8296"
               multiline
               numberOfLines={3}
               style={{ minHeight: 80, textAlignVertical: 'top' }}
-              className="rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3 text-base text-[#2B2B2B]"
+              className="rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3 text-body text-nanny-text"
             />
           </View>
         ) : eventType === 'CONDITION' ? (
           <View className="mb-6">
-            <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">Notas sobre los síntomas</Text>
+            <Text className="mb-2 text-body font-semibold text-nanny-muted">Notas sobre los síntomas</Text>
             <TextInput
               value={notes}
               onChangeText={setNotes}
               placeholder="Describe lo que quieras: intensidad, temperatura, comportamiento, indicaciones..."
-              placeholderTextColor="#9a928b"
+              placeholderTextColor="#8F8296"
               multiline
               numberOfLines={4}
               style={{ minHeight: 100, textAlignVertical: 'top' }}
-              className="rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3 text-base text-[#2B2B2B]"
+              className="rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3 text-body text-nanny-text"
             />
           </View>
         ) : eventType !== 'VACCINE' ? (
           <View className="mb-6">
-            <Text className="mb-2 text-sm font-semibold text-[#8A7F75]">Notas</Text>
+            <Text className="mb-2 text-body font-semibold text-nanny-muted">Notas</Text>
             <TextInput
               value={notes}
               onChangeText={setNotes}
               placeholder="Añade indicaciones o información relevante"
-              placeholderTextColor="#9a928b"
+              placeholderTextColor="#8F8296"
               multiline
               numberOfLines={4}
               style={{ minHeight: 100, textAlignVertical: 'top' }}
-              className="rounded-2xl border border-[#e0d9c9] bg-[#ece6d9] px-4 py-3 text-base text-[#2B2B2B]"
+              className="rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3 text-body text-nanny-text"
             />
           </View>
         ) : null}
 
         {/* Control de Notificaciones (No disponible para Síntomas) */}
         {eventType !== 'CONDITION' && (
-          <View className="mb-8 rounded-3xl border border-[#e0d9c9] bg-[#ece6d9] p-5">
+          <View className="mb-8 rounded-3xl border border-nanny-border bg-nanny-card p-5">
             <View className="flex-row items-center justify-between">
               <View className="flex-1 pr-3">
-                <Text className="text-base font-bold text-[#2B2B2B]">Recordatorio</Text>
-                <Text className="text-xs text-[#8A7F75]">
+                <Text className="text-body font-semibold text-nanny-text">Recordatorio</Text>
+                <Text className="text-caption text-nanny-muted">
                   {eventType === 'MEDICINE'
                     ? 'Aviso para la toma según la pauta'
                     : 'Recibe una alerta en tu dispositivo'}
@@ -1072,13 +1072,13 @@ export default function CrearEventoScreen() {
               <Switch
                 value={enableNotification}
                 onValueChange={handleToggleNotification}
-                trackColor={{ false: '#ded6c7', true: '#6d83a1' }}
+                trackColor={{ false: '#E7DAEA', true: '#654875' }}
               />
             </View>
 
             {enableNotification && (
-              <View className="mt-4 border-t border-[#ded6c7] pt-4">
-                <Text className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-[#8A7F75]">
+              <View className="mt-4 border-t border-nanny-border pt-4">
+                <Text className="mb-2.5 text-caption font-semibold uppercase tracking-wider text-nanny-muted">
                   Antelación del aviso
                 </Text>
                 <View className="flex-row flex-wrap gap-2">
@@ -1090,13 +1090,13 @@ export default function CrearEventoScreen() {
                         onPress={() => setAdvanceMinutes(item.minutes)}
                         className={`rounded-full px-3 py-1.5 border ${
                           selected
-                            ? 'border-[#6d83a1] bg-[#6d83a1]'
-                            : 'border-[#ddd5c6] bg-[#f7f3ec]'
+                            ? 'border-nanny-blue bg-nanny-blue'
+                            : 'border-nanny-border bg-nanny-bg'
                         }`}
                       >
                         <Text
-                          className={`text-xs font-medium ${
-                            selected ? 'text-white' : 'text-[#5B5149]'
+                          className={`text-caption font-medium ${
+                            selected ? 'text-white' : 'text-nanny-muted'
                           }`}
                         >
                           {item.label}
@@ -1107,7 +1107,7 @@ export default function CrearEventoScreen() {
                 </View>
 
                 {eventType === 'MEDICINE' && (
-                  <Text className="mt-3 text-xs italic text-[#7A726A]">
+                  <Text className="mt-3 text-caption italic text-nanny-muted">
                     ℹ️ Se programará la alerta para la próxima toma. Una vez enviada, el sistema programará la siguiente automáticamente sin saturar tu calendario.
                   </Text>
                 )}
@@ -1121,7 +1121,7 @@ export default function CrearEventoScreen() {
                           name: 'default',
                           importance: Notifications.AndroidImportance.MAX,
                           vibrationPattern: [0, 250, 250, 250],
-                          lightColor: '#6d83a1',
+                          lightColor: '#654875',
                           sound: 'default',
                         }).catch(() => {});
                       }
@@ -1143,10 +1143,10 @@ export default function CrearEventoScreen() {
                       Alert.alert('Error', e?.message || 'Error desconocido');
                     }
                   }}
-                  className="mt-3.5 flex-row items-center justify-center rounded-xl border border-[#6d83a1] bg-[#eef3f8] py-2.5 px-4"
+                  className="mt-3.5 flex-row items-center justify-center rounded-xl border border-nanny-blue bg-nanny-soft py-2.5 px-4"
                 >
-                  <Ionicons name="notifications-outline" size={16} color="#6d83a1" />
-                  <Text className="ml-2 text-xs font-semibold text-[#6d83a1]">
+                  <Ionicons name="notifications-outline" size={16} color="#654875" />
+                  <Text className="ml-2 text-caption font-semibold text-nanny-blue">
                     Probar alerta ahora (sonará en 2s)
                   </Text>
                 </TouchableOpacity>

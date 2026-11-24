@@ -55,9 +55,9 @@ export default function LikeButton({ message, userId }: Props) {
       <Ionicons
         name={state.likedByMe ? 'heart' : 'heart-outline'}
         size={16}
-        color={state.likedByMe ? '#cc7a66' : '#808080'}
+        color={state.likedByMe ? '#cc7a66' : '#6E5D78'}
       />
-      <Text className={`ml-1 text-sm ${state.likedByMe ? 'text-nanny-red' : 'text-nanny-muted'}`}>
+      <Text className={`ml-1 text-body ${state.likedByMe ? 'text-nanny-red' : 'text-nanny-muted'}`}>
         {state.likesCount}
       </Text>
     </TouchableOpacity>

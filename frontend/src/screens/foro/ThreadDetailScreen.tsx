@@ -184,8 +184,8 @@ export default function ThreadDetailScreen() {
           accessibilityRole="button"
           accessibilityLabel="Volver al foro"
         >
-          <Ionicons name="chevron-back" size={18} color="#6d83a1" />
-          <Text className="ml-1 text-sm text-nanny-blue">Foro</Text>
+          <Ionicons name="chevron-back" size={18} color="#654875" />
+          <Text className="ml-1 text-body text-nanny-blue">Foro</Text>
         </TouchableOpacity>
         {thread && thread.owner.id === selectedUserId ? (
           <TouchableOpacity
@@ -205,7 +205,7 @@ export default function ThreadDetailScreen() {
               accessibilityLabel="Eliminar hilo como administrador"
             >
               <Ionicons name="shield-outline" size={18} color="#cc7a66" />
-              <Text className="ml-1 text-sm font-semibold text-nanny-red">
+              <Text className="ml-1 text-body font-semibold text-nanny-red">
                 Eliminar
               </Text>
             </TouchableOpacity>
@@ -216,7 +216,7 @@ export default function ThreadDetailScreen() {
       {loading ? (
         <ActivityIndicator
           size="large"
-          color="#6d83a1"
+          color="#654875"
           style={{ marginTop: 48 }}
         />
       ) : !thread ? (
@@ -244,27 +244,27 @@ export default function ThreadDetailScreen() {
               <AuthorAvatar author={thread.owner} />
               <View className="ml-3">
                 <View className="flex-row items-center">
-                  <Text className="text-sm font-semibold text-nanny-text">
+                  <Text className="text-body font-semibold text-nanny-text">
                     {thread.owner.name}
                   </Text>
                   <ProBadge author={thread.owner} />
                 </View>
-                <Text className="text-xs text-nanny-muted">
+                <Text className="text-caption text-nanny-muted">
                   {timeAgo(thread.createdAt)}
                 </Text>
               </View>
             </ModeratableAuthor>
-            <Text className="mb-2 text-2xl font-semibold text-nanny-text">
+            <Text className="mb-2 text-title font-bold text-nanny-text">
               {thread.title}
             </Text>
-            <Text className="text-base leading-6 text-nanny-text">
+            <Text className="text-body leading-6 text-nanny-text">
               {thread.content}
             </Text>
             <View className="mt-3 flex-row flex-wrap gap-2">
               {thread.tags.map((tag) => (
                 <Text
                   key={tag.id}
-                  className="rounded-full bg-nanny-card px-3 py-1 text-xs text-nanny-blue"
+                  className="rounded-full bg-nanny-card px-3 py-1 text-caption text-nanny-blue"
                 >
                   #{tag.name}
                 </Text>
@@ -285,9 +285,9 @@ export default function ThreadDetailScreen() {
                   <Ionicons
                     name={thread.reportedByMe ? "flag" : "flag-outline"}
                     size={14}
-                    color={thread.reportedByMe ? "#cc7a66" : "#808080"}
+                    color={thread.reportedByMe ? "#cc7a66" : "#6E5D78"}
                   />
-                  <Text className="ml-1 text-sm font-semibold text-nanny-muted">
+                  <Text className="ml-1 text-body font-semibold text-nanny-muted">
                     {thread.reportedByMe ? "Reportado" : "Reportar"}
                   </Text>
                 </TouchableOpacity>
@@ -296,7 +296,7 @@ export default function ThreadDetailScreen() {
             <SummaryCard state={summary} />
           </View>
 
-          <Text className="mb-3 text-base font-bold uppercase tracking-wider text-nanny-muted">
+          <Text className="mb-3 text-body font-semibold uppercase tracking-wider text-nanny-muted">
             {thread.messageCount === 1
               ? "1 respuesta"
               : `${thread.messageCount} respuestas`}
@@ -334,7 +334,7 @@ export default function ThreadDetailScreen() {
             onSend={sendReply}
           />
         ) : (
-          <Text className="border-t border-nanny-card bg-white px-6 py-4 text-center text-sm text-nanny-muted">
+          <Text className="border-t border-nanny-card bg-white px-6 py-4 text-center text-body text-nanny-muted">
             Elige un usuario en la pestaña Datos para poder responder.
           </Text>
         ))}

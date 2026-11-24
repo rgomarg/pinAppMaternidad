@@ -83,8 +83,8 @@ export default function ThreadListScreen() {
       <View className="px-6 pb-4 pt-2">
         <View className="mb-4 flex-row items-end justify-between">
           <View>
-            <Text className="mb-1 text-sm font-medium text-nanny-muted">Comunidad</Text>
-            <Text className="text-3xl font-semibold text-nanny-text">Foro</Text>
+            <Text className="mb-1 text-body font-medium text-nanny-muted">Comunidad</Text>
+            <Text className="text-title font-bold text-nanny-text">Foro</Text>
           </View>
           {isAdmin && (
             <TouchableOpacity
@@ -93,8 +93,8 @@ export default function ThreadListScreen() {
               accessibilityRole="button"
               accessibilityLabel="Abrir panel de moderación"
             >
-              <Ionicons name="shield-checkmark-outline" size={16} color="#6d83a1" />
-              <Text className="ml-1 text-sm font-semibold text-nanny-blue">Moderación</Text>
+              <Ionicons name="shield-checkmark-outline" size={16} color="#654875" />
+              <Text className="ml-1 text-body font-semibold text-nanny-blue">Moderación</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -107,7 +107,7 @@ export default function ThreadListScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#6d83a1" style={{ marginTop: 48 }} />
+        <ActivityIndicator size="large" color="#654875" style={{ marginTop: 48 }} />
       ) : (
         <FlatList
           data={threads}
@@ -131,7 +131,7 @@ export default function ThreadListScreen() {
           }
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
-          ListFooterComponent={loadingMore ? <ActivityIndicator color="#6d83a1" /> : undefined}
+          ListFooterComponent={loadingMore ? <ActivityIndicator color="#654875" /> : undefined}
           ListEmptyComponent={
             <Text className="mt-12 text-center text-nanny-muted">
               {error ?? (tagId ? 'No hay hilos con esta etiqueta todavía.' : 'Todavía no hay hilos. ¡Abre el primero!')}

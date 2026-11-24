@@ -3,15 +3,16 @@ import { View, Text, TouchableOpacity, Pressable, ActivityIndicator, LayoutChang
 import Svg, { Path, Line, Circle, Text as SvgText } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { GrowthData, GrowthSeries, Metric, Sex } from '../api/growth';
+import { COLORS as THEME } from '../theme';
 
 // Colores de tailwind.config.js (las props de SVG no aceptan className)
 const COLORS = {
-  blue: '#6d83a1',
-  red: '#cc7a66',
-  green: '#65a882',
-  muted: '#808080',
-  text: '#3a3a3a',
-  card: '#ece6d9',
+  blue: THEME.primary,
+  red: THEME.red,
+  green: THEME.green,
+  muted: THEME.muted,
+  text: THEME.text,
+  card: THEME.surface,
 };
 
 const CHART_HEIGHT = 220;
@@ -50,7 +51,7 @@ export default function GrowthChart({ data, loading, error, onSelectSex, onAddMe
   return (
     <View className="bg-nanny-card p-4 rounded-2xl min-h-[250px] flex-col mb-6">
       <View className="flex-row justify-between items-center mb-3">
-        <Text className="font-semibold text-lg text-nanny-text">Curva de crecimiento</Text>
+        <Text className="font-semibold text-subtitle text-nanny-text">Curva de crecimiento</Text>
         <View className="flex-row bg-white rounded-full overflow-hidden">
           {(['weight', 'height'] as Metric[]).map((m) => (
             <TouchableOpacity
@@ -58,7 +59,7 @@ export default function GrowthChart({ data, loading, error, onSelectSex, onAddMe
               onPress={() => setMetric(m)}
               className={`px-3 py-1 ${metric === m ? 'bg-nanny-blue' : ''}`}
             >
-              <Text className={`font-medium text-xs ${metric === m ? 'text-white' : 'text-nanny-muted'}`}>
+              <Text className={`font-medium text-caption ${metric === m ? 'text-white' : 'text-nanny-muted'}`}>
                 {m === 'weight' ? 'Peso' : 'Altura'}
               </Text>
             </TouchableOpacity>
@@ -111,7 +112,7 @@ function SexPrompt({ name, onSelectSex }: { name: string; onSelectSex: (sex: Sex
       <Text className="text-nanny-text text-center font-medium mt-2 mb-1">
         ¿{name} es niño o niña?
       </Text>
-      <Text className="text-nanny-muted text-center text-sm mb-4 px-4">
+      <Text className="text-nanny-muted text-center text-body mb-4 px-4">
         Las curvas de la OMS son distintas para cada sexo. Solo hace falta indicarlo una vez.
       </Text>
       <View className="flex-row gap-3">
@@ -134,7 +135,7 @@ function EmptyState({ metric, count, onAdd }: { metric: Metric; count: number; o
       <Text className="text-nanny-text text-center font-medium mt-2 mb-1">
         {count === 0 ? `Aún no hay registros de ${name}` : `Solo hay un registro de ${name}`}
       </Text>
-      <Text className="text-nanny-muted text-center text-sm mb-4 px-4">
+      <Text className="text-nanny-muted text-center text-body mb-4 px-4">
         Se necesitan al menos dos registros de medidas para mostrar la gráfica de evolución.
       </Text>
       <TouchableOpacity onPress={onAdd} className="flex-row items-center gap-1 bg-nanny-blue px-5 py-2 rounded-full">
@@ -150,15 +151,15 @@ function Legend() {
     <View className="flex-row flex-wrap items-center gap-x-4 gap-y-1 mb-2">
       <View className="flex-row items-center gap-1">
         <View className="w-4 h-0.5 bg-nanny-blue" />
-        <Text className="text-nanny-blue text-xs font-medium">Registrado</Text>
+        <Text className="text-nanny-blue text-caption font-medium">Registrado</Text>
       </View>
       <View className="flex-row items-center gap-1">
-        <Text className="text-nanny-red text-xs font-bold">---</Text>
-        <Text className="text-nanny-red text-xs font-medium">Proyección</Text>
+        <Text className="text-nanny-red text-caption font-semibold">---</Text>
+        <Text className="text-nanny-red text-caption font-medium">Proyección</Text>
       </View>
       <View className="flex-row items-center gap-1">
         <View className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.green, opacity: 0.35 }} />
-        <Text className="text-nanny-muted text-xs font-medium">Percentiles OMS</Text>
+        <Text className="text-nanny-muted text-caption font-medium">Percentiles OMS</Text>
       </View>
     </View>
   );
@@ -320,14 +321,14 @@ function Details({ series, selected }: { series: GrowthSeries; selected: number 
     <View className="mt-2">
       {point ? (
         <View className="bg-white rounded-xl px-3 py-2 flex-row justify-between items-center">
-          <Text className="text-nanny-muted text-sm">{formatDate(point.date)}</Text>
+          <Text className="text-nanny-muted text-body">{formatDate(point.date)}</Text>
           <Text className="text-nanny-text font-semibold">{point.value} {series.unit}</Text>
-          <Text className="text-nanny-blue font-semibold text-sm">
+          <Text className="text-nanny-blue font-semibold text-body">
             {point.percentile != null ? `Percentil ${Math.round(point.percentile)}` : 'Fuera de tabla OMS'}
           </Text>
         </View>
       ) : (
-        <Text className="text-nanny-muted text-xs text-center">Toca un punto para ver su percentil</Text>
+        <Text className="text-nanny-muted text-caption text-center">Toca un punto para ver su percentil</Text>
       )}
 
       {insight && (
@@ -335,7 +336,7 @@ function Details({ series, selected }: { series: GrowthSeries; selected: number 
           <Ionicons name={INSIGHT_STYLE[insight.level].icon} size={22} color={INSIGHT_STYLE[insight.level].color} />
           <View className="flex-1">
             <Text className="text-nanny-text font-semibold">{insight.title}</Text>
-            <Text className="text-nanny-muted text-sm">{insight.message}</Text>
+            <Text className="text-nanny-muted text-body">{insight.message}</Text>
           </View>
         </View>
       )}

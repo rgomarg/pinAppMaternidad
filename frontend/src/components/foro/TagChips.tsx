@@ -29,7 +29,7 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
     >
-      <Text className={`text-sm font-semibold ${active ? 'text-white' : 'text-nanny-text'}`}>{label}</Text>
+      <Text className={`text-body font-semibold ${active ? 'text-white' : 'text-nanny-text'}`}>{label}</Text>
     </TouchableOpacity>
   );
 }

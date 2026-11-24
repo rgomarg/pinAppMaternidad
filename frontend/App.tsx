@@ -15,6 +15,7 @@ import CrearEventoScreen from './src/screens/CrearEventoScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import * as Notifications from 'expo-notifications';
 import { FamilySelectionProvider, useFamilySelection } from './src/context/FamilySelectionContext';
+import { COLORS, TYPOGRAPHY } from './src/theme';
 
 
 const Tab = createBottomTabNavigator();
@@ -62,18 +63,18 @@ function MainTabs() {
 
             return <Ionicons name={iconName as any} size={size} color={color} />;
           },
-          tabBarActiveTintColor: '#6d83a1', // nanny-blue
-          tabBarInactiveTintColor: '#808080', // nanny-muted
+          tabBarActiveTintColor: COLORS.primary,
+          tabBarInactiveTintColor: COLORS.muted,
           tabBarStyle: {
-            backgroundColor: '#ffffff',
-            borderTopColor: '#e0d9c9',
+            backgroundColor: COLORS.surface,
+            borderTopColor: COLORS.border,
             borderTopWidth: 1,
             height: 70,
             paddingBottom: 10,
             paddingTop: 10,
           },
           tabBarLabelStyle: {
-            fontSize: 11,
+            fontSize: TYPOGRAPHY.caption.fontSize,
             fontWeight: '600',
           }
         })}
@@ -103,7 +104,7 @@ export default function App() {
           name: 'default',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#6d83a1',
+          lightColor: COLORS.primary,
           sound: 'default',
         }).catch(() => {});
       }

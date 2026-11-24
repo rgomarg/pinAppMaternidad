@@ -179,16 +179,16 @@ export default function ActualizarAlturaModal({
           {/* Cabecera */}
           <View className="flex-row justify-between items-center pb-4 border-b border-gray-200 mb-4">
             <TouchableOpacity onPress={onClose} disabled={guardando}>
-              <Text className="text-nanny-muted text-base font-medium">Cancelar</Text>
+              <Text className="text-nanny-muted text-body font-medium">Cancelar</Text>
             </TouchableOpacity>
             
-            <Text className="text-lg font-bold text-nanny-text">Actualizar altura</Text>
+            <Text className="text-subtitle font-semibold text-nanny-text">Actualizar altura</Text>
             
             <TouchableOpacity
               onPress={handleGuardar}
               disabled={guardando || !isValid}
             >
-              <Text className={`text-base font-bold ${isValid && !guardando ? 'text-nanny-blue' : 'text-gray-300'}`}>
+              <Text className={`text-body font-semibold ${isValid && !guardando ? 'text-nanny-blue' : 'text-gray-300'}`}>
                 {guardando ? 'Guardando...' : 'Guardar'}
               </Text>
             </TouchableOpacity>
@@ -198,11 +198,11 @@ export default function ActualizarAlturaModal({
             {/* Tarjeta de perfil (Niño) */}
             <View className="flex-row items-center bg-nanny-card p-4 rounded-2xl mb-5">
               <View className="w-12 h-12 bg-gray-300 rounded-full mr-4 overflow-hidden items-center justify-center">
-                <Ionicons name="person" size={24} color="#808080" />
+                <Ionicons name="person" size={24} color="#6E5D78" />
               </View>
               <View>
-                <Text className="font-bold text-nanny-text text-base">{childName}</Text>
-                <Text className="text-nanny-muted text-sm mt-0.5">
+                <Text className="font-semibold text-nanny-text text-body">{childName}</Text>
+                <Text className="text-nanny-muted text-body mt-0.5">
                   Altura anterior: {alturaAnterior != null ? `${alturaAnterior} cm` : 'Sin registro previo'}
                 </Text>
               </View>
@@ -210,16 +210,16 @@ export default function ActualizarAlturaModal({
 
             {/* Input: Nuevo valor */}
             <View className="mb-5">
-              <Text className="text-nanny-muted text-sm mb-2 ml-1">Nuevo valor de altura *</Text>
+              <Text className="text-nanny-muted text-body mb-2 ml-1">Nuevo valor de altura *</Text>
               <View 
                 className={`flex-row items-center bg-nanny-card rounded-2xl px-4 py-3 h-14 ${
                   isInvalid ? 'border border-red-400 bg-red-50/20' : ''
                 }`}
               >
                 <TextInput
-                  className="flex-1 text-base text-nanny-text font-medium"
+                  className="flex-1 text-body text-nanny-text font-medium"
                   placeholder="Ej. 118.5"
-                  placeholderTextColor="#a39d94"
+                  placeholderTextColor="#8F8296"
                   keyboardType="decimal-pad"
                   value={nuevaAltura}
                   onChangeText={setNuevaAltura}
@@ -227,21 +227,21 @@ export default function ActualizarAlturaModal({
                 {/* Botones de flechas (estilo spinner funcional) */}
                 <View className="flex-col bg-white rounded px-1.5 py-1 ml-2 mr-3 justify-center items-center shadow-sm">
                   <TouchableOpacity onPress={handleIncrement} hitSlop={{ top: 5, bottom: 2, left: 5, right: 5 }}>
-                    <Ionicons name="caret-up" size={12} color="#6d83a1" />
+                    <Ionicons name="caret-up" size={12} color="#654875" />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={handleDecrement} hitSlop={{ top: 2, bottom: 5, left: 5, right: 5 }}>
-                    <Ionicons name="caret-down" size={12} color="#6d83a1" />
+                    <Ionicons name="caret-down" size={12} color="#654875" />
                   </TouchableOpacity>
                 </View>
-                <Text className="text-nanny-text font-bold text-base">cm</Text>
+                <Text className="text-nanny-text font-semibold text-body">cm</Text>
               </View>
 
               {getValidationMessage() ? (
-                <Text className="text-red-500 text-xs mt-1.5 ml-1 font-medium">
+                <Text className="text-red-500 text-caption mt-1.5 ml-1 font-medium">
                   {getValidationMessage()}
                 </Text>
               ) : (
-                <Text className="text-nanny-muted text-xs mt-1.5 ml-1">
+                <Text className="text-nanny-muted text-caption mt-1.5 ml-1">
                   Valores válidos: entre {MIN_HEIGHT} cm y {MAX_HEIGHT} cm.
                 </Text>
               )}
@@ -249,33 +249,33 @@ export default function ActualizarAlturaModal({
 
             {/* Input: Fecha */}
             <View className="mb-5">
-              <Text className="text-nanny-muted text-sm mb-2 ml-1">Fecha de la medición *</Text>
+              <Text className="text-nanny-muted text-body mb-2 ml-1">Fecha de la medición *</Text>
               <TouchableOpacity 
                 onPress={() => setShowDatePicker(!showDatePicker)}
                 activeOpacity={0.7}
                 className="flex-row items-center bg-nanny-card rounded-2xl px-4 py-3 h-14"
               >
-                <Text className="flex-1 text-base text-nanny-text font-medium">
+                <Text className="flex-1 text-body text-nanny-text font-medium">
                   {formatDate(fecha)}
                 </Text>
                 <Ionicons 
                   name={showDatePicker ? "chevron-up" : "calendar-outline"} 
                   size={20} 
-                  color="#3a3a3a" 
+                  color="#2D1E36" 
                 />
               </TouchableOpacity>
 
               {showDatePicker && (
                 <View className="mt-2 bg-white rounded-2xl p-3 border border-gray-200 shadow-sm">
                   <View className="flex-row justify-between items-center pb-2 mb-2 border-b border-gray-100">
-                    <Text className="text-xs font-semibold text-nanny-muted uppercase">
+                    <Text className="text-caption font-semibold text-nanny-muted uppercase">
                       Seleccionar fecha
                     </Text>
                     <TouchableOpacity 
                       onPress={() => setShowDatePicker(false)}
                       className="px-2 py-1 bg-gray-100 rounded-lg"
                     >
-                      <Text className="text-xs font-medium text-nanny-text">Cerrar</Text>
+                      <Text className="text-caption font-medium text-nanny-text">Cerrar</Text>
                     </TouchableOpacity>
                   </View>
                   <Calendar
@@ -285,14 +285,14 @@ export default function ActualizarAlturaModal({
                     onDayPress={handleDayPress}
                     theme={{
                       calendarBackground: 'transparent',
-                      textSectionTitleColor: '#6d83a1',
-                      selectedDayBackgroundColor: '#6d83a1',
+                      textSectionTitleColor: '#654875',
+                      selectedDayBackgroundColor: '#654875',
                       selectedDayTextColor: '#ffffff',
-                      todayTextColor: '#6d83a1',
-                      dayTextColor: '#2d3748',
-                      textDisabledColor: '#cbd5e1',
-                      arrowColor: '#6d83a1',
-                      monthTextColor: '#2d3748',
+                      todayTextColor: '#654875',
+                      dayTextColor: '#2D1E36',
+                      textDisabledColor: '#8F8296',
+                      arrowColor: '#654875',
+                      monthTextColor: '#2D1E36',
                       textDayFontSize: 14,
                       textMonthFontSize: 16,
                       textDayHeaderFontSize: 12,
@@ -301,11 +301,11 @@ export default function ActualizarAlturaModal({
                       <Ionicons 
                         name={direction === 'left' ? 'chevron-back' : 'chevron-forward'} 
                         size={20} 
-                        color="#6d83a1" 
+                        color="#654875" 
                       />
                     )}
                     markedDates={{
-                      [toYMD(fecha)]: { selected: true, selectedColor: '#6d83a1' },
+                      [toYMD(fecha)]: { selected: true, selectedColor: '#654875' },
                     }}
                   />
                 </View>
@@ -313,9 +313,9 @@ export default function ActualizarAlturaModal({
             </View>
 
             {/* Mensaje de Info inferior */}
-            <View className="flex-row bg-[#f0f6fa] border border-[#d4e3f0] rounded-xl p-4 mt-2 mb-6">
-              <Ionicons name="information-circle-outline" size={22} color="#6d83a1" style={{ marginTop: -1 }} />
-              <Text className="text-nanny-blue text-sm ml-3 flex-1 leading-5 font-medium">
+            <View className="flex-row bg-nanny-soft border border-nanny-border-strong rounded-xl p-4 mt-2 mb-6">
+              <Ionicons name="information-circle-outline" size={22} color="#654875" style={{ marginTop: -1 }} />
+              <Text className="text-nanny-blue text-body ml-3 flex-1 leading-5 font-medium">
                 La nueva medición se añadirá a la curva de crecimiento y actualizará el valor actual de altura.
               </Text>
             </View>

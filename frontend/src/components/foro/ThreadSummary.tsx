@@ -14,11 +14,11 @@ import { forumApi } from "../../api/forum";
 // El botón va en la fila de acciones del hilo y la tarjeta debajo, así que el estado
 // vive en un hook que la pantalla comparte entre los dos componentes.
 
-const BLUE = "#6d83a1";
-const MUTED = "#a39b90";
-const CARD_BG = "#e6edf6";
-const CARD_BORDER = "#b9cbe2";
-const ACTIVE_BG = "#dce6f2";
+const BLUE = "#654875";
+const MUTED = "#8F8296";
+const CARD_BG = "#EAE0F2";
+const CARD_BORDER = "#D5C3DD";
+const ACTIVE_BG = "#EAE0F2";
 const PRO_COLOR = "#8a6cc4";
 const PRO_BG = "#efeaf8";
 
@@ -112,7 +112,7 @@ export function SummaryButton({ state }: { state: SummaryState }) {
         size={14}
         color={color}
       />
-      <Text style={{ color }} className="ml-1 text-sm font-semibold">
+      <Text style={{ color }} className="ml-1 text-body font-semibold">
         {open ? "Ocultar" : "Resumen"}
       </Text>
       {locked && (
@@ -156,10 +156,10 @@ export function SummaryCard({ state }: { state: SummaryState }) {
           <Ionicons name="sparkles" size={16} color="#ffffff" />
         </View>
         <View className="ml-3 flex-1">
-          <Text style={{ color: BLUE }} className="text-sm font-bold">
+          <Text style={{ color: BLUE }} className="text-body font-semibold">
             Resumen de respuestas
           </Text>
-          <Text className="text-xs text-nanny-muted">Generado con IA</Text>
+          <Text className="text-caption text-nanny-muted">Generado con IA</Text>
         </View>
         {summary && !loading && (
           <TouchableOpacity
@@ -173,7 +173,7 @@ export function SummaryCard({ state }: { state: SummaryState }) {
               size={14}
               color={BLUE}
             />
-            <Text style={{ color: BLUE }} className="ml-1 text-xs font-semibold">
+            <Text style={{ color: BLUE }} className="ml-1 text-caption font-semibold">
               {copied ? "Copiado" : "Copiar"}
             </Text>
           </TouchableOpacity>
@@ -183,14 +183,14 @@ export function SummaryCard({ state }: { state: SummaryState }) {
       {loading ? (
         <View className="flex-row items-center py-2">
           <ActivityIndicator size="small" color={BLUE} />
-          <Text className="ml-2 text-sm text-nanny-muted">
+          <Text className="ml-2 text-body text-nanny-muted">
             Generando resumen...
           </Text>
         </View>
       ) : error ? (
-        <Text className="text-sm text-nanny-red">{error}</Text>
+        <Text className="text-body text-nanny-red">{error}</Text>
       ) : (
-        <Text className="text-sm leading-6 text-nanny-text">{summary}</Text>
+        <Text className="text-body leading-6 text-nanny-text">{summary}</Text>
       )}
     </View>
   );
@@ -222,10 +222,10 @@ export function ProUpgradeModal({ state }: { state: SummaryState }) {
           >
             <Ionicons name="lock-closed" size={24} color={PRO_COLOR} />
           </View>
-          <Text className="text-center text-lg font-bold text-nanny-text">
+          <Text className="text-center text-subtitle font-semibold text-nanny-text">
             Función exclusiva para usuarios PRO
           </Text>
-          <Text className="mt-2 text-center text-sm text-nanny-muted">
+          <Text className="mt-2 text-center text-body text-nanny-muted">
             Mejora tu plan para obtener esta funcionalidad: un resumen con IA de
             los puntos clave de cada hilo del foro.
           </Text>

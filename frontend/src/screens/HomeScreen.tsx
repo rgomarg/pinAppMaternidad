@@ -28,19 +28,19 @@ function BookCoverImage({ uri }: { uri?: string | null }) {
     return (
       <View
         style={{ width: 96, height: 144 }}
-        className="items-center justify-center rounded-lg bg-[#e5dfd4] border border-[#ded6ca]"
+        className="items-center justify-center rounded-lg bg-nanny-surface border border-nanny-border"
       >
-        <Ionicons name="book-outline" size={36} color="#968e84" />
+        <Ionicons name="book-outline" size={36} color="#6E5D78" />
       </View>
     );
   }
 
   return (
-    <View style={{ width: 96, height: 144 }} className="relative overflow-hidden rounded-lg bg-[#e5dfd4]">
+    <View style={{ width: 96, height: 144 }} className="relative overflow-hidden rounded-lg bg-nanny-surface">
       {loading && (
         <View
           style={{ width: 96, height: 144 }}
-          className="absolute inset-0 items-center justify-center bg-[#e5dfd4]"
+          className="absolute inset-0 items-center justify-center bg-nanny-surface"
         >
           <ActivityIndicator size="small" color="#b87427" />
         </View>
@@ -292,7 +292,7 @@ export default function HomeScreen() {
         name: 'default',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#6d83a1',
+        lightColor: '#654875',
         sound: 'default',
       }).catch(() => {});
     }
@@ -484,7 +484,7 @@ export default function HomeScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: '#f7f3ec', paddingTop: insets.top }}
+      style={{ flex: 1, backgroundColor: '#F8EFF5', paddingTop: insets.top }}
     >
       <ScrollView
         ref={scrollViewRef}
@@ -497,15 +497,15 @@ export default function HomeScreen() {
         {/* Header */}
         <View className="flex-row justify-between items-start mb-6">
           <View>
-            <Text className="text-sm font-medium text-nanny-muted mb-1">
+            <Text className="text-body font-medium text-nanny-muted mb-1">
               {isAdmin ? 'Panel de administración' : 'Predicciones e insights'}
             </Text>
             {isAdmin ? (
-              <Text className="text-3xl font-semibold text-nanny-text">{activeUser?.name ?? 'Administración'}</Text>
+              <Text className="text-title font-bold text-nanny-text">{activeUser?.name ?? 'Administración'}</Text>
             ) : activeChild ? (
-              <Text className="text-3xl font-semibold text-nanny-text">{activeChild.name}</Text>
+              <Text className="text-title font-bold text-nanny-text">{activeChild.name}</Text>
             ) : (
-              <Text className="text-xl font-semibold text-nanny-text italic">Selecciona un usuario</Text>
+              <Text className="text-subtitle font-semibold text-nanny-text italic">Selecciona un usuario</Text>
             )}
           </View>
           
@@ -517,7 +517,7 @@ export default function HomeScreen() {
               {activeUser?.avatarUrl ? (
                 <Image source={{ uri: activeUser.avatarUrl }} className="h-full w-full" />
               ) : (
-                <Text className="text-white font-semibold text-lg">{activeUserId ? activeUserId.toString() : "?"}</Text>
+                <Text className="text-white font-semibold text-subtitle">{activeUserId ? activeUserId.toString() : "?"}</Text>
               )}
             </View>
             <View className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
@@ -532,7 +532,7 @@ export default function HomeScreen() {
         {isAdmin && activeUserId ? (
           <AdminHome adminId={activeUserId} />
         ) : loading ? (
-          <ActivityIndicator size="large" color="#6d83a1" />
+          <ActivityIndicator size="large" color="#654875" />
         ) : (
           <>
             {/* Child Selector */}
@@ -548,7 +548,7 @@ export default function HomeScreen() {
                       }`}
                     >
                       <View className="w-6 h-6 rounded-full bg-orange-200 items-center justify-center overflow-hidden">
-                        <Text className="text-xs font-bold text-black">{child?.name?.charAt(0) || '?'}</Text>
+                        <Text className="text-caption font-semibold text-black">{child?.name?.charAt(0) || '?'}</Text>
                       </View>
                       <Text className={`font-semibold ${activeChildId === child.id ? 'text-white' : 'text-nanny-text'}`}>
                         {child.name}
@@ -567,23 +567,23 @@ export default function HomeScreen() {
                   <TouchableOpacity 
                     onPress={() => setModalPesoVisible(true)}
                     className="absolute top-4 right-4 w-10 h-10 bg-blue-100 rounded-full items-center justify-center">                    
-                    <Ionicons name="add" size={16} color="#6d83a1" />
+                    <Ionicons name="add" size={16} color="#654875" />
                   </TouchableOpacity>
-                  <Text className="text-nanny-muted text-sm font-medium mb-2">Peso actual</Text>
+                  <Text className="text-nanny-muted text-body font-medium mb-2">Peso actual</Text>
                   <View className="flex-row items-baseline gap-1 mb-1">
-                    <Text className="text-3xl font-bold text-nanny-text">
+                    <Text className="text-title font-bold text-nanny-text">
                       {pesoActual ?? '--'}
                     </Text>
-                    <Text className="text-nanny-text font-medium text-base">kg</Text>
+                    <Text className="text-nanny-text font-medium text-body">kg</Text>
                   </View>
-                  <Text className="text-nanny-green text-xs font-medium mb-1">
+                  <Text className="text-nanny-green text-caption font-medium mb-1">
                     {difPeso != null
                       ? `${Number(difPeso) > 0 ? `+${difPeso}` : difPeso} kg respecto al anterior`
                       : 'No hay registros anteriores'}
                   </Text>
 
                   {proyeccionPeso && (
-                    <Text className="text-nanny-red text-xs font-medium mb-1">
+                    <Text className="text-nanny-red text-caption font-medium mb-1">
                       Previsión {formatMonthYearLong(proyeccionPeso.date)}: {proyeccionPeso.value} kg
                     </Text>
                   )}
@@ -594,23 +594,23 @@ export default function HomeScreen() {
                   <TouchableOpacity 
                     onPress={() => setModalAlturaVisible(true)}
                     className="absolute top-4 right-4 w-10 h-10 bg-blue-100 rounded-full items-center justify-center">
-                    <Ionicons name="add" size={16} color="#6d83a1" />
+                    <Ionicons name="add" size={16} color="#654875" />
                   </TouchableOpacity>
-                  <Text className="text-nanny-muted text-sm font-medium mb-2">Altura actual</Text>
+                  <Text className="text-nanny-muted text-body font-medium mb-2">Altura actual</Text>
                   <View className="flex-row items-baseline gap-1 mb-1">
-                    <Text className="text-3xl font-bold text-nanny-text">
+                    <Text className="text-title font-bold text-nanny-text">
                       {alturaActual ?? '--'}
                     </Text>
-                    <Text className="text-nanny-text font-medium text-base">cm</Text>
+                    <Text className="text-nanny-text font-medium text-body">cm</Text>
                   </View>
-                  <Text className="text-nanny-green text-xs font-medium mb-1">
+                  <Text className="text-nanny-green text-caption font-medium mb-1">
                     {difAltura != null
                       ? `${Number(difAltura) > 0 ? `+${difAltura}` : difAltura} cm respecto al anterior`
                       : 'No hay registro anterior'}
                   </Text>
 
                   {proyeccionAltura && (
-                    <Text className="text-nanny-red text-xs font-medium mb-1">
+                    <Text className="text-nanny-red text-caption font-medium mb-1">
                       Previsión {formatMonthYearLong(proyeccionAltura.date)}: {proyeccionAltura.value} cm
                     </Text>
                   )}
@@ -629,19 +629,19 @@ export default function HomeScreen() {
 
             {/* Checklist */}
             <View className="bg-nanny-card rounded-2xl mb-6 overflow-hidden">
-              <Text className="font-semibold text-lg text-nanny-text px-4 pt-4 pb-3">ToDoList</Text>
-              <View className="mx-4 mb-3 flex-row rounded-2xl bg-[#ded6ca] p-1">
+              <Text className="font-semibold text-subtitle text-nanny-text px-4 pt-4 pb-3">ToDoList</Text>
+              <View className="mx-4 mb-3 flex-row rounded-2xl bg-nanny-soft p-1">
                 <TouchableOpacity
                   onPress={() => setChecklistTab('pending')}
-                  className={`flex-1 items-center rounded-xl py-2 ${checklistTab === 'pending' ? 'bg-[#f7f3ec]' : ''}`}
+                  className={`flex-1 items-center rounded-xl py-2 ${checklistTab === 'pending' ? 'bg-nanny-bg' : ''}`}
                 >
-                  <Ionicons name="time-outline" size={22} color={checklistTab === 'pending' ? '#b87427' : '#968e84'} />
+                  <Ionicons name="time-outline" size={22} color={checklistTab === 'pending' ? '#b87427' : '#6E5D78'} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setChecklistTab('completed')}
-                  className={`flex-1 items-center rounded-xl py-2 ${checklistTab === 'completed' ? 'bg-[#f7f3ec]' : ''}`}
+                  className={`flex-1 items-center rounded-xl py-2 ${checklistTab === 'completed' ? 'bg-nanny-bg' : ''}`}
                 >
-                  <Ionicons name="checkmark-circle-outline" size={22} color={checklistTab === 'completed' ? '#4e8c67' : '#968e84'} />
+                  <Ionicons name="checkmark-circle-outline" size={22} color={checklistTab === 'completed' ? '#4e8c67' : '#6E5D78'} />
                 </TouchableOpacity>
               </View>
                 <View className="mx-4 mb-3 flex-row items-center gap-3">
@@ -649,8 +649,8 @@ export default function HomeScreen() {
                   value={newTaskTitle}
                   onChangeText={setNewTaskTitle}
                   placeholder="Añadir una tarea..."
-                  placeholderTextColor="#a49d95"
-                  className="flex-1 rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] px-4 py-2 text-base text-nanny-text"
+                  placeholderTextColor="#8F8296"
+                  className="flex-1 rounded-2xl border border-nanny-border bg-nanny-bg px-4 py-2 text-body text-nanny-text"
                   onSubmitEditing={addChecklistItem}
                   onFocus={focusChecklistInput}
                   returnKeyType="done"
@@ -659,15 +659,15 @@ export default function HomeScreen() {
                   onPress={addChecklistItem}
                   disabled={!newTaskTitle.trim() || !activeChildId}
                   className={`h-12 w-12 items-center justify-center rounded-2xl ${
-                    newTaskTitle.trim() && activeChildId ? 'bg-[#c4baac]' : 'bg-[#e2ddd5]'
+                    newTaskTitle.trim() && activeChildId ? 'bg-nanny-blue' : 'bg-nanny-soft'
                   }`}
                 >
                   <Ionicons name="add" size={30} color="white" />
                 </TouchableOpacity>
               </View>
               {visibleChecklist.map((item) => (
-                <View key={item.id} className="flex-row items-center border-t border-[#ded6ca] px-4 py-4">
-                  <TouchableOpacity onPress={() => toggleChecklistItem(item)} className={`mr-4 h-10 w-10 items-center justify-center rounded-xl border-2 ${item.isCompleted ? 'border-[#6d83a1] bg-[#6d83a1]' : 'border-[#bdb5ab] bg-[#f7f3ec]'}`}>
+                <View key={item.id} className="flex-row items-center border-t border-nanny-border px-4 py-4">
+                  <TouchableOpacity onPress={() => toggleChecklistItem(item)} className={`mr-4 h-10 w-10 items-center justify-center rounded-xl border-2 ${item.isCompleted ? 'border-nanny-blue bg-nanny-blue' : 'border-nanny-border-strong bg-nanny-bg'}`}>
                     {item.isCompleted && <Ionicons name="checkmark" size={24} color="white" />}
                   </TouchableOpacity>
                   {editingTaskId === item.id ? (
@@ -676,10 +676,10 @@ export default function HomeScreen() {
                       onChangeText={setEditingTaskTitle}
                       autoFocus
                       onFocus={focusChecklistInput}
-                      className="flex-1 rounded-lg border border-[#bdb5ab] bg-[#f7f3ec] px-2 py-2 text-base text-nanny-text"
+                      className="flex-1 rounded-lg border border-nanny-border-strong bg-nanny-bg px-2 py-2 text-body text-nanny-text"
                     />
                   ) : (
-                    <Text className={`flex-1 text-base text-nanny-text ${item.isCompleted ? 'line-through text-nanny-muted' : ''}`}>{item.title}</Text>
+                    <Text className={`flex-1 text-body text-nanny-text ${item.isCompleted ? 'line-through text-nanny-muted' : ''}`}>{item.title}</Text>
                   )}
                   {editingTaskId === item.id ? (
                     <>
@@ -687,13 +687,13 @@ export default function HomeScreen() {
                         <Ionicons name="checkmark" size={24} color="#4e8c67" />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => setEditingTaskId(null)} className="ml-3">
-                        <Ionicons name="close" size={24} color="#968e84" />
+                        <Ionicons name="close" size={24} color="#6E5D78" />
                       </TouchableOpacity>
                     </>
                   ) : (
                     <>
                       <TouchableOpacity onPress={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); }} className="ml-3">
-                        <Ionicons name="pencil-outline" size={23} color="#6d83a1" />
+                        <Ionicons name="pencil-outline" size={23} color="#654875" />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => deleteChecklistItem(item.id)} className="ml-4">
                         <Ionicons name="trash-outline" size={23} color="#c65342" />
@@ -706,35 +706,35 @@ export default function HomeScreen() {
             {/* Recomendaciones */}
             <View className="bg-nanny-card rounded-2xl mb-6 overflow-hidden">
               <View className="flex-row items-center justify-between px-4 pt-4 pb-3">
-                <Text className="font-semibold text-lg text-nanny-text">Recomendaciones</Text>
+                <Text className="font-semibold text-subtitle text-nanny-text">Recomendaciones</Text>
                 {activeUser?.role !== 'PRO' && (
                   <View className="flex-row items-center rounded-full bg-[#b87427]/15 px-2.5 py-1">
                     <Ionicons name="sparkles" size={13} color="#b87427" />
-                    <Text className="ml-1 text-xs font-bold text-[#b87427]">PRO</Text>
+                    <Text className="ml-1 text-caption font-semibold text-[#b87427]">PRO</Text>
                   </View>
                 )}
               </View>
 
               {/* Selector de pestañas siempre visible, para elegir seccion de articulos/libros y comidas */}
-              <View className="mx-4 mb-3 flex-row rounded-2xl bg-[#ded6ca] p-1">
+              <View className="mx-4 mb-3 flex-row rounded-2xl bg-nanny-soft p-1">
                 <TouchableOpacity
                   onPress={() => setRecomendacionesTab('articulos')}
-                  className={`flex-1 items-center rounded-xl py-2 ${recomendacionesTab === 'articulos' ? 'bg-[#f7f3ec]' : ''}`}
+                  className={`flex-1 items-center rounded-xl py-2 ${recomendacionesTab === 'articulos' ? 'bg-nanny-bg' : ''}`}
                 >
                   <Ionicons
                     name="book-outline"
                     size={22}
-                    color={recomendacionesTab === 'articulos' ? '#b87427' : '#968e84'}
+                    color={recomendacionesTab === 'articulos' ? '#b87427' : '#6E5D78'}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setRecomendacionesTab('comidas')}
-                  className={`flex-1 items-center rounded-xl py-2 ${recomendacionesTab === 'comidas' ? 'bg-[#f7f3ec]' : ''}`}
+                  className={`flex-1 items-center rounded-xl py-2 ${recomendacionesTab === 'comidas' ? 'bg-nanny-bg' : ''}`}
                 >
                   <Ionicons
                     name="nutrition-outline"
                     size={22}
-                    color={recomendacionesTab === 'comidas' ? '#b87427' : '#968e84'}
+                    color={recomendacionesTab === 'comidas' ? '#b87427' : '#6E5D78'}
                   />
                 </TouchableOpacity>
               </View>
@@ -742,14 +742,14 @@ export default function HomeScreen() {
               {/* Contenido condicionado al rol PRO / Admin */}
               {activeUser?.role === 'PRO' || isAdmin ? (
                 activeChildAge > 6 ? (
-                  <View className="mx-4 mb-4 items-center justify-center rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-5">
-                    <View className="mb-2.5 h-12 w-12 items-center justify-center rounded-full bg-[#ded6ca]/70">
-                      <Ionicons name="information-circle-outline" size={26} color="#6d83a1" />
+                  <View className="mx-4 mb-4 items-center justify-center rounded-2xl border border-nanny-border bg-nanny-bg p-5">
+                    <View className="mb-2.5 h-12 w-12 items-center justify-center rounded-full bg-nanny-soft/70">
+                      <Ionicons name="information-circle-outline" size={26} color="#654875" />
                     </View>
-                    <Text className="text-base font-semibold text-nanny-text text-center">
+                    <Text className="text-body font-semibold text-nanny-text text-center">
                       No hay información para niños de esta edad
                     </Text>
-                    <Text className="mt-1 text-center text-xs text-nanny-muted px-2">
+                    <Text className="mt-1 text-center text-caption text-nanny-muted px-2">
                       Las recomendaciones actuales están disponibles para niños de hasta 6 años.
                     </Text>
                   </View>
@@ -759,27 +759,27 @@ export default function HomeScreen() {
                     <View>
                       <View className="mb-2 flex-row items-center gap-1.5">
                         <Ionicons name="book" size={17} color="#b87427" />
-                        <Text className="text-sm font-bold text-nanny-text">Libro del mes</Text>
+                        <Text className="text-body font-semibold text-nanny-text">Libro del mes</Text>
                       </View>
                       {books.length > 0 ? (
                         <TouchableOpacity
                           activeOpacity={0.85}
                           onPress={() => setShowLibroSinopsis((prev) => !prev)}
-                          className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4"
+                          className="rounded-2xl border border-nanny-border bg-nanny-bg p-4"
                         >
                           <View className="flex-row gap-3.5">
                             <BookCoverImage uri={books[0].imageUrl} />
                             <View className="flex-1 justify-between py-1">
                               <View>
-                                <Text className="text-base font-bold text-nanny-text leading-snug">
+                                <Text className="text-body font-semibold text-nanny-text leading-snug">
                                   {books[0].title}
                                 </Text>
-                                <Text className="mt-1 text-xs font-semibold text-nanny-muted">
+                                <Text className="mt-1 text-caption font-semibold text-nanny-muted">
                                   Por {books[0].authors?.join(', ')}
                                 </Text>
                               </View>
                               <View className="mt-3 w-36 flex-row items-center justify-end self-end">
-                                <Text className="mr-1 text-xs font-semibold text-[#b87427]">
+                                <Text className="mr-1 text-caption font-semibold text-[#b87427]">
                                   {showLibroSinopsis ? 'Ocultar sinopsis' : 'Ver sinopsis'}
                                 </Text>
                                 <Ionicons
@@ -791,13 +791,13 @@ export default function HomeScreen() {
                             </View>
                           </View>
                           {showLibroSinopsis && (
-                            <View className="mt-3.5 border-t border-[#ded6ca]/70 pt-3">
-                              <Text className="mb-1 text-xs font-bold uppercase tracking-wider text-nanny-muted">
+                            <View className="mt-3.5 border-t border-nanny-border/70 pt-3">
+                              <Text className="mb-1 text-caption font-semibold uppercase tracking-wider text-nanny-muted">
                                 Sinopsis
                               </Text>
                               <Text
                                 style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
-                                className="w-full text-xs leading-relaxed text-nanny-text"
+                                className="w-full text-caption leading-relaxed text-nanny-text"
                               >
                                 {books[0].synopsis}
                               </Text>
@@ -805,8 +805,8 @@ export default function HomeScreen() {
                           )}
                         </TouchableOpacity>
                       ) : (
-                        <View className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4">
-                          <Text className="text-xs text-nanny-muted">Cargando libro recomendado...</Text>
+                        <View className="rounded-2xl border border-nanny-border bg-nanny-bg p-4">
+                          <Text className="text-caption text-nanny-muted">Cargando libro recomendado...</Text>
                         </View>
                       )}
                     </View>
@@ -814,21 +814,21 @@ export default function HomeScreen() {
                     {/* Sección Artículos Semanales */}
                     <View>
                       <View className="mb-2 flex-row items-center gap-1.5">
-                        <Ionicons name="newspaper" size={17} color="#6d83a1" />
-                        <Text className="text-sm font-bold text-nanny-text">Artículos semanales</Text>
+                        <Ionicons name="newspaper" size={17} color="#654875" />
+                        <Text className="text-body font-semibold text-nanny-text">Artículos semanales</Text>
                       </View>
                       {recLoading ? (
-                        <ActivityIndicator size="small" color="#6d83a1" />
+                        <ActivityIndicator size="small" color="#654875" />
                       ) : articles.length > 0 ? (
                         <View className="gap-3">
                           {articles.map((art) => (
-                            <View key={art.id} className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4">
-                              <Text className="text-base font-bold text-nanny-text leading-snug">
+                            <View key={art.id} className="rounded-2xl border border-nanny-border bg-nanny-bg p-4">
+                              <Text className="text-body font-semibold text-nanny-text leading-snug">
                                 {art.title}
                               </Text>
                               <Text
                                 style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
-                                className="mt-2 w-full text-xs leading-relaxed text-nanny-text"
+                                className="mt-2 w-full text-caption leading-relaxed text-nanny-text"
                               >
                                 {art.description}
                               </Text>
@@ -838,18 +838,18 @@ export default function HomeScreen() {
                                     console.error('Error abriendo enlace:', err),
                                   )
                                 }
-                                className="mt-3 flex-row items-center self-start rounded-xl bg-[#6d83a1]/15 px-3 py-1.5 active:opacity-70"
+                                className="mt-3 flex-row items-center self-start rounded-xl bg-nanny-blue/15 px-3 py-1.5 active:opacity-70"
                               >
-                                <Text className="mr-1.5 text-xs font-semibold text-[#6d83a1]">
+                                <Text className="mr-1.5 text-caption font-semibold text-nanny-blue">
                                   Leer artículo {art.source ? `(${art.source})` : ''}
                                 </Text>
-                                <Ionicons name="open-outline" size={13} color="#6d83a1" />
+                                <Ionicons name="open-outline" size={13} color="#654875" />
                               </TouchableOpacity>
                             </View>
                           ))}
                         </View>
                       ) : (
-                        <Text className="text-xs text-nanny-muted">No hay artículos para mostrar.</Text>
+                        <Text className="text-caption text-nanny-muted">No hay artículos para mostrar.</Text>
                       )}
                     </View>
                   </View>
@@ -858,7 +858,7 @@ export default function HomeScreen() {
                   <View className="mx-4 mb-4 gap-4">
                     <View className="mb-1 flex-row items-center gap-1.5">
                       <Ionicons name="restaurant" size={17} color="#b87427" />
-                      <Text className="text-sm font-bold text-nanny-text">Recetas de la semana</Text>
+                      <Text className="text-body font-semibold text-nanny-text">Recetas de la semana</Text>
                     </View>
 
                     {recLoading ? (
@@ -871,36 +871,36 @@ export default function HomeScreen() {
                             key={receta.id}
                             activeOpacity={0.85}
                             onPress={() => setExpandedRecipeId(isExpanded ? null : receta.id)}
-                            className="rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-4"
+                            className="rounded-2xl border border-nanny-border bg-nanny-bg p-4"
                           >
                           {/* Cabecera de la receta */}
                           <View className="flex-row gap-3.5">
                             <Image
                               source={{ uri: receta.imageUrl }}
                               style={{ width: 96, height: 96 }}
-                              className="h-24 w-24 rounded-xl bg-[#e5dfd4]"
+                              className="h-24 w-24 rounded-xl bg-nanny-surface"
                               resizeMode="cover"
                             />
                             <View className="flex-1 justify-between py-0.5">
                               <View>
-                                <Text className="text-base font-bold text-nanny-text leading-snug">
+                                <Text className="text-body font-semibold text-nanny-text leading-snug">
                                   {receta.name}
                                 </Text>
                                 <View className="mt-2 flex-row flex-wrap items-center gap-3">
                                   <View className="flex-row items-center">
-                                    <Ionicons name="time-outline" size={14} color="#808080" />
-                                    <Text className="ml-1 text-xs text-nanny-muted">{receta.time}</Text>
+                                    <Ionicons name="time-outline" size={14} color="#6E5D78" />
+                                    <Text className="ml-1 text-caption text-nanny-muted">{receta.time}</Text>
                                   </View>
                                   <View className="flex-row items-center">
-                                    <Ionicons name="speedometer-outline" size={14} color="#808080" />
-                                    <Text className="ml-1 text-xs text-nanny-muted">{receta.difficulty}</Text>
+                                    <Ionicons name="speedometer-outline" size={14} color="#6E5D78" />
+                                    <Text className="ml-1 text-caption text-nanny-muted">{receta.difficulty}</Text>
                                   </View>
                                 </View>
                               </View>
 
                               {/* Botón ver receta a la derecha, tamaño fijo y sin fondo */}
                               <View className="mt-2 w-32 flex-row items-center justify-end self-end">
-                                <Text className="mr-1 text-xs font-semibold text-[#b87427]">
+                                <Text className="mr-1 text-caption font-semibold text-[#b87427]">
                                   {isExpanded ? 'Ocultar receta' : 'Ver receta'}
                                 </Text>
                                 <Ionicons
@@ -914,24 +914,24 @@ export default function HomeScreen() {
 
                           {/* Instrucciones desplegables: Ingredientes y Pasos */}
                           {isExpanded && (
-                            <View className="mt-3.5 border-t border-[#ded6ca]/70 pt-3">
+                            <View className="mt-3.5 border-t border-nanny-border/70 pt-3">
                               {/* Raciones */}
-                              <View className="mb-3 flex-row items-center gap-1.5 self-start rounded-lg bg-[#ded6ca]/50 px-2.5 py-1">
-                                <Ionicons name="people-outline" size={14} color="#6d83a1" />
-                                <Text className="text-xs font-semibold text-nanny-text">
+                              <View className="mb-3 flex-row items-center gap-1.5 self-start rounded-lg bg-nanny-soft/50 px-2.5 py-1">
+                                <Ionicons name="people-outline" size={14} color="#654875" />
+                                <Text className="text-caption font-semibold text-nanny-text">
                                   {receta.servings}
                                 </Text>
                               </View>
 
                               {/* Ingredientes */}
-                              <Text className="mb-1.5 text-xs font-bold uppercase tracking-wider text-nanny-muted">
+                              <Text className="mb-1.5 text-caption font-semibold uppercase tracking-wider text-nanny-muted">
                                 Ingredientes
                               </Text>
                               <View className="mb-3.5 gap-1.5">
                                 {receta.ingredients.map((ingrediente: string, idx: number) => (
                                   <View key={idx} className="flex-row items-start">
-                                    <Text className="mr-2 text-xs font-bold text-[#b87427]">•</Text>
-                                    <Text className="flex-1 text-xs text-nanny-text leading-relaxed">
+                                    <Text className="mr-2 text-caption font-semibold text-[#b87427]">•</Text>
+                                    <Text className="flex-1 text-caption text-nanny-text leading-relaxed">
                                       {ingrediente}
                                     </Text>
                                   </View>
@@ -939,18 +939,18 @@ export default function HomeScreen() {
                               </View>
 
                               {/* Pasos de preparación */}
-                              <Text className="mb-1.5 text-xs font-bold uppercase tracking-wider text-nanny-muted">
+                              <Text className="mb-1.5 text-caption font-semibold uppercase tracking-wider text-nanny-muted">
                                 Preparación paso a paso
                               </Text>
                               <View className="gap-2.5">
                                 {receta.steps.map((paso: string, idx: number) => (
                                   <View key={idx} className="flex-row items-start gap-2">
-                                    <View className="h-5 w-5 items-center justify-center rounded-full bg-[#ded6ca] mt-0.5">
+                                    <View className="h-5 w-5 items-center justify-center rounded-full bg-nanny-soft mt-0.5">
                                       <Text className="text-[10px] font-bold text-nanny-text">{idx + 1}</Text>
                                     </View>
                                     <Text
                                       style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
-                                      className="flex-1 text-xs leading-relaxed text-nanny-text"
+                                      className="flex-1 text-caption leading-relaxed text-nanny-text"
                                     >
                                       {paso}
                                     </Text>
@@ -963,20 +963,20 @@ export default function HomeScreen() {
                         );
                       })
                     ) : (
-                      <Text className="text-xs text-nanny-muted">No hay recetas para mostrar.</Text>
+                      <Text className="text-caption text-nanny-muted">No hay recetas para mostrar.</Text>
                     )}
                   </View>
                 )
               ) : (
                 /* Aviso para usuarios que no son PRO */
-                <View className="mx-4 mb-4 items-center justify-center rounded-2xl border border-[#ded6ca] bg-[#f7f3ec] p-5">
-                  <View className="mb-2.5 h-12 w-12 items-center justify-center rounded-full bg-[#ded6ca]/70">
+                <View className="mx-4 mb-4 items-center justify-center rounded-2xl border border-nanny-border bg-nanny-bg p-5">
+                  <View className="mb-2.5 h-12 w-12 items-center justify-center rounded-full bg-nanny-soft/70">
                     <Ionicons name="lock-closed" size={24} color="#b87427" />
                   </View>
-                  <Text className="text-base font-semibold text-nanny-text text-center">
+                  <Text className="text-body font-semibold text-nanny-text text-center">
                     Función exclusiva para usuarios PRO
                   </Text>
-                  <Text className="mt-1 text-center text-xs text-nanny-muted px-2">
+                  <Text className="mt-1 text-center text-caption text-nanny-muted px-2">
                     {recomendacionesTab === 'articulos'
                       ? 'Accede a artículos, guías y lecturas recomendadas según la edad y desarrollo de tu hijo.'
                       : 'Descubre recetas saludables y recomendaciones de alimentación adaptadas a su etapa.'}
@@ -988,7 +988,7 @@ export default function HomeScreen() {
                     className="mt-4 flex-row items-center rounded-xl bg-[#b87427] px-5 py-2.5 shadow-sm active:opacity-80"
                   >
                     <Ionicons name="star" size={16} color="white" />
-                    <Text className="ml-2 text-sm font-semibold text-white">Hazte PRO</Text>
+                    <Text className="ml-2 text-body font-semibold text-white">Hazte PRO</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -1002,7 +1002,7 @@ export default function HomeScreen() {
         <View className="flex-1 justify-end bg-black/50">
           <View className="bg-white rounded-t-3xl p-6 min-h-[300px]">
             <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-xl font-bold">Elegir Usuario</Text>
+              <Text className="text-subtitle font-semibold">Elegir Usuario</Text>
               <TouchableOpacity onPress={() => setIsUserModalVisible(false)}>
                 <Ionicons name="close" size={24} color="black" />
               </TouchableOpacity>
@@ -1015,22 +1015,22 @@ export default function HomeScreen() {
                 }}
                 className="mb-4 flex-row items-center rounded-2xl bg-nanny-card px-4 py-3"
               >
-                <Ionicons name="person-circle-outline" size={24} color="#6d83a1" />
-                <Text className="ml-3 text-base font-semibold text-nanny-text">Editar mi perfil</Text>
-                <Ionicons name="chevron-forward" size={20} color="#808080" style={{ marginLeft: 'auto' }} />
+                <Ionicons name="person-circle-outline" size={24} color="#654875" />
+                <Text className="ml-3 text-body font-semibold text-nanny-text">Editar mi perfil</Text>
+                <Ionicons name="chevron-forward" size={20} color="#6E5D78" style={{ marginLeft: 'auto' }} />
               </TouchableOpacity>
             )}
             {usersLoading ? (
-              <ActivityIndicator size="large" color="#6d83a1" />
+              <ActivityIndicator size="large" color="#654875" />
             ) : usersError ? (
               <View>
-                <Text className="mb-4 text-center text-sm text-red-400">{usersError}</Text>
-                <TouchableOpacity onPress={fetchUsers} className="self-center rounded-xl bg-[#6d83a1] px-5 py-3">
+                <Text className="mb-4 text-center text-body text-red-400">{usersError}</Text>
+                <TouchableOpacity onPress={fetchUsers} className="self-center rounded-xl bg-nanny-blue px-5 py-3">
                   <Text className="font-semibold text-white">Reintentar</Text>
                 </TouchableOpacity>
               </View>
             ) : users.length === 0 ? (
-              <Text className="text-center text-sm text-gray-500">No hay usuarios disponibles.</Text>
+              <Text className="text-center text-body text-gray-500">No hay usuarios disponibles.</Text>
             ) : (
               <FlatList
                 data={users}
@@ -1041,14 +1041,14 @@ export default function HomeScreen() {
                     className="flex-row items-center justify-between border-b border-gray-100 p-4"
                   >
                     <View className="flex-row items-center">
-                      <Text className="text-lg">{[item.name, item.surname].filter(Boolean).join(' ')}</Text>
+                      <Text className="text-body">{[item.name, item.surname].filter(Boolean).join(' ')}</Text>
                       {item.role === 'ADMIN' && (
-                        <Text className="ml-2 rounded-full bg-nanny-blue/15 px-2 py-0.5 text-xs font-semibold text-nanny-blue">
+                        <Text className="ml-2 rounded-full bg-nanny-blue/15 px-2 py-0.5 text-caption font-semibold text-nanny-blue">
                           Admin
                         </Text>
                       )}
                       {item.isPediatrician && (
-                        <Text className="ml-2 rounded-full bg-nanny-green/15 px-2 py-0.5 text-xs font-semibold text-nanny-green">
+                        <Text className="ml-2 rounded-full bg-nanny-green/15 px-2 py-0.5 text-caption font-semibold text-nanny-green">
                           Pediatra
                         </Text>
                       )}

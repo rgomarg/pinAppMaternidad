@@ -74,14 +74,14 @@ export default function NewThreadScreen() {
     >
       <View className="flex-row items-center justify-between px-6 py-3">
         <TouchableOpacity onPress={() => navigation.goBack()} accessibilityRole="button">
-          <Text className="text-base text-nanny-blue">Cancelar</Text>
+          <Text className="text-body text-nanny-blue">Cancelar</Text>
         </TouchableOpacity>
-        <Text className="text-lg font-bold text-nanny-text">Nuevo hilo</Text>
+        <Text className="text-subtitle font-semibold text-nanny-text">Nuevo hilo</Text>
         <TouchableOpacity onPress={publish} disabled={saving} accessibilityRole="button">
           {saving ? (
-            <ActivityIndicator color="#6d83a1" />
+            <ActivityIndicator color="#654875" />
           ) : (
-            <Text className={`text-base font-semibold ${submitted && !isValid ? 'text-nanny-muted' : 'text-nanny-blue'}`}>
+            <Text className={`text-body font-semibold ${submitted && !isValid ? 'text-nanny-muted' : 'text-nanny-blue'}`}>
               Publicar
             </Text>
           )}
@@ -89,39 +89,39 @@ export default function NewThreadScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
-        <Text className="mb-2 text-sm font-semibold text-nanny-muted">Título *</Text>
+        <Text className="mb-2 text-body font-semibold text-nanny-muted">Título *</Text>
         <TextInput
           value={title}
           onChangeText={setTitle}
           maxLength={MAX_TITLE}
           placeholder="¿Sobre qué quieres preguntar?"
-          placeholderTextColor="#a8a29a"
-          className="mb-1 rounded-2xl bg-white px-4 py-3 text-base text-nanny-text"
+          placeholderTextColor="#8F8296"
+          className="mb-1 rounded-2xl bg-white px-4 py-3 text-body text-nanny-text"
         />
         <View className="mb-5 flex-row">
           <FieldError message={submitted ? errors.title : null} />
-          <Text className="text-xs text-nanny-muted">
+          <Text className="text-caption text-nanny-muted">
             {title.length}/{MAX_TITLE}
           </Text>
         </View>
 
-        <Text className="mb-2 text-sm font-semibold text-nanny-muted">Mensaje *</Text>
+        <Text className="mb-2 text-body font-semibold text-nanny-muted">Mensaje *</Text>
         <TextInput
           value={content}
           onChangeText={setContent}
           maxLength={MAX_CONTENT}
           placeholder="Cuenta tu situación con el detalle que quieras"
-          placeholderTextColor="#a8a29a"
+          placeholderTextColor="#8F8296"
           multiline
           textAlignVertical="top"
           style={{ minHeight: 160 }}
-          className="mb-1 rounded-2xl bg-white px-4 py-3 text-base text-nanny-text"
+          className="mb-1 rounded-2xl bg-white px-4 py-3 text-body text-nanny-text"
         />
         <View className="mb-5 flex-row">
           <FieldError message={submitted ? errors.content : null} />
         </View>
 
-        <Text className="mb-2 text-sm font-semibold text-nanny-muted">Etiquetas *</Text>
+        <Text className="mb-2 text-body font-semibold text-nanny-muted">Etiquetas *</Text>
         <TagChips tags={tags} selected={tagIds} onToggle={toggleTag} />
         <View className="mt-1 flex-row">
           <FieldError message={submitted ? errors.tags : null} />
@@ -132,5 +132,5 @@ export default function NewThreadScreen() {
 }
 
 function FieldError({ message }: { message: string | null }) {
-  return <Text className="flex-1 text-xs text-red-500">{message ?? ''}</Text>;
+  return <Text className="flex-1 text-caption text-red-500">{message ?? ''}</Text>;
 }

@@ -40,18 +40,18 @@ const SEX_OPTIONS = [
 type Sex = (typeof SEX_OPTIONS)[number]["value"];
 
 const inputClass =
-    "bg-nanny-card border border-[#e0d9c9] rounded-2xl px-4 py-4 text-base text-nanny-text";
+    "bg-nanny-card border border-nanny-border rounded-2xl px-4 py-4 text-body text-nanny-text";
 
 function SectionTitle({ children }: { children: string }) {
     return (
-        <Text className="text-sm font-bold text-nanny-red uppercase mt-8 mb-3">
+        <Text className="text-body font-semibold text-nanny-red uppercase mt-8 mb-3">
             {children}
         </Text>
     );
 }
 
 function Label({ children }: { children: string }) {
-    return <Text className="text-sm text-nanny-muted mb-2 mt-4">{children}</Text>;
+    return <Text className="text-body text-nanny-muted mb-2 mt-4">{children}</Text>;
 }
 
 // Campo de texto con botón "+" que va acumulando elementos en una lista
@@ -79,7 +79,7 @@ function TagListInput({
                 <TextInput
                     className={`flex-1 ${inputClass}`}
                     placeholder={placeholder}
-                    placeholderTextColor="#9a9a8e"
+                    placeholderTextColor="#8F8296"
                     value={text}
                     onChangeText={setText}
                     onSubmitEditing={add}
@@ -88,7 +88,7 @@ function TagListInput({
                     onPress={add}
                     className="w-14 bg-nanny-blue rounded-2xl items-center justify-center"
                 >
-                    <Text className="text-white text-xl">+</Text>
+                    <Text className="text-white text-body">+</Text>
                 </TouchableOpacity>
             </View>
             {items.length > 0 && (
@@ -97,9 +97,9 @@ function TagListInput({
                         <TouchableOpacity
                             key={`${item}-${i}`}
                             onPress={() => onChange(items.filter((_, idx) => idx !== i))}
-                            className="bg-nanny-card border border-[#e0d9c9] rounded-full px-3 py-1"
+                            className="bg-nanny-card border border-nanny-border rounded-full px-3 py-1"
                         >
-                            <Text className="text-nanny-text text-sm">{item} ✕</Text>
+                            <Text className="text-nanny-text text-body">{item} ✕</Text>
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -134,14 +134,14 @@ function MedicineListInput({
                 <TextInput
                     className={`flex-1 ${inputClass}`}
                     placeholder="Medicamento"
-                    placeholderTextColor="#9a9a8e"
+                    placeholderTextColor="#8F8296"
                     value={name}
                     onChangeText={setName}
                 />
                 <TextInput
                     className={`w-28 ${inputClass}`}
                     placeholder="Dosis"
-                    placeholderTextColor="#9a9a8e"
+                    placeholderTextColor="#8F8296"
                     value={dosage}
                     onChangeText={setDosage}
                     onSubmitEditing={add}
@@ -150,7 +150,7 @@ function MedicineListInput({
                     onPress={add}
                     className="w-14 bg-nanny-blue rounded-2xl items-center justify-center"
                 >
-                    <Text className="text-white text-xl">+</Text>
+                    <Text className="text-white text-body">+</Text>
                 </TouchableOpacity>
             </View>
             {items.length > 0 && (
@@ -159,9 +159,9 @@ function MedicineListInput({
                         <TouchableOpacity
                             key={`${item.name}-${i}`}
                             onPress={() => onChange(items.filter((_, idx) => idx !== i))}
-                            className="bg-nanny-card border border-[#e0d9c9] rounded-full px-3 py-1"
+                            className="bg-nanny-card border border-nanny-border rounded-full px-3 py-1"
                         >
-                            <Text className="text-nanny-text text-sm">
+                            <Text className="text-nanny-text text-body">
                                 {item.name} · {item.dosage} ✕
                             </Text>
                         </TouchableOpacity>
@@ -289,12 +289,12 @@ export default function ChildRegistrationScreen() {
             {/* Cabecera */}
             <View className="flex-row items-center justify-between px-6 py-4 border-b border-nanny-card">
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text className="text-base text-nanny-muted">Cancelar</Text>
+                    <Text className="text-body text-nanny-muted">Cancelar</Text>
                 </TouchableOpacity>
-                <Text className="text-lg font-bold text-nanny-text">{isEditing ? "Editar niño/a" : "Añadir niño/a"}</Text>
+                <Text className="text-subtitle font-semibold text-nanny-text">{isEditing ? "Editar niño/a" : "Añadir niño/a"}</Text>
                 <TouchableOpacity onPress={handleSave} disabled={saving}>
                     <Text
-                        className={`text-base font-semibold ${isValid ? "text-nanny-blue" : "text-[#c4c0b6]"}`}
+                        className={`text-body font-semibold ${isValid ? "text-nanny-blue" : "text-nanny-subtle"}`}
                     >
                         {isEditing ? "Guardar cambios" : "Guardar"}
                     </Text>
@@ -314,7 +314,7 @@ export default function ChildRegistrationScreen() {
                 <TextInput
                     className={inputClass}
                     placeholder="Nombre"
-                    placeholderTextColor="#9a9a8e"
+                    placeholderTextColor="#8F8296"
                     value={name}
                     onChangeText={setName}
                 />
@@ -323,7 +323,7 @@ export default function ChildRegistrationScreen() {
                 <TextInput
                     className={inputClass}
                     placeholder="Apellidos"
-                    placeholderTextColor="#9a9a8e"
+                    placeholderTextColor="#8F8296"
                     value={surname}
                     onChangeText={setSurname}
                 />
@@ -333,10 +333,10 @@ export default function ChildRegistrationScreen() {
                     onPress={openDatePicker}
                     className={`flex-row items-center justify-between ${inputClass}`}
                 >
-                    <Text className={birthDate ? "text-base text-nanny-text" : "text-base text-[#9a9a8e]"}>
+                    <Text className={birthDate ? "text-body text-nanny-text" : "text-body text-nanny-subtle"}>
                         {birthDate ? formatDate(birthDate) : "dd/mm/aaaa"}
                     </Text>
-                    <Ionicons name="calendar-outline" size={20} color="#3a3a3a" />
+                    <Ionicons name="calendar-outline" size={20} color="#2D1E36" />
                 </TouchableOpacity>
                 {Platform.OS === "ios" && showIosPicker && (
                     <DateTimePicker
@@ -358,13 +358,13 @@ export default function ChildRegistrationScreen() {
                                 onPress={() => setSex(option.value)}
                                 className={`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-2xl border ${selected
                                         ? "bg-nanny-blue border-nanny-blue"
-                                        : "bg-nanny-card border-[#e0d9c9]"
+                                        : "bg-nanny-card border-nanny-border"
                                     }`}
                             >
                                 <Ionicons
                                     name={option.icon}
                                     size={18}
-                                    color={selected ? "#ffffff" : "#6b6b60"}
+                                    color={selected ? "#ffffff" : "#6E5D78"}
                                 />
                                 <Text
                                     className={`font-semibold ${selected ? "text-white" : "text-nanny-muted"}`}
@@ -386,7 +386,7 @@ export default function ChildRegistrationScreen() {
                                 onPress={() => setBloodGroup(selected ? null : group)}
                                 className={`px-4 py-2 rounded-full border ${selected
                                         ? "bg-nanny-blue border-nanny-blue"
-                                        : "bg-nanny-card border-[#e0d9c9]"
+                                        : "bg-nanny-card border-nanny-border"
                                     }`}
                             >
                                 <Text
@@ -404,22 +404,22 @@ export default function ChildRegistrationScreen() {
                 <SectionTitle>Medidas actuales</SectionTitle>
                 <View className="flex-row gap-5">
                     <View className="flex-1">
-                        <Text className="text-sm text-nanny-muted mb-2">Peso (kg)</Text>
+                        <Text className="text-body text-nanny-muted mb-2">Peso (kg)</Text>
                         <TextInput
                             className={inputClass}
                             placeholder="ej. 22.5"
-                            placeholderTextColor="#9a9a8e"
+                            placeholderTextColor="#8F8296"
                             keyboardType="decimal-pad"
                             value={weight}
                             onChangeText={setWeight}
                         />
                     </View>
                     <View className="flex-1">
-                        <Text className="text-sm text-nanny-muted mb-2">Altura (cm)</Text>
+                        <Text className="text-body text-nanny-muted mb-2">Altura (cm)</Text>
                         <TextInput
                             className={inputClass}
                             placeholder="ej. 118"
-                            placeholderTextColor="#9a9a8e"
+                            placeholderTextColor="#8F8296"
                             keyboardType="decimal-pad"
                             value={height}
                             onChangeText={setHeight}
