@@ -15,7 +15,8 @@ import CrearEventoScreen from './src/screens/CrearEventoScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import * as Notifications from 'expo-notifications';
 import { FamilySelectionProvider, useFamilySelection } from './src/context/FamilySelectionContext';
-import { COLORS, TYPOGRAPHY } from './src/theme';
+import { COLORS, FONTS } from './src/theme';
+import { useFonts, Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold } from '@expo-google-fonts/figtree';
 
 
 const Tab = createBottomTabNavigator();
@@ -51,26 +52,27 @@ function MainTabs() {
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
 
+            // Iconos de línea también cuando la pestaña está activa (como en el prototipo)
             if (route.name === 'Datos') {
-              iconName = focused ? 'analytics' : 'analytics-outline';
+              iconName = 'pulse-outline';
             } else if (route.name === 'Calendario') {
-              iconName = focused ? 'calendar' : 'calendar-outline';
+              iconName = 'calendar-clear-outline';
             } else if (route.name === 'Familia') {
-              iconName = focused ? 'people' : 'people-outline';
+              iconName = 'people-outline';
             } else if (route.name === 'Foro') {
-              iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+              iconName = 'chatbox-outline';
             }
 
             return <TabIcon name={iconName as any} focused={focused} size={size} color={color} />;
           },
           tabBarActiveTintColor: COLORS.primary,
-          tabBarInactiveTintColor: COLORS.muted,
+          tabBarInactiveTintColor: COLORS.tabInactive,
           tabBarStyle: {
             backgroundColor: COLORS.surface,
             borderTopWidth: 0,
-            height: 70,
-            paddingBottom: 10,
-            paddingTop: 10,
+            height: 76,
+            paddingBottom: 14,
+            paddingTop: 12,
             shadowColor: COLORS.primary,
             shadowOffset: { width: 0, height: -6 },
             shadowOpacity: 0.06,
@@ -78,25 +80,26 @@ function MainTabs() {
             elevation: 12,
           },
           tabBarLabelStyle: {
-            fontSize: TYPOGRAPHY.caption.fontSize,
-            fontWeight: '700',
+            fontSize: 11,
+            fontFamily: FONTS.semibold,
+            marginTop: 2,
           }
         })}
         >
           <Tab.Screen
             name="Datos"
             component={HomeScreen}
-            options={isAdmin ? { title: 'Inicio', tabBarIcon: adminHomeIcon } : undefined}
+            options={isAdmin ? { title: 'Inicio', tabBarIcon: adminHomeIcon } : { tabBarLabel: 'Inicio' }}
           />
-          {!isAdmin && <Tab.Screen name="Calendario" component={CalendarioScreen} />}
           {!isAdmin && <Tab.Screen name="Familia" component={FamiliaScreen} />}
-          <Tab.Screen name="Foro" component={ForoScreen} />
+          {!isAdmin && <Tab.Screen name="Calendario" component={CalendarioScreen} />}
+          <Tab.Screen name="Foro" component={ForoScreen} options={{ tabBarLabel: 'Comunidad' }} />
         </Tab.Navigator>
   );
 }
 
 const adminHomeIcon = ({ focused, color, size }: { focused: boolean; color: string; size: number }) => (
-  <TabIcon name={focused ? 'shield-checkmark' : 'shield-checkmark-outline'} focused={focused} size={size} color={color} />
+  <TabIcon name="shield-checkmark-outline" focused={focused} size={size} color={color} />
 );
 
 // Icono de pestaña con una pequeña barra encima cuando está activa (solo estético)
@@ -105,15 +108,17 @@ function TabIcon({ name, focused, size, color }: { name: React.ComponentProps<ty
     <View style={{ alignItems: 'center' }}>
       {focused && (
         <View
-          style={{ position: 'absolute', top: -10, width: 28, height: 3, borderRadius: 2, backgroundColor: COLORS.primary }}
+          style={{ position: 'absolute', top: -12, width: 28, height: 3, borderRadius: 2, backgroundColor: COLORS.primary }}
         />
       )}
-      <Ionicons name={name} size={size} color={color} />
+      <Ionicons name={name} size={22} color={color} />
     </View>
   );
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({ Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold });
+
   useEffect(() => {
     async function configureNotifications() {
       // 1. Canal predeterminado para Android con máxima importancia y sonido
@@ -137,6 +142,11 @@ export default function App() {
     }
     configureNotifications();
   }, []);
+
+  // Hasta que Figtree esté cargada se muestra solo el fondo, para no pintar con la fuente del sistema
+  if (!fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: COLORS.background }} />;
+  }
 
   return (
     <NavigationContainer>

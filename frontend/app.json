@@ -2,7 +2,7 @@
   "expo": {
     "name": "frontend",
     "slug": "frontend",
-    "owner" : "pinMaternidad",
+    "owner": "pinMaternidad",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -44,7 +44,8 @@
           "photosPermission": "Permitir acceso a tus fotos para elegir una imagen de código QR compartido.",
           "cameraPermission": "Permitir acceso a la cámara para hacer una foto del código QR compartido."
         }
-      ]
-      ]
+      ],
+      "expo-font"
+    ]
   }
 }

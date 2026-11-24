@@ -22,10 +22,21 @@ module.exports = {
         'nanny-border': '#E7DAEA',      // bordes y separadores
         'nanny-border-strong': '#D5C3DD',
         'nanny-green': '#65a882',
-        'nanny-red': '#cc7a66'
+        'nanny-red': '#cc7a66',
+        'nanny-green-muted': '#5E8A6E',
+        'nanny-danger': '#C0563F',
+        'nanny-disabled': '#B8A7C6'
+      },
+      // Figtree: cada grosor es una familia (ver FONTS en src/theme.ts)
+      fontFamily: {
+        'figtree': ['Figtree_400Regular'],
+        'figtree-medium': ['Figtree_500Medium'],
+        'figtree-semibold': ['Figtree_600SemiBold'],
+        'figtree-bold': ['Figtree_700Bold'],
       },
       // Escala tipográfica única: título, subtítulo, texto general y texto pequeño
       fontSize: {
+        'display': ['34px', { lineHeight: '40px' }],
         'title': ['26px', { lineHeight: '32px' }],
         'subtitle': ['18px', { lineHeight: '24px' }],
         'body': ['15px', { lineHeight: '21px' }],

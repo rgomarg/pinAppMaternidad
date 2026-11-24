@@ -63,6 +63,7 @@ async function main() {
         create: [
           {
             name: 'Leo',
+            avatarUrl: 'https://api.dicebear.com/9.x/adventurer/png?seed=Leo&size=128',
             birthDate: new Date('2025-08-15T10:00:00Z'),
             bloodGroup: 'O+',
             allergies: 'Ninguna conocida',
@@ -126,6 +127,7 @@ async function main() {
         create: [
           {
             name: 'Sofía',
+            avatarUrl: 'https://api.dicebear.com/9.x/adventurer/png?seed=Sofia&size=128',
             birthDate: new Date('2026-01-10T08:30:00Z'),
             bloodGroup: 'A-',
             sex: Sex.FEMALE,
@@ -167,6 +169,7 @@ async function main() {
         create: [
           {
             name: 'Mateo',
+            avatarUrl: 'https://api.dicebear.com/9.x/adventurer/png?seed=Mateo&size=128',
             birthDate: new Date('2021-03-22T16:00:00Z'),
             bloodGroup: 'B+',
             allergies: 'Penicilina, Polen',
@@ -239,6 +242,7 @@ async function main() {
         create: [
           {
             name: 'Lucía',
+            avatarUrl: 'https://api.dicebear.com/9.x/adventurer/png?seed=Lucia&size=128',
             surname: 'Ruiz',
             birthDate: new Date('2022-05-03T07:00:00Z'),
             bloodGroup: 'A+',
@@ -290,6 +294,7 @@ async function main() {
           },
           {
             name: 'Pablo',
+            avatarUrl: 'https://api.dicebear.com/9.x/adventurer/png?seed=Pablo&size=128',
             surname: 'Ruiz',
             birthDate: new Date('2025-11-20T05:30:00Z'),
             bloodGroup: '0-',

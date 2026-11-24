@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useRef, useState } from 
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -55,6 +56,7 @@ type Child = {
   birthDate: string;
   bloodGroup?: string | null;
   allergies?: string | null;
+  avatarUrl?: string | null;
   isShared?: boolean;
   expiresAt?: string;
   slug?: string;
@@ -97,6 +99,7 @@ type Vaccine = {
   name: string;
   appliedAt: string | null;
   scheduledFor: string | null;
+  lot?: string | null; // el backend aún no guarda el lote: si llega, se muestra
 };
 
 
@@ -137,53 +140,130 @@ async function fetchChildDashboard(childId: number): Promise<Dashboard> {
   };
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+// whiteTop: la zona de la barra de estado se pinta de blanco para que continúe la cabecera blanca
+function Shell({ children, whiteTop = false }: { children: React.ReactNode; whiteTop?: boolean }) {
   const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1, backgroundColor: palette.background, paddingTop: insets.top }}>
       <ScreenBackground />
+      {whiteTop && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: COLORS.surface }} />
+      )}
       {children}
     </View>
   );
 }
 
+// Cabecera blanca: "< Volver" a la izquierda, título centrado y una acción a la derecha
 function Header({
   title,
   onBack,
+  backLabel = 'Atrás',
   action,
 }: {
   title: string;
   onBack?: () => void;
+  backLabel?: string;
   action?: React.ReactNode;
 }) {
   return (
-    <View className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 py-4">
-      <TouchableOpacity onPress={onBack} disabled={!onBack} className="min-w-[72px]">
+    <View className="flex-row items-center justify-between bg-nanny-card px-5 pb-4 pt-3">
+      <TouchableOpacity onPress={onBack} disabled={!onBack} className="min-w-[96px]" accessibilityRole="button">
         {onBack && (
           <View className="flex-row items-center">
             <Ionicons name="chevron-back" size={20} color={palette.blue} />
-            <Text style={{ color: palette.blue }} className="text-body">Libro</Text>
+            <Text style={{ color: palette.blue }} className="ml-1 font-figtree-medium text-[16px]">{backLabel}</Text>
           </View>
         )}
       </TouchableOpacity>
-      <Text style={{ color: palette.text }} className="text-subtitle font-semibold">{title}</Text>
-      <View className="min-w-[72px] items-end">{action}</View>
+      <Text style={{ color: palette.text }} className="flex-1 text-center font-figtree-semibold text-[17px]" numberOfLines={1}>
+        {title}
+      </Text>
+      <View className="min-w-[96px] items-end">{action}</View>
     </View>
   );
 }
 
-function Avatar({ child, size = 72 }: { child: Child; size?: number }) {
+// Foto del menor (Child.avatarUrl) con anillo de color; sin foto, la inicial
+function Avatar({ child, size = 72, ringColor = COLORS.primarySoft }: { child: Child; size?: number; ringColor?: string }) {
   return (
     <View
-      style={{ width: size, height: size, borderRadius: size / 2, borderColor: palette.red }}
-      className="items-center justify-center overflow-hidden border-4 bg-nanny-soft"
+      style={{ width: size, height: size, borderRadius: size / 2, borderColor: ringColor, borderWidth: 3 }}
+      className="items-center justify-center overflow-hidden bg-nanny-soft"
     >
-      <Text style={{ color: palette.blue, fontSize: size * 0.35 }} className="font-bold">
-        {child.name?.charAt(0) || '?'}
-      </Text>
+      {child.avatarUrl ? (
+        <Image source={{ uri: child.avatarUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+      ) : (
+        <Text style={{ color: palette.blue, fontSize: size * 0.35 }} className="font-figtree-semibold">
+          {child.name?.charAt(0) || '?'}
+        </Text>
+      )}
     </View>
   );
 }
+
+// ------------------------------
+// Formato de fechas y textos (solo presentación)
+// ------------------------------
+const MONTHS_SHORT_LOWER = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
+const MONTHS_SHORT_CAP = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+const MONTHS_LONG_LOWER = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+// "15 may 2019"
+function formatDayShort(value: string | Date) {
+  const d = new Date(value);
+  return `${d.getDate()} ${MONTHS_SHORT_LOWER[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// "12 de marzo de 2019"
+function formatDayLong(value: string | Date) {
+  const d = new Date(value);
+  return `${d.getDate()} de ${MONTHS_LONG_LOWER[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+// "Mar 2024"
+function formatMonthYearCap(value: string | Date) {
+  const d = new Date(value);
+  return `${MONTHS_SHORT_CAP[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// "02 Sep 2025"
+function formatDayCap(value: string | Date) {
+  const d = new Date(value);
+  return `${String(d.getDate()).padStart(2, '0')} ${MONTHS_SHORT_CAP[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// 12 -> "2 veces al día", 24 -> "1 vez al día", 8 -> "cada 8h"
+function frequencyLabel(intervalHours: number | null) {
+  if (!intervalHours) return null;
+  if (intervalHours >= 12 && 24 % intervalHours === 0) {
+    const times = 24 / intervalHours;
+    return `${times} ${times === 1 ? 'vez' : 'veces'} al día`;
+  }
+  return `cada ${intervalHours}h`;
+}
+
+// "Horarios: 08:00, 20:00" -> "08:00 · 20:00"; otras instrucciones se muestran tal cual
+function scheduleLabel(instructions?: string | null) {
+  if (!instructions) return null;
+  if (/^Horarios:/i.test(instructions)) {
+    return instructions.replace(/^Horarios:\s*/i, '').split(',').map((t) => t.trim()).filter(Boolean).join(' · ');
+  }
+  return instructions;
+}
+
+function isMedicineActive(medicine: { endDate: string | null }) {
+  return !medicine.endDate || new Date(medicine.endDate) >= new Date();
+}
+
+const SEVERITY_STYLES: Record<AllergySeverity, { label: string; bg: string; color: string }> = {
+  severa: { label: 'Severa', bg: '#F9E1E1', color: '#B23B3B' },
+  moderada: { label: 'Moderada', bg: '#FBF0CF', color: '#8A6A12' },
+  leve: { label: 'Leve', bg: '#E3F1E6', color: '#3F7A52' },
+};
+
+const VACCINE_DONE = '#E2566B';
+const VACCINE_PENDING = '#D94F8A';
 
 function getAge(birthDate: string) {
   const birth = new Date(birthDate);
@@ -240,8 +320,8 @@ function ChildCard({
   onDeleted: () => void;
 }) {
   const pendingVaccines = child.vaccines.filter((vaccine) => !vaccine.appliedAt).length;
-  const activeMedicines = child.medicine.filter((medicine) => !medicine.endDate || new Date(medicine.endDate) >= new Date()).length;
-  
+  const activeMedicines = child.medicine.filter(isMedicineActive).length;
+
   const [exporting, setExporting] = useState(false);
   const fullName = [child.name, child.surname].filter(Boolean).join(' ');
   const remainingMinutes = child.isShared && child.expiresAt ? getRemainingShareMinutes(child.expiresAt) : null;
@@ -302,86 +382,92 @@ function ChildCard({
   };
 
   return (
-    <View className="mb-5 rounded-3xl bg-nanny-card" style={SHADOWS.card}>
-    <View className="overflow-hidden rounded-3xl border border-nanny-border bg-nanny-card">
-      <TouchableOpacity
-        onPress={openMenu}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityRole="button"
-        accessibilityLabel={`Más opciones de ${fullName}`}
-        className="absolute right-3 top-3 z-10 h-9 w-9 items-center justify-center rounded-full"
-      >
-        <Ionicons name="ellipsis-horizontal" size={22} color={palette.muted} />
-      </TouchableOpacity>
-      <TouchableOpacity onPress={onPress} className="flex-row items-center px-5 pb-4 pt-5">
-        <Avatar child={child} size={66} />
-        <View className="ml-5 flex-1">
-          <Text style={{ color: palette.text }} className="text-subtitle font-semibold">{fullName}</Text>
-          <Text style={{ color: palette.muted }} className="mt-1 text-body">
-            {getAge(child.birthDate)} años · Sangre {child.bloodGroup || '—'}
-          </Text>
-          {child.isShared && remainingMinutes !== null && (
-            <View className="mt-2 self-start rounded-full bg-nanny-soft px-3 py-1">
-              <Text style={{ color: palette.blue }} className="text-caption font-semibold">
-                Acceso temporal · {remainingMinutes} {remainingMinutes === 1 ? 'min restante' : 'min restantes'}
-              </Text>
-            </View>
-          )}
-          {allergyRecords(child.allergies).map((allergy) => (
-            <View key={allergy.name} className={`mt-2 self-start rounded-full px-3 py-1 ${allergy.severity === 'severa' ? 'bg-[#ffe1dc]' : 'bg-[#fff1ec]'}`}>
-              <Text style={{ color: palette.red }} className="text-caption">
-                {allergy.severity === 'severa' ? '⚠ Alergia severa: ' : '⚠ '}{allergy.name}
-              </Text>
-            </View>
-          ))}
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={palette.muted} />
-      </TouchableOpacity>
+    <View className="mb-4 rounded-[28px] bg-nanny-card" style={SHADOWS.card}>
+      <View className="overflow-hidden rounded-[28px]">
+        <TouchableOpacity
+          onPress={openMenu}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel={`Más opciones de ${fullName}`}
+          className="absolute right-4 top-4 z-10 h-8 w-8 items-center justify-center rounded-full bg-nanny-soft"
+        >
+          <Ionicons name="ellipsis-horizontal" size={18} color={palette.text} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onPress} activeOpacity={0.8} className="flex-row items-center px-5 pb-2 pt-5">
+          <Avatar child={child} size={72} />
+          <View className="ml-4 flex-1 pr-8">
+            <Text style={{ color: palette.text }} className="font-figtree-medium text-[19px]">{fullName}</Text>
+            <Text style={{ color: palette.muted }} className="mt-0.5 font-figtree text-[14px]">
+              {getAge(child.birthDate)} años · Sangre {child.bloodGroup || '—'}
+            </Text>
+            {child.isShared && remainingMinutes !== null && (
+              <View className="mt-2 self-start rounded-full bg-nanny-soft px-2.5 py-0.5">
+                <Text style={{ color: palette.blue }} className="font-figtree-medium text-[11px]">
+                  Acceso temporal · {remainingMinutes} {remainingMinutes === 1 ? 'min restante' : 'min restantes'}
+                </Text>
+              </View>
+            )}
+            {allergyRecords(child.allergies).length > 0 && (
+              <View className="mt-2 flex-row flex-wrap gap-1.5">
+                {allergyRecords(child.allergies).map((allergy) => (
+                  <View key={allergy.name} className="rounded-full bg-[#F9E1E6] px-2.5 py-0.5">
+                    <Text className="font-figtree-medium text-[11px] text-[#8A3A55]">{allergy.name}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
 
-      <View className="flex-row border-y border-nanny-border">
-        <PreviewStat value={child.conditions.length + child.diseases.length} label="Condiciones" />
-        <PreviewStat value={activeMedicines} label="Med. activos" />
-        <PreviewStat value={pendingVaccines} label="Vacunas pend." valueColor={pendingVaccines ? palette.red : palette.text} />
-      </View>
+        <TouchableOpacity onPress={onPress} activeOpacity={0.8} className="flex-row py-3">
+          <PreviewStat value={child.conditions.length + child.diseases.length} label="Condiciones" />
+          <PreviewStat value={activeMedicines} label="Medicación" divider />
+          <PreviewStat value={pendingVaccines} label="Vacunas pend." divider />
+        </TouchableOpacity>
 
-      <View className="flex-row items-center px-5 py-3">
-        <Text style={{ color: palette.muted }} className="flex-1 text-caption">
-          {child.isShared ? 'Ficha compartida mediante QR (solo lectura)' : 'Sin seguimientos registrados'}
-        </Text>
+        {child.isShared ? (
+          <View className="border-t border-nanny-border px-5 py-3">
+            <Text style={{ color: palette.muted }} className="font-figtree text-caption">
+              Ficha compartida mediante QR (solo lectura)
+            </Text>
+          </View>
+        ) : (
+          <View className="flex-row border-t border-nanny-border">
+            <TouchableOpacity
+              onPress={onShareQr}
+              className="flex-1 flex-row items-center justify-center border-r border-nanny-border py-4"
+              accessibilityRole="button"
+              accessibilityLabel={`Compartir QR de ${fullName}`}
+            >
+              <Ionicons name="qr-code-outline" size={17} color={COLORS.primaryDark} />
+              <Text style={{ color: COLORS.primaryDark }} className="ml-2.5 font-figtree text-[16px]">Compartir QR</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => exportData(child.id)}
+              disabled={exporting}
+              className="flex-1 flex-row items-center justify-center py-4"
+              accessibilityRole="button"
+              accessibilityLabel={`Guardar PDF de ${fullName}`}
+            >
+              {exporting ? (
+                <ActivityIndicator size="small" color={COLORS.primaryDark} />
+              ) : (
+                <Ionicons name="download-outline" size={17} color={COLORS.primaryDark} />
+              )}
+              <Text style={{ color: COLORS.primaryDark }} className="ml-2.5 font-figtree text-[16px]">Guardar PDF</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
-      {!child.isShared && (
-        <View className="flex-row border-t border-nanny-border bg-nanny-bg">
-          <TouchableOpacity
-            onPress={onShareQr}
-            className="flex-1 flex-row items-center justify-center border-r border-nanny-border py-3.5"
-            accessibilityRole="button"
-            accessibilityLabel={`Compartir QR de ${fullName}`}
-          >
-            <Ionicons name="qr-code-outline" size={18} color={palette.blue} />
-            <Text style={{ color: palette.blue }} className="ml-2 text-body font-semibold">Compartir QR</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => exportData(child.id)}
-            disabled={exporting}
-            className="flex-1 flex-row items-center justify-center py-3.5"
-            accessibilityRole="button"
-            accessibilityLabel={`Guardar PDF de ${fullName}`}
-          >
-            <Ionicons name="download-outline" size={18} color={palette.blue} />
-            <Text style={{ color: palette.blue }} className="ml-2 text-body font-semibold">Guardar PDF</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
     </View>
   );
 }
 
-function PreviewStat({ value, label, valueColor = palette.text }: { value: number; label: string; valueColor?: string }) {
+function PreviewStat({ value, label, divider = false }: { value: number; label: string; divider?: boolean }) {
   return (
-    <View className="flex-1 items-center border-r border-nanny-border py-3 last:border-r-0">
-      <Text style={{ color: valueColor }} className="text-subtitle font-semibold">{value}</Text>
-      <Text style={{ color: palette.muted }} className="mt-1 text-[11px]">{label}</Text>
+    <View className={`flex-1 items-center py-2 ${divider ? 'border-l border-nanny-border' : ''}`}>
+      <Text style={{ color: palette.text }} className="font-figtree-medium text-[18px]">{value}</Text>
+      <Text style={{ color: palette.muted }} className="mt-1 font-figtree text-[11px]">{label}</Text>
     </View>
   );
 }
@@ -391,6 +477,7 @@ function ChildPickerScreen() {
   const { selectedUserId: userId } = useFamilySelection();
   const [children, setChildren] = useState<ChildPreview[]>([]);
   const [sharedChildren, setSharedChildren] = useState<SharedChildProfile[]>([]);
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadChildren = useCallback(async () => {
@@ -401,11 +488,13 @@ function ChildPickerScreen() {
 
       if (userId === null) {
         setChildren([]);
+        setUserAvatarUrl(null);
         return;
       }
       const response = await fetch(`${API_URL}/user/${userId}`);
       if (!response.ok) throw new Error();
       const profile = await response.json();
+      setUserAvatarUrl(profile.avatarUrl ?? null);
       const profiles = Array.isArray(profile.children)
         ? await Promise.all(profile.children.map(async (child: Child) => {
           return fetchChildDashboard(child.id) as Promise<ChildPreview>;
@@ -442,7 +531,7 @@ function ChildPickerScreen() {
     if (userId === null) {
       Alert.alert(
         'Selecciona un usuario',
-        'Debes seleccionar primero un usuario en la pestaña Datos para vincular el menor a su perfil.',
+        'Debes seleccionar primero un usuario en la pestaña Inicio para vincular el menor a su perfil.',
       );
       return;
     }
@@ -451,13 +540,13 @@ function ChildPickerScreen() {
 
   return (
     <Shell>
-      <View className="flex-row items-center justify-between px-6 pb-2 pt-3">
+      <View className="flex-row items-center justify-between px-5 pb-2 pt-4">
         <View className="flex-1 pr-3">
-          <Text style={{ color: palette.muted }} className="mb-0.5 text-body font-medium">
-            Registro médico
-          </Text>
-          <Text style={{ color: palette.text }} className="text-title font-bold">
+          <Text style={{ color: palette.text }} className="font-figtree-medium text-display">
             Libro de familia
+          </Text>
+          <Text style={{ color: palette.muted }} className="mt-1 font-figtree text-[14px]">
+            Pulsa para ver su información médica
           </Text>
         </View>
         <View className="flex-row items-center gap-3">
@@ -470,27 +559,37 @@ function ChildPickerScreen() {
           >
             <Ionicons name="scan-outline" size={20} color={palette.blue} />
           </TouchableOpacity>
-          <View className="relative h-11 w-11 items-center justify-center rounded-full bg-nanny-blue">
-            <Text className="text-body font-semibold text-white">
-              {userId ? String(userId) : '?'}
-            </Text>
-            <View className="absolute -bottom-0.5 -right-0.5 rounded-full bg-white p-0.5">
-              <View className="h-3.5 w-3.5 items-center justify-center rounded-full bg-nanny-blue">
-                <Ionicons name="person" size={8} color="#ffffff" />
+          {/* Igual que en Inicio: abre el selector de usuarios (con "Editar mi perfil") */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Datos', { openUserPicker: Date.now() })}
+            accessibilityRole="button"
+            accessibilityLabel="Cambiar de usuario o editar mi perfil"
+            className="relative"
+          >
+            <View className="h-11 w-11 rounded-full border-2 border-nanny-blue p-0.5">
+              <View className="flex-1 items-center justify-center overflow-hidden rounded-full bg-nanny-blue">
+                {userAvatarUrl ? (
+                  <Image source={{ uri: userAvatarUrl }} style={{ width: '100%', height: '100%' }} />
+                ) : (
+                  <Text className="font-figtree-semibold text-body text-white">{userId ? String(userId) : '?'}</Text>
+                )}
               </View>
             </View>
-          </View>
+            <View className="absolute -bottom-0.5 -right-0.5 h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-white bg-nanny-blue">
+              <Ionicons name="person" size={8} color="#ffffff" />
+            </View>
+          </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 48 }}>
         {userId === null && combinedChildren.length === 0 && (
-          <View className="mb-6">
-            <Text style={{ color: palette.text }} className="text-subtitle font-semibold">
+          <View className="mb-6 px-1">
+            <Text style={{ color: palette.text }} className="font-figtree-semibold text-subtitle">
               Selecciona un usuario
             </Text>
-            <Text style={{ color: palette.muted }} className="mt-2 text-body">
-              Elige un usuario en la pestaña Datos para cargar sus hijos o vincular temporalmente un menor mediante QR.
+            <Text style={{ color: palette.muted }} className="mt-2 font-figtree text-body">
+              Elige un usuario en la pestaña Inicio para cargar sus hijos o vincular temporalmente un menor mediante QR.
             </Text>
           </View>
         )}
@@ -508,12 +607,12 @@ function ChildPickerScreen() {
         {userId !== null && (
           <TouchableOpacity
             onPress={() => navigation.navigate('RegistroHijo', { userId })}
-            className="flex-row items-center justify-center rounded-3xl border border-dashed border-nanny-blue py-4"
+            className="flex-row items-center justify-center rounded-full border-[1.5px] border-dashed border-[#BFAFCB] bg-white/30 py-4"
             accessibilityRole="button"
-            accessibilityLabel="Añadir hijo"
+            accessibilityLabel="Añadir niño o niña"
           >
-            <Ionicons name="add" size={20} color={palette.blue} />
-            <Text style={{ color: palette.blue }} className="ml-2 text-body font-semibold">Añadir hijo</Text>
+            <Ionicons name="add-circle-outline" size={20} color={COLORS.primaryDark} />
+            <Text style={{ color: COLORS.primaryDark }} className="ml-2 font-figtree-medium text-[16px]">Añadir niño/a</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -521,22 +620,30 @@ function ChildPickerScreen() {
   );
 }
 
+// Cabecera de sección: "Alergias · 3" y "+ Añadir"
 function Section({
   title,
+  count,
   onAdd,
   children,
 }: {
   title: string;
+  count?: string | number;
   onAdd?: () => void;
   children: React.ReactNode;
 }) {
   return (
     <View className="mb-8">
       <View className="mb-3 flex-row items-center justify-between">
-        <Text style={{ color: palette.muted }} className="text-body font-semibold uppercase tracking-wider">{title}</Text>
+        <View className="flex-row items-baseline">
+          <Text style={{ color: palette.text }} className="font-figtree-medium text-[20px]">{title}</Text>
+          {count !== undefined && (
+            <Text style={{ color: palette.text }} className="ml-1.5 font-figtree text-[14px]">· {count}</Text>
+          )}
+        </View>
         {onAdd && (
-          <TouchableOpacity onPress={onAdd}>
-            <Text style={{ color: palette.blue }} className="text-body font-semibold">+ Añadir</Text>
+          <TouchableOpacity onPress={onAdd} hitSlop={8}>
+            <Text style={{ color: palette.text }} className="font-figtree text-[18px]">+ Añadir</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -545,22 +652,34 @@ function Section({
   );
 }
 
-function SimpleCard({ title, subtitle, onPress }: { title: string; subtitle?: string; onPress?: () => void }) {
+// Fila blanca de la ficha (alergia, vacuna, condición, medicamento)
+function RowCard({
+  onPress,
+  disabled,
+  accessibilityLabel,
+  children,
+  align = 'center',
+}: {
+  onPress?: () => void;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+  children: React.ReactNode;
+  align?: 'center' | 'start';
+}) {
   return (
     <TouchableOpacity
       onPress={onPress}
-      disabled={!onPress}
+      disabled={disabled || !onPress}
       activeOpacity={0.7}
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={onPress ? `${title}. Toca para editar o eliminar` : undefined}
-      className="mb-3 flex-row items-center rounded-3xl bg-nanny-card p-5"
-      style={SHADOWS.card}
+      accessibilityLabel={accessibilityLabel}
+      className={`mb-2.5 flex-row rounded-[22px] bg-nanny-card px-4 py-4 ${align === 'center' ? 'items-center' : 'items-start'}`}
+      style={[SHADOWS.card, { minHeight: 70 }]}
     >
-      <View className="flex-1">
-        <Text style={{ color: palette.text }} className="text-body">{title}</Text>
-        {subtitle && <Text style={{ color: palette.muted }} className="mt-1 text-body">{subtitle}</Text>}
-      </View>
-      {onPress && <Ionicons name="ellipsis-horizontal" size={18} color={palette.muted} />}
+      <View className="flex-1 flex-row items-center">{children}</View>
+      {onPress && !disabled && (
+        <Ionicons name="chevron-forward" size={16} color={palette.muted} style={{ marginLeft: 8, alignSelf: 'center' }} />
+      )}
     </TouchableOpacity>
   );
 }
@@ -588,7 +707,7 @@ function ShareQrScreen() {
   };
 
   return (
-    <Shell>
+    <Shell whiteTop>
       <View className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 py-4">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -596,11 +715,11 @@ function ShareQrScreen() {
           accessibilityRole="button"
           accessibilityLabel="Cerrar"
         >
-          <Text style={{ color: palette.muted }} className="text-body font-medium">
+          <Text style={{ color: palette.muted }} className="text-body font-figtree-medium">
             Cerrar
           </Text>
         </TouchableOpacity>
-        <Text style={{ color: palette.text }} className="text-subtitle font-semibold">
+        <Text style={{ color: palette.text }} className="text-subtitle font-figtree-semibold">
           Compartir acceso
         </Text>
         <View className="min-w-[72px]" />
@@ -614,10 +733,10 @@ function ShareQrScreen() {
         </View>
 
         <View className="mt-7 rounded-2xl border border-nanny-border bg-nanny-surface px-5 py-4">
-          <Text style={{ color: palette.muted }} className="text-caption font-semibold uppercase tracking-wider">
+          <Text style={{ color: palette.muted }} className="text-caption font-figtree-semibold uppercase tracking-wider">
             ID DEL MENOR
           </Text>
-          <Text style={{ color: palette.text }} className="mt-1 text-subtitle font-semibold">
+          <Text style={{ color: palette.text }} className="mt-1 text-subtitle font-figtree-semibold">
             {childSlug}
           </Text>
         </View>
@@ -630,14 +749,14 @@ function ShareQrScreen() {
           className="mt-4 flex-row items-center justify-center rounded-2xl py-4"
         >
           <Ionicons name={copied ? 'checkmark-outline' : 'copy-outline'} size={20} color="#ffffff" />
-          <Text className="ml-2.5 text-body font-semibold text-white">
+          <Text className="ml-2.5 text-body font-figtree-semibold text-white">
             {copied ? 'Enlace copiado' : 'Copiar enlace de invitación'}
           </Text>
         </TouchableOpacity>
 
         <View className="mt-5 flex-row items-start rounded-2xl border border-[#ead9bc] bg-[#fdf5e6] p-4">
           <Ionicons name="information-circle-outline" size={22} color="#8c6229" style={{ marginTop: 1 }} />
-          <Text style={{ color: '#7d5a2b' }} className="ml-3 flex-1 text-body leading-5">
+          <Text style={{ color: '#7d5a2b' }} className="font-figtree ml-3 flex-1 text-body leading-5">
             Demostración local: el QR comparte solo identidad básica. No sincroniza cambios médicos entre dispositivos.
           </Text>
         </View>
@@ -776,7 +895,7 @@ function ScanQrScreen() {
   const canSubmit = codeInput.trim().length > 0;
 
   return (
-    <Shell>
+    <Shell whiteTop>
       <Modal
         visible={cameraModalVisible}
         animationType="slide"
@@ -789,9 +908,9 @@ function ScanQrScreen() {
               accessibilityRole="button"
               accessibilityLabel="Cerrar cámara"
             >
-              <Text className="text-body font-semibold text-white">Cancelar</Text>
+              <Text className="text-body font-figtree-semibold text-white">Cancelar</Text>
             </TouchableOpacity>
-            <Text className="text-subtitle font-semibold text-white">Escanear código QR</Text>
+            <Text className="text-subtitle font-figtree-semibold text-white">Escanear código QR</Text>
             <View className="w-16" />
           </View>
 
@@ -807,7 +926,7 @@ function ScanQrScreen() {
               className="absolute inset-0 items-center justify-center"
             >
               <View className="h-64 w-64 rounded-3xl border-2 border-white/80 bg-transparent" />
-              <Text className="mt-5 rounded-full bg-black/60 px-4 py-2 text-center text-body font-medium text-white">
+              <Text className="mt-5 rounded-full bg-black/60 px-4 py-2 text-center text-body font-figtree-medium text-white">
                 Apunta al código QR compartido por el otro tutor
               </Text>
             </View>
@@ -822,11 +941,11 @@ function ScanQrScreen() {
           accessibilityRole="button"
           accessibilityLabel="Cancelar"
         >
-          <Text style={{ color: palette.muted }} className="text-body font-medium">
+          <Text style={{ color: palette.muted }} className="text-body font-figtree-medium">
             Cancelar
           </Text>
         </TouchableOpacity>
-        <Text style={{ color: palette.text }} className="text-subtitle font-semibold">
+        <Text style={{ color: palette.text }} className="text-subtitle font-figtree-semibold">
           Añadir mediante QR
         </Text>
         <View className="min-w-[72px]" />
@@ -851,17 +970,17 @@ function ScanQrScreen() {
             <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-nanny-soft">
               <Ionicons name="qr-code-outline" size={30} color="#654875" />
             </View>
-            <Text style={{ color: palette.text }} className="text-center text-subtitle font-semibold">
+            <Text style={{ color: palette.text }} className="text-center text-subtitle font-figtree-semibold">
               Abrir cámara o elegir imagen
             </Text>
-            <Text style={{ color: palette.muted }} className="mt-2 text-center text-body leading-5">
+            <Text style={{ color: palette.muted }} className="font-figtree mt-2 text-center text-body leading-5">
               Haz una foto clara del código QR compartido por el otro tutor.
             </Text>
           </TouchableOpacity>
 
           <View className="my-7 flex-row items-center">
             <View className="h-[1px] flex-1 bg-nanny-border" />
-            <Text style={{ color: palette.muted }} className="mx-4 text-body">
+            <Text style={{ color: palette.muted }} className="font-figtree mx-4 text-body">
               o pega el código
             </Text>
             <View className="h-[1px] flex-1 bg-nanny-border" />
@@ -876,7 +995,7 @@ function ScanQrScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             style={{ color: palette.text, minHeight: 130, textAlignVertical: 'top' }}
-            className="rounded-3xl border border-nanny-border-strong bg-nanny-card px-5 py-4 text-body"
+            className="font-figtree rounded-3xl border border-nanny-border-strong bg-nanny-card px-5 py-4 text-body"
           />
 
           <TouchableOpacity
@@ -887,12 +1006,12 @@ function ScanQrScreen() {
             style={{ backgroundColor: canSubmit ? palette.blue : '#D5C3DD' }}
             className="mt-5 items-center justify-center rounded-2xl py-4"
           >
-            <Text className="text-body font-semibold text-white">
+            <Text className="text-body font-figtree-semibold text-white">
               Vincular menor
             </Text>
           </TouchableOpacity>
 
-          <Text style={{ color: palette.muted }} className="mt-4 px-2 text-center text-caption leading-5">
+          <Text style={{ color: palette.muted }} className="font-figtree mt-4 px-2 text-center text-caption leading-5">
             Prototipo local: la ficha importada no recibirá futuras actualizaciones del otro dispositivo.
           </Text>
         </ScrollView>
@@ -966,11 +1085,6 @@ function ChildProfileScreen() {
   const remainingMinutes = isShared && data.expiresAt ? getRemainingShareMinutes(data.expiresAt) : null;
   const fullName = [data.name, data.surname].filter(Boolean).join(' ');
   const applied = data.vaccines.filter((vaccine) => vaccine.appliedAt).length;
-  const vaccinesByRecent = [...data.vaccines].sort((a, b) => {
-    const dateA = new Date(a.appliedAt || a.scheduledFor || 0).getTime();
-    const dateB = new Date(b.appliedAt || b.scheduledFor || 0).getTime();
-    return dateB - dateA || b.id - a.id;
-  });
   const openForm = (screen: string) => navigation.navigate(screen, { child: data });
 
   // Menú con las acciones de un elemento (alergia, vacuna, condición o medicamento)
@@ -1022,177 +1136,228 @@ function ChildProfileScreen() {
 
   const editChild = () => navigation.navigate('RegistroHijo', { child: data });
 
-  const deleteChild = () => confirmDeleteChild(data, () => navigation.navigate('ChildPicker'));
+
+  const allergies = allergyRecords(data.allergies);
+  // Vacunas en orden cronológico: primero las aplicadas y al final las pendientes
+  const vaccinesInOrder = [
+    ...data.vaccines.filter((v) => v.appliedAt).sort((a, b) => new Date(a.appliedAt!).getTime() - new Date(b.appliedAt!).getTime()),
+    ...data.vaccines.filter((v) => !v.appliedAt).sort((a, b) => new Date(a.scheduledFor || 0).getTime() - new Date(b.scheduledFor || 0).getTime()),
+  ];
 
   return (
-    <Shell>
-      <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
-        <View className="bg-nanny-card px-6 pb-7 pt-4">
+    <Shell whiteTop>
+      <Header
+        title={data.name}
+        backLabel="Familia"
+        onBack={() => navigation.navigate('ChildPicker')}
+        action={isShared ? (
           <TouchableOpacity
-            onPress={() => navigation.navigate('ChildPicker')}
-            className="mb-5 flex-row items-center self-start"
+            onPress={async () => {
+              await removeSharedChild(data.id, userId);
+              navigation.navigate('ChildPicker');
+            }}
             accessibilityRole="button"
-            accessibilityLabel="Volver al libro de familia"
+            accessibilityLabel={`Dejar de ver a ${fullName}`}
+            className="flex-row items-center"
           >
-            <Ionicons name="chevron-back" size={18} color={palette.blue} />
-            <Text style={{ color: palette.blue }} className="ml-1 text-body">Libro de familia</Text>
+            <Ionicons name="close-circle-outline" size={18} color={COLORS.danger} />
+            <Text style={{ color: COLORS.danger }} className="ml-1 font-figtree-medium text-[16px]">Quitar</Text>
           </TouchableOpacity>
-          <View className="flex-row items-center">
-            <Avatar child={data} size={72} />
-            <View className="ml-5 flex-1">
-              <Text style={{ color: palette.text }} className="text-title font-bold">{fullName}</Text>
-              <Text style={{ color: palette.muted }} className="mt-1 text-body">
-                {getAge(data.birthDate)} años · {new Date(data.birthDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </Text>
+        ) : (
+          <TouchableOpacity
+            onPress={editChild}
+            accessibilityRole="button"
+            accessibilityLabel={`Editar a ${fullName}`}
+            className="flex-row items-center"
+          >
+            <Ionicons name="create-outline" size={19} color={palette.blue} />
+            <Text style={{ color: palette.blue }} className="ml-1.5 font-figtree-medium text-[16px]">Editar</Text>
+          </TouchableOpacity>
+        )}
+      />
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 48 }}>
+        {/* Tarjeta del menor */}
+        <View className="mb-8 flex-row items-center rounded-[28px] bg-nanny-card px-5 py-5" style={SHADOWS.card}>
+          <Avatar child={data} size={72} ringColor="#E58AA8" />
+          <View className="ml-4 flex-1">
+            <Text style={{ color: palette.text }} className="font-figtree-medium text-[24px]">{fullName}</Text>
+            <Text style={{ color: palette.muted }} className="mt-0.5 font-figtree text-[14px]">
+              {getAge(data.birthDate)} años · {formatDayLong(data.birthDate)}
+            </Text>
+            <View className="mt-2 flex-row flex-wrap gap-2">
               {data.bloodGroup && (
-                <Text style={{ color: palette.red }} className="mt-2 self-start rounded-full bg-[#fff1ec] px-3 py-1 text-body">
-                  Sangre {data.bloodGroup}
-                </Text>
+                <View className="rounded-full bg-nanny-soft px-3 py-0.5">
+                  <Text style={{ color: COLORS.primaryDark }} className="font-figtree-medium text-[12px] uppercase tracking-wide">
+                    Sangre {data.bloodGroup}
+                  </Text>
+                </View>
               )}
               {isShared && remainingMinutes !== null && (
-                <View className="mt-2 self-start rounded-full bg-nanny-soft px-3 py-1">
-                  <Text style={{ color: palette.blue }} className="text-caption font-semibold">
-                    Vista compartida (solo lectura · {remainingMinutes} min restantes)
+                <View className="rounded-full bg-nanny-soft px-3 py-0.5">
+                  <Text style={{ color: palette.blue }} className="font-figtree-medium text-[12px]">
+                    Solo lectura · {remainingMinutes} min
                   </Text>
                 </View>
               )}
             </View>
           </View>
-          {!isShared ? (
-            <View className="mt-5 flex-row gap-3">
-              <TouchableOpacity
-                onPress={editChild}
-                accessibilityRole="button"
-                accessibilityLabel={`Editar a ${fullName}`}
-                className="flex-1 flex-row items-center justify-center rounded-2xl border border-nanny-border bg-nanny-bg py-3"
-              >
-                <Ionicons name="create-outline" size={18} color={palette.blue} />
-                <Text style={{ color: palette.blue }} className="ml-2 text-body font-semibold">Editar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('ShareQrAccess', { child: data })}
-                accessibilityRole="button"
-                accessibilityLabel={`Compartir QR de ${fullName}`}
-                className="flex-1 flex-row items-center justify-center rounded-2xl border border-nanny-border bg-nanny-bg py-3"
-              >
-                <Ionicons name="qr-code-outline" size={18} color={palette.blue} />
-                <Text style={{ color: palette.blue }} className="ml-2 text-body font-semibold">Compartir QR</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={deleteChild}
-                accessibilityRole="button"
-                accessibilityLabel={`Eliminar a ${fullName}`}
-                className="flex-1 flex-row items-center justify-center rounded-2xl border border-nanny-border bg-nanny-bg py-3"
-              >
-                <Ionicons name="trash-outline" size={18} color={palette.red} />
-                <Text style={{ color: palette.red }} className="ml-2 text-body font-semibold">Eliminar</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View className="mt-5 flex-row gap-3">
-              <TouchableOpacity
-                onPress={async () => {
-                  await removeSharedChild(data.id, userId);
-                  navigation.navigate('ChildPicker');
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`Dejar de ver a ${fullName}`}
-                className="flex-1 flex-row items-center justify-center rounded-2xl border border-nanny-border bg-nanny-bg py-3"
-              >
-                <Ionicons name="close-circle-outline" size={18} color={palette.red} />
-                <Text style={{ color: palette.red }} className="ml-2 text-body font-semibold">Quitar acceso temporal</Text>
-              </TouchableOpacity>
-            </View>
-          )}
         </View>
 
-        <View className="px-6 pt-7">
-          <Section title={`Alergias · ${allergyRecords(data.allergies).length}`} onAdd={isShared ? undefined : () => openForm('AddAllergy')}>
-            {allergyRecords(data.allergies).map((allergy) => {
-              const isSevere = allergy.severity === 'severa';
-              return (
-              <TouchableOpacity
+        <Section title="Alergias" count={allergies.length} onAdd={isShared ? undefined : () => openForm('AddAllergy')}>
+          {allergies.map((allergy) => {
+            const severity = SEVERITY_STYLES[allergy.severity];
+            return (
+              <RowCard
                 key={allergy.name}
-                activeOpacity={0.7}
                 disabled={isShared}
                 onPress={() => itemMenu(allergy.name, () => editItem('AddAllergy', allergy), deleteAllergy(allergy.name))}
-                className={`mb-3 flex-row items-center rounded-3xl border p-5 ${isSevere ? 'border-[#c64b3b] bg-[#fff0ec]' : 'border-transparent bg-nanny-card'}`}
-                accessibilityLabel={`${isSevere ? 'Alerta: ' : ''}Alergia ${allergy.name}, gravedad ${allergy.severity}`}
+                accessibilityLabel={`Alergia ${allergy.name}, gravedad ${allergy.severity}`}
               >
-                <View className={`mr-4 h-10 w-10 items-center justify-center rounded-full ${isSevere ? 'bg-[#c64b3b]' : 'bg-[#fff1ec]'}`}>
-                  <Ionicons name={isSevere ? 'warning' : 'alert-circle-outline'} size={20} color={isSevere ? '#ffffff' : palette.red} />
+                <View style={{ backgroundColor: severity.bg }} className="mr-4 rounded-full px-2.5 py-1">
+                  <Text style={{ color: severity.color }} className="font-figtree-medium text-[13px]">{severity.label}</Text>
                 </View>
                 <View className="flex-1">
-                  <Text style={{ color: palette.text }} className="text-body">{allergy.name}</Text>
-                  <Text style={{ color: isSevere ? '#a33327' : palette.muted }} className="mt-1 text-body font-semibold">
-                    {isSevere ? 'ALERTA · Alergia severa' : `Gravedad: ${allergy.severity}`}
-                  </Text>
+                  <Text style={{ color: palette.text }} className="font-figtree-medium text-[16px]">{allergy.name}</Text>
+                  {allergy.notes ? (
+                    <Text style={{ color: palette.muted }} className="mt-0.5 font-figtree text-[12px]" numberOfLines={2}>
+                      {allergy.notes}
+                    </Text>
+                  ) : null}
                 </View>
-                {!isShared && <Ionicons name="ellipsis-horizontal" size={18} color={palette.muted} />}
-              </TouchableOpacity>
-              );
-            })}
-          </Section>
+              </RowCard>
+            );
+          })}
+        </Section>
 
-          <Section title={`Vacunas · ${applied}/${data.vaccines.length} aplicadas`} onAdd={isShared ? undefined : () => openForm('AddVaccine')}>
-            {vaccinesByRecent.map((vaccine) => (
-              <TouchableOpacity
+        <Section
+          title="Vacunas"
+          count={`${applied}/${data.vaccines.length} aplicadas`}
+          onAdd={isShared ? undefined : () => openForm('AddVaccine')}
+        >
+          {vaccinesInOrder.map((vaccine) => {
+            const done = !!vaccine.appliedAt;
+            const showNext = !!vaccine.scheduledFor && (!done || new Date(vaccine.scheduledFor) > new Date());
+            const details = [done ? formatDayShort(vaccine.appliedAt!) : null, vaccine.lot ? `Lote ${vaccine.lot}` : null]
+              .filter(Boolean)
+              .join(' · ');
+            return (
+              <RowCard
                 key={vaccine.id}
-                activeOpacity={0.7}
                 disabled={isShared}
                 onPress={() => itemMenu(vaccine.name, () => editItem('AddVaccine', vaccine), deleteRecord('vaccine', vaccine.id))}
-                className="mb-3 flex-row items-center rounded-3xl bg-nanny-card p-5"
-                style={SHADOWS.card}
               >
-                <View className={`mr-4 h-9 w-9 items-center justify-center rounded-full ${vaccine.appliedAt ? 'bg-[#e5f1e9]' : 'bg-[#fff0d8]'}`}>
-                  <Ionicons name={vaccine.appliedAt ? 'checkmark' : 'time-outline'} size={18} color={vaccine.appliedAt ? palette.green : '#bd7110'} />
+                <View
+                  style={{ backgroundColor: done ? VACCINE_DONE : VACCINE_PENDING }}
+                  className="mr-4 h-6 w-6 items-center justify-center rounded-full"
+                >
+                  <Ionicons name={done ? 'checkmark' : 'time-outline'} size={done ? 15 : 14} color="#ffffff" />
                 </View>
                 <View className="flex-1">
-                  <Text style={{ color: palette.text }} className="text-body">{vaccine.name}</Text>
-                  <Text style={{ color: palette.muted }} className="mt-1 text-body">
-                    {vaccine.appliedAt
-                      ? new Date(vaccine.appliedAt).toLocaleDateString('es-ES')
-                      : `Pendiente${vaccine.scheduledFor ? ` · ${new Date(vaccine.scheduledFor).toLocaleDateString('es-ES')}` : ''}`}
-                  </Text>
+                  <Text style={{ color: palette.text }} className="font-figtree-medium text-[16px]">{vaccine.name}</Text>
+                  {done ? (
+                    details ? <Text style={{ color: palette.muted }} className="mt-0.5 font-figtree text-[12px]">{details}</Text> : null
+                  ) : (
+                    <Text style={{ color: '#C2577A' }} className="mt-0.5 font-figtree text-[12px]">Pendiente</Text>
+                  )}
+                  {showNext && (
+                    <Text style={{ color: palette.blue }} className="mt-1 font-figtree-medium text-[12px]">
+                      Próxima: {formatDayShort(vaccine.scheduledFor!)}
+                    </Text>
+                  )}
                 </View>
-                {!isShared && <Ionicons name="ellipsis-horizontal" size={18} color={palette.muted} />}
-              </TouchableOpacity>
-            ))}
-          </Section>
+              </RowCard>
+            );
+          })}
+        </Section>
 
-          <Section title={`Condiciones · ${data.conditions.length + data.diseases.length}`} onAdd={isShared ? undefined : () => openForm('AddCondition')}>
-            {data.conditions.map((condition) => (
-              <SimpleCard key={condition.id} title={condition.description || condition.desciption || 'Condición registrada'} subtitle={`Registrada: ${new Date(condition.timestamp).toLocaleDateString('es-ES')}`} />
-            ))}
-            {data.diseases.map((disease) => (
-              <SimpleCard
-                key={`disease-${disease.id}`}
-                title={disease.name}
-                subtitle={disease.description || undefined}
-                onPress={isShared ? undefined : () => itemMenu(disease.name, () => editItem('AddCondition', disease), deleteRecord('disease', disease.id))}
-              />
-            ))}
-          </Section>
+        <Section
+          title="Condiciones"
+          count={data.conditions.length + data.diseases.length}
+          onAdd={isShared ? undefined : () => openForm('AddCondition')}
+        >
+          {data.diseases.map((disease) => (
+            <RowCard
+              key={`disease-${disease.id}`}
+              disabled={isShared}
+              onPress={() => itemMenu(disease.name, () => editItem('AddCondition', disease), deleteRecord('disease', disease.id))}
+            >
+              <View className="flex-1">
+                <Text style={{ color: palette.text }} className="font-figtree-medium text-[16px]">{disease.name}</Text>
+                {disease.diagnosticatedAge && (
+                  <Text style={{ color: palette.muted }} className="mt-0.5 font-figtree text-[12px]">
+                    Diagnosticada: {formatMonthYearCap(disease.diagnosticatedAge)}
+                  </Text>
+                )}
+                {disease.description ? (
+                  <Text style={{ color: palette.muted }} className="mt-1 font-figtree text-[12px]">{disease.description}</Text>
+                ) : null}
+              </View>
+            </RowCard>
+          ))}
+          {data.conditions.map((condition) => (
+            <RowCard key={condition.id}>
+              <View className="flex-1">
+                <Text style={{ color: palette.text }} className="font-figtree-medium text-[16px]">
+                  {condition.description || condition.desciption || 'Condición registrada'}
+                </Text>
+                <Text style={{ color: palette.muted }} className="mt-0.5 font-figtree text-[12px]">
+                  Registrada: {formatMonthYearCap(condition.timestamp)}
+                </Text>
+              </View>
+            </RowCard>
+          ))}
+        </Section>
 
-          <Section title={`Medicamentos · ${data.medicine.length}`} onAdd={isShared ? undefined : () => openForm('AddMedicine')}>
-            {data.medicine.map((medicine) => (
-              <SimpleCard
+        <Section title="Medicamentos" count={data.medicine.length} onAdd={isShared ? undefined : () => openForm('AddMedicine')}>
+          {data.medicine.map((medicine) => {
+            const active = isMedicineActive(medicine);
+            const doseLine = [medicine.dosage, frequencyLabel(medicine.intervalHours)].filter(Boolean).join(' · ');
+            const schedule = scheduleLabel(medicine.instructions);
+            return (
+              <TouchableOpacity
                 key={medicine.id}
-                title={medicine.name}
-                subtitle={`${medicine.dosage}${medicine.intervalHours ? ` · cada ${medicine.intervalHours} h` : ''}`}
-                onPress={isShared ? undefined : () => itemMenu(medicine.name, () => editItem('AddMedicine', medicine), deleteRecord('medicine', medicine.id))}
-              />
-            ))}
-          </Section>
+                disabled={isShared}
+                activeOpacity={0.7}
+                onPress={() => itemMenu(medicine.name, () => editItem('AddMedicine', medicine), deleteRecord('medicine', medicine.id))}
+                className="mb-2.5 flex-row rounded-[22px] bg-nanny-card px-4 py-4"
+                style={SHADOWS.card}
+              >
+                <View
+                  style={{ backgroundColor: active ? VACCINE_PENDING : '#B9AEC2' }}
+                  className="mr-3.5 mt-2 h-2 w-2 rounded-full"
+                />
+                <View className="flex-1">
+                  <Text style={{ color: palette.text }} className="font-figtree-medium text-[16px]">{medicine.name}</Text>
+                  {doseLine ? <Text style={{ color: palette.muted }} className="mt-1 font-figtree text-[14px]">{doseLine}</Text> : null}
+                  {schedule ? <Text style={{ color: palette.muted }} className="mt-0.5 font-figtree text-[14px]">{schedule}</Text> : null}
+                  {medicine.startDate ? (
+                    <Text style={{ color: palette.muted }} className="mt-0.5 font-figtree text-[14px]">
+                      Desde: {formatDayCap(medicine.startDate)}
+                    </Text>
+                  ) : null}
+                </View>
+                <View className="flex-row items-start">
+                  <View className={`rounded-full px-2.5 py-0.5 ${active ? 'bg-nanny-soft' : 'bg-[#EDE7F0]'}`}>
+                    <Text style={{ color: active ? COLORS.primaryDark : palette.muted }} className="font-figtree-medium text-[13px]">
+                      {active ? 'Activo' : 'Finalizado'}
+                    </Text>
+                  </View>
+                  {!isShared && (
+                    <Ionicons name="chevron-forward" size={16} color={palette.muted} style={{ marginLeft: 8, marginTop: 3 }} />
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </Section>
 
-          {canSeeHistory ? (
-            <HealthHistory key={historyKey} childId={data.id} />
-          ) : (
-            <HealthHistoryLocked
-              onUpgrade={() => Alert.alert('Plan PRO', 'La mejora de plan estará disponible próximamente.')}
-            />
-          )}
-        </View>
+        {canSeeHistory ? (
+          <HealthHistory key={historyKey} childId={data.id} />
+        ) : (
+          <HealthHistoryLocked
+            onUpgrade={() => Alert.alert('Plan PRO', 'La mejora de plan estará disponible próximamente.')}
+          />
+        )}
       </ScrollView>
     </Shell>
   );
@@ -1203,8 +1368,8 @@ function ChildBanner({ child }: { child: Child }) {
     <View className="mx-6 mb-7 flex-row items-center rounded-3xl bg-nanny-card p-6" style={SHADOWS.card}>
       <Avatar child={child} size={66} />
       <View className="ml-5 flex-1">
-        <Text style={{ color: palette.text }} className="text-title font-bold">{child.name}</Text>
-        <Text style={{ color: palette.muted }} className="mt-1 text-body">Esta información se añadirá a su perfil médico.</Text>
+        <Text style={{ color: palette.text }} className="text-title font-figtree-bold">{child.name}</Text>
+        <Text style={{ color: palette.muted }} className="font-figtree mt-1 text-body">Esta información se añadirá a su perfil médico.</Text>
       </View>
     </View>
   );
@@ -1235,7 +1400,7 @@ function Field({
   return (
     <View className="mb-6">
       <View className="mb-2 flex-row items-center">
-        <Text style={{ color: palette.muted }} className="text-body">{label}</Text>
+        <Text style={{ color: palette.muted }} className="font-figtree text-body">{label}</Text>
         {tooltip && (
           <TouchableOpacity
             onPress={() => setShowTip((v) => !v)}
@@ -1266,7 +1431,7 @@ function Field({
       />
       {tooltip && showTip && (
         <View className="mt-2 rounded-xl bg-nanny-text px-3 py-2">
-          <Text className="text-caption text-white">{tooltip}</Text>
+          <Text className="font-figtree text-caption text-white">{tooltip}</Text>
         </View>
       )}
     </View>
@@ -1287,9 +1452,9 @@ function DateField({
   const [open, setOpen] = useState(false);
   return (
     <View className="mb-6">
-      <Text style={{ color: palette.muted }} className="mb-2 text-body">{label}</Text>
+      <Text style={{ color: palette.muted }} className="font-figtree mb-2 text-body">{label}</Text>
       <TouchableOpacity onPress={() => setOpen(true)} className="flex-row items-center justify-between rounded-3xl border border-nanny-border bg-nanny-card px-6 py-4">
-        <Text style={{ color: value ? palette.text : '#8F8296' }} className="text-body">{value ? value.toLocaleDateString('es-ES') : 'dd/mm/aaaa'}</Text>
+        <Text style={{ color: value ? palette.text : '#8F8296' }} className="font-figtree text-body">{value ? value.toLocaleDateString('es-ES') : 'dd/mm/aaaa'}</Text>
         <Ionicons name="calendar-outline" size={22} color={palette.text} />
       </TouchableOpacity>
       {open && (
@@ -1331,11 +1496,11 @@ function FormLayout({
   const navigation = useNavigation<any>();
   const scrollViewRef = useRef<ScrollViewInstance | null>(null);
   return (
-    <Shell>
+    <Shell whiteTop>
       <Header
         title={title}
         onBack={() => navigation.goBack()}
-        action={<TouchableOpacity onPress={onSave} disabled={saving}><Text style={{ color: saving ? '#D5C3DD' : palette.blue }} className="text-body font-semibold">Guardar</Text></TouchableOpacity>}
+        action={<TouchableOpacity onPress={onSave} disabled={saving}><Text style={{ color: saving ? '#D5C3DD' : palette.blue }} className="font-figtree-semibold text-[16px]">Guardar</Text></TouchableOpacity>}
       />
       <KeyboardAvoidingView
         behavior="height"
@@ -1414,7 +1579,7 @@ function AddVaccineScreen() {
   return (
     <FormLayout title={item ? 'Editar vacuna' : 'Nueva vacuna'} child={child} onSave={save} saving={saving}>
       <Field label="Nombre *" placeholder="Ej. Triple vírica" value={name} onChangeText={setName} />
-      <Text style={{ color: palette.muted }} className="mb-2 text-body">Estado *</Text>
+      <Text style={{ color: palette.muted }} className="font-figtree mb-2 text-body">Estado *</Text>
       <View className="mb-6 flex-row gap-3">
         {[true, false].map((value) => (
           <TouchableOpacity
@@ -1423,7 +1588,7 @@ function AddVaccineScreen() {
             style={{ borderColor: applied === value ? palette.blue : '#E7DAEA', backgroundColor: applied === value ? '#EAE0F2' : palette.card }}
             className="flex-1 items-center rounded-3xl border p-4"
           >
-            <Text style={{ color: applied === value ? palette.blue : palette.muted }} className="text-body font-semibold">{value ? 'Aplicada' : 'Pendiente'}</Text>
+            <Text style={{ color: applied === value ? palette.blue : palette.muted }} className="text-body font-figtree-semibold">{value ? 'Aplicada' : 'Pendiente'}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -1483,7 +1648,7 @@ function AddAllergyScreen() {
   return (
     <FormLayout title={item ? 'Editar alergia' : 'Nueva alergia'} child={child} onSave={save} saving={saving}>
       <Field label="Nombre *" placeholder="Ej. Frutos secos" value={name} onChangeText={setName} />
-      <Text style={{ color: palette.muted }} className="mb-2 text-body">Gravedad *</Text>
+      <Text style={{ color: palette.muted }} className="font-figtree mb-2 text-body">Gravedad *</Text>
       <View className="mb-6 flex-row gap-2">
         {(['leve', 'moderada', 'severa'] as AllergySeverity[]).map((option) => {
           const selected = severity === option;
@@ -1497,7 +1662,7 @@ function AddAllergyScreen() {
               style={{ borderColor: selected ? optionColor : '#E7DAEA', backgroundColor: selected ? '#fff7ed' : palette.card }}
               className="flex-1 items-center rounded-3xl border p-4"
             >
-              <Text style={{ color: selected ? optionColor : palette.muted }} className="text-body font-semibold">
+              <Text style={{ color: selected ? optionColor : palette.muted }} className="text-body font-figtree-semibold">
                 {option.charAt(0).toUpperCase() + option.slice(1)}
               </Text>
             </TouchableOpacity>
@@ -1607,7 +1772,7 @@ function AddMedicineScreen() {
       </View>
       <DateField label="Fecha de inicio *" value={startDate} onChange={setStartDate} />
       <Field label="Horarios de toma" placeholder="Ej. 08:00, 16:00, 00:00" value={times} onChangeText={setTimes} />
-      <Text style={{ color: palette.muted }} className="-mt-4 mb-5 text-body">Separa cada horario con una coma.</Text>
+      <Text style={{ color: palette.muted }} className="font-figtree -mt-4 mb-5 text-body">Separa cada horario con una coma.</Text>
     </FormLayout>
   );
 }

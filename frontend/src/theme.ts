@@ -40,6 +40,25 @@ export const COLORS = {
   // Colores con significado (se mantienen respecto al diseño anterior)
   green: '#65a882',
   red: '#cc7a66',
+  /** Verde apagado para la variación de peso/altura (mockup Home) */
+  greenMuted: '#5E8A6E',
+  /** Rojo teja para acciones de borrar */
+  danger: '#C0563F',
+  /** Botón deshabilitado y elementos inactivos de la barra inferior */
+  disabled: '#B8A7C6',
+  tabInactive: '#9C8FA8',
+} as const;
+
+/**
+ * Fuente Figtree (se carga en App.tsx con useFonts). En React Native cada grosor
+ * es una familia distinta: fontWeight no la cambia. En NativeWind se usan como
+ * font-figtree, font-figtree-medium, font-figtree-semibold y font-figtree-bold.
+ */
+export const FONTS = {
+  regular: 'Figtree_400Regular',
+  medium: 'Figtree_500Medium',
+  semibold: 'Figtree_600SemiBold',
+  bold: 'Figtree_700Bold',
 } as const;
 
 /**
@@ -48,6 +67,7 @@ export const COLORS = {
  * text-title, text-subtitle, text-body y text-caption.
  */
 export const TYPOGRAPHY = {
+  display: { fontSize: 34, lineHeight: 40, fontWeight: '500' as const },
   title: { fontSize: 26, lineHeight: 32, fontWeight: '700' as const },
   subtitle: { fontSize: 18, lineHeight: 24, fontWeight: '600' as const },
   body: { fontSize: 15, lineHeight: 21, fontWeight: '400' as const },

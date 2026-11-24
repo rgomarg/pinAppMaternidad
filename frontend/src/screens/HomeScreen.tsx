@@ -4,11 +4,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
 import { API_URL } from '../api/config';
 import { setNotificationPreferences } from '../services/notificationService';
-import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useRoute, CommonActions, useFocusEffect } from '@react-navigation/native';
 
 import ActualizarAlturaModal from '../components/MeasuramentHeightForm';
 import ActualizarPesoModal from '../components/MeasuramentWeightForm';
-import GrowthChart, { formatMonthYearLong } from '../components/GrowthChart';
+import GrowthChart, { formatMonthYear } from '../components/GrowthChart';
+import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { useFamilySelection } from '../context/FamilySelectionContext';
 import AdminHome from '../components/admin/AdminHome';
 import type { Role } from '../api/forum';
@@ -30,21 +31,21 @@ function BookCoverImage({ uri }: { uri?: string | null }) {
     return (
       <View
         style={{ width: 96, height: 144 }}
-        className="items-center justify-center rounded-lg bg-nanny-surface border border-nanny-border"
+        className="items-center justify-center rounded-xl bg-nanny-surface"
       >
-        <Ionicons name="book-outline" size={36} color="#6E5D78" />
+        <Ionicons name="book-outline" size={36} color={COLORS.muted} />
       </View>
     );
   }
 
   return (
-    <View style={{ width: 96, height: 144 }} className="relative overflow-hidden rounded-lg bg-nanny-surface">
+    <View style={{ width: 96, height: 144 }} className="relative overflow-hidden rounded-xl bg-nanny-surface">
       {loading && (
         <View
           style={{ width: 96, height: 144 }}
           className="absolute inset-0 items-center justify-center bg-nanny-surface"
         >
-          <ActivityIndicator size="small" color="#b87427" />
+          <ActivityIndicator size="small" color={COLORS.primary} />
         </View>
       )}
       <Image
@@ -56,7 +57,7 @@ function BookCoverImage({ uri }: { uri?: string | null }) {
           cache: 'force-cache',
         }}
         style={{ width: 96, height: 144 }}
-        className="rounded-lg"
+        className="rounded-xl"
         resizeMode="cover"
         onLoadStart={() => setLoading(true)}
         onLoad={() => setLoading(false)}
@@ -65,6 +66,179 @@ function BookCoverImage({ uri }: { uri?: string | null }) {
           setHasError(true);
         }}
       />
+    </View>
+  );
+}
+
+// ------------------------------
+// Piezas visuales de la Home (solo presentación)
+// ------------------------------
+
+const DAYS_LONG = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const MONTHS_LONG_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+// "Martes, 24 de noviembre"
+function formatToday(date: Date) {
+  return `${DAYS_LONG[date.getDay()]}, ${date.getDate()} de ${MONTHS_LONG_ES[date.getMonth()]}`;
+}
+
+// "Noviembre 2026"
+function formatMonthChip(date: Date) {
+  const month = MONTHS_LONG_ES[date.getMonth()];
+  return `${month.charAt(0).toUpperCase()}${month.slice(1)} ${date.getFullYear()}`;
+}
+
+// Redondea a un decimal y quita el ".0" (2.0 -> "2", 0.5 -> "0.5")
+function formatNumber(value: number) {
+  return String(Number(value.toFixed(1)));
+}
+
+// Variación respecto a la medición de hace al menos 3 meses (las mediciones llegan ordenadas
+// de más reciente a más antigua). Si no hay ninguna tan antigua, se compara con la anterior.
+function changeLabel(measurements: any[], key: 'weight' | 'height', unit: string) {
+  const latest = measurements[0];
+  if (!latest) return null;
+  const cutoff = new Date(latest.date);
+  cutoff.setMonth(cutoff.getMonth() - 3);
+  const threeMonthsAgo = measurements.find((m) => new Date(m.date) <= cutoff);
+  const reference = threeMonthsAgo ?? measurements[1];
+  if (!reference) return null;
+  const diff = latest[key] - reference[key];
+  const sign = diff > 0 ? '+' : '';
+  return `${sign}${formatNumber(diff)} ${unit} ${threeMonthsAgo ? 'ult. 3m' : 'vs. anterior'}`;
+}
+
+// Minigráfica decorativa de la tendencia (últimas mediciones)
+function Sparkline({ values }: { values: number[] }) {
+  const W = 92;
+  const H = 62;
+  const left = 16;
+  const right = 7;
+  const top = 7;
+  const bottom = 14;
+  // Sin datos suficientes se dibuja una tendencia de ejemplo más tenue
+  const hasData = values.length >= 2;
+  const data = hasData ? values : [1, 1.8, 2.3, 3.4];
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const pts = data.map((v, i) => ({
+    x: left + (i * (W - left - right)) / (data.length - 1),
+    y: H - bottom - ((v - min) / range) * (H - bottom - top),
+  }));
+  const path = pts.reduce((d, p, i) => {
+    if (i === 0) return `M ${p.x} ${p.y}`;
+    const prev = pts[i - 1];
+    const midX = (prev.x + p.x) / 2;
+    return `${d} C ${midX} ${prev.y} ${midX} ${p.y} ${p.x} ${p.y}`;
+  }, '');
+
+  return (
+    <Svg width={W} height={H} style={{ opacity: hasData ? 1 : 0.5 }}>
+      <Line x1={2} y1={2} x2={2} y2={H - 4} stroke={COLORS.muted} strokeOpacity={0.45} strokeWidth={2} strokeLinecap="round" />
+      <Line x1={2} y1={H - 4} x2={W - 1} y2={H - 4} stroke={COLORS.muted} strokeOpacity={0.45} strokeWidth={2} strokeLinecap="round" />
+      <Path d={path} stroke={COLORS.primary} strokeWidth={4} fill="none" strokeLinecap="round" />
+      {pts.map((p, i) => (
+        <Circle key={i} cx={p.x} cy={p.y} r={4.5} fill="white" stroke={COLORS.primary} strokeWidth={2.5} />
+      ))}
+    </Svg>
+  );
+}
+
+// Tarjeta de Peso / Altura
+function StatCard({ label, value, unit, change, projection, onAdd }: {
+  label: string;
+  value: number | null | undefined;
+  unit: string;
+  change: string | null;
+  projection: string | null;
+  onAdd: () => void;
+}) {
+  return (
+    <View className="flex-1 rounded-[26px] bg-nanny-card p-4" style={SHADOWS.card}>
+      <View className="flex-row items-center justify-between">
+        <Text className="font-figtree-medium text-[14px] text-nanny-text">{label}</Text>
+        <TouchableOpacity onPress={onAdd} className="h-8 w-8 items-center justify-center rounded-full bg-nanny-soft">
+          <Ionicons name="add" size={18} color={COLORS.primary} />
+        </TouchableOpacity>
+      </View>
+      <View className="mt-2 flex-row items-baseline">
+        <Text className="font-figtree-medium text-nanny-text" style={{ fontSize: 34, lineHeight: 42 }}>
+          {value ?? '--'}
+        </Text>
+        <Text className="ml-2 font-figtree-medium text-[15px] text-nanny-text">{unit}</Text>
+      </View>
+      <Text className="mt-1 font-figtree text-[13px] text-nanny-green-muted">
+        {change ?? 'Sin registros anteriores'}
+      </Text>
+      {projection && (
+        <View className="mt-1.5 flex-row items-center">
+          <Ionicons name="arrow-up" size={13} color={COLORS.primary} style={{ transform: [{ rotate: '45deg' }] }} />
+          <Text className="ml-1 font-figtree-medium text-[13px] text-nanny-blue">{projection}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// Selector en píldora (Pendientes/Completadas, Lectura/Recetas)
+function SegmentedTabs<T extends string>({ options, value, onChange, activeClassName = 'bg-nanny-blue' }: {
+  options: { key: T; label: string; icon?: React.ComponentProps<typeof Ionicons>['name'] }[];
+  value: T;
+  onChange: (key: T) => void;
+  activeClassName?: string;
+}) {
+  return (
+    <View className="mb-3 flex-row rounded-full bg-white/60 p-1">
+      {options.map((option) => {
+        const active = option.key === value;
+        return (
+          <TouchableOpacity
+            key={option.key}
+            onPress={() => onChange(option.key)}
+            className={`flex-1 flex-row items-center justify-center rounded-full py-2.5 ${active ? activeClassName : ''}`}
+          >
+            {option.icon && (
+              <Ionicons name={option.icon} size={16} color={active ? 'white' : COLORS.muted} style={{ marginRight: 6 }} />
+            )}
+            <Text className={`font-figtree-medium text-[15px] ${active ? 'text-white' : 'text-nanny-muted'}`}>
+              {option.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+// Títulos de sección sobre el degradado
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <Text className="font-figtree-medium text-nanny-text" style={{ fontSize: 20, lineHeight: 26 }}>
+      {children}
+    </Text>
+  );
+}
+
+function SubsectionTitle({ children }: { children: React.ReactNode }) {
+  return <Text className="mb-2.5 font-figtree-medium text-[16px] text-nanny-text">{children}</Text>;
+}
+
+// Aviso dentro de Recomendaciones (sin acceso PRO o fuera de rango de edad)
+function NoticeCard({ icon, title, message, children }: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  title: string;
+  message: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <View className="items-center justify-center rounded-[24px] bg-nanny-card p-5" style={SHADOWS.card}>
+      <View className="mb-2.5 h-12 w-12 items-center justify-center rounded-full bg-nanny-soft">
+        <Ionicons name={icon} size={24} color={COLORS.primary} />
+      </View>
+      <Text className="text-center font-figtree-semibold text-body text-nanny-text">{title}</Text>
+      <Text className="mt-1 px-2 text-center font-figtree text-[13px] text-nanny-muted">{message}</Text>
+      {children}
     </View>
   );
 }
@@ -87,6 +261,7 @@ export default function HomeScreen() {
   const [checklistTab, setChecklistTab] = useState<'pending' | 'completed'>('pending');
   const [recomendacionesTab, setRecomendacionesTab] = useState<'articulos' | 'comidas'>('articulos');
   const [showLibroSinopsis, setShowLibroSinopsis] = useState(false);
+  const [showGrowthChart, setShowGrowthChart] = useState(false);
   const [expandedRecipeId, setExpandedRecipeId] = useState<number | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
@@ -367,6 +542,15 @@ export default function HomeScreen() {
 
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+
+  // Otras pestañas (p. ej. Familia) abren el selector de usuarios navegando aquí con openUserPicker
+  const openUserPickerRequest = route.params?.openUserPicker;
+  useEffect(() => {
+    if (!openUserPickerRequest) return;
+    fetchUsers();
+    setIsUserModalVisible(true);
+  }, [openUserPickerRequest]);
   const activeChild = children.find(c => c.id === activeChildId);
   const activeUser = users.find(u => u.id === activeUserId);
   const activeChildAge = activeChild?.birthDate ? calculateChildAge(activeChild.birthDate) : 0;
@@ -376,13 +560,24 @@ export default function HomeScreen() {
 
   const medicionesPeso = activeChild?.measurements?.filter((m: any) => m.weight != null) || [];
   const pesoActual = medicionesPeso[0]?.weight;
-  const pesoAnterior = medicionesPeso[1]?.weight;
-  const difPeso = (pesoActual != null && pesoAnterior != null) ? (pesoActual - pesoAnterior).toFixed(1) : null;
+  const cambioPeso = changeLabel(medicionesPeso, 'weight', 'kg');
 
   const medicionesAltura = activeChild?.measurements?.filter((m: any) => m.height != null) || [];
   const alturaActual = medicionesAltura[0]?.height;
-  const alturaAnterior = medicionesAltura[1]?.height;
-  const difAltura = (alturaActual != null && alturaAnterior != null) ? (alturaActual - alturaAnterior).toFixed(1) : null;
+  const cambioAltura = changeLabel(medicionesAltura, 'height', 'cm');
+
+  // Resumen de crecimiento: si el backend dice que todo va bien se muestra el texto del prototipo;
+  // en avisos y alertas se usa el título y mensaje que calcula el backend.
+  const insight = growth.data?.weight?.insight ?? growth.data?.height?.insight ?? null;
+  const growthTitle = !insight ? 'Crecimiento' : insight.level === 'ok' ? 'Crecimiento estable' : insight.title;
+  const growthMessage = !insight
+    ? 'Añade mediciones para ver su evolución.'
+    : insight.level === 'ok'
+      ? `¡${activeChild?.name} está creciendo correctamente!`
+      : insight.message;
+  const sparklineValues: number[] = (
+    growth.data?.weight?.points.map((p) => p.value) ?? [...medicionesPeso].reverse().map((m: any) => m.weight)
+  ).slice(-4);
 
   const goToCalendar = () => {
       // si ya lo ha elegido, se le pasa la informacion
@@ -491,351 +686,319 @@ export default function HomeScreen() {
       <ScreenBackground />
       <ScrollView
         ref={scrollViewRef}
-        contentContainerStyle={{ padding: 24, paddingBottom: 260 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 260 }}
         style={{ flex: 1 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       >
-        
+
         {/* Header */}
-        <View className="flex-row justify-between items-start mb-6">
-          <View>
-            <Text className="text-body font-medium text-nanny-muted mb-1">
-              {isAdmin ? 'Panel de administración' : 'Predicciones e insights'}
+        <View className="mb-4 flex-row items-start justify-between">
+          <View className="flex-1 pr-3">
+            <Text className="mb-1 font-figtree-medium text-[14px] text-nanny-muted">
+              {isAdmin ? 'Panel de administración' : formatToday(new Date())}
             </Text>
-            {isAdmin ? (
-              <Text className="text-title font-bold text-nanny-text">{activeUser?.name ?? 'Administración'}</Text>
-            ) : activeChild ? (
-              <Text className="text-title font-bold text-nanny-text">{activeChild.name}</Text>
-            ) : (
-              <Text className="text-title font-bold text-nanny-text">Selecciona un usuario</Text>
-            )}
+            <Text className="font-figtree-medium text-display text-nanny-text">
+              {isAdmin
+                ? activeUser?.name ?? 'Administración'
+                : activeChild
+                  ? `Salud de ${activeChild.name}`
+                  : 'Selecciona un usuario'}
+            </Text>
           </View>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             onPress={() => { fetchUsers(); setIsUserModalVisible(true); }}
-            className="relative h-12 w-12 items-center justify-center"
+            className="relative"
           >
-            <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-nanny-blue">
-              {activeUser?.avatarUrl ? (
-                <Image source={{ uri: activeUser.avatarUrl }} className="h-full w-full" />
-              ) : (
-                <Text className="text-white font-semibold text-subtitle">{activeUserId ? activeUserId.toString() : "?"}</Text>
-              )}
-            </View>
-            <View className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
-              <View className="bg-nanny-blue rounded-full w-4 h-4 items-center justify-center">
-                <Ionicons name="person" size={10} color="white" />
+            <View className="h-11 w-11 rounded-full border-2 border-nanny-blue p-0.5">
+              <View className="flex-1 items-center justify-center overflow-hidden rounded-full bg-nanny-blue">
+                {activeUser?.avatarUrl ? (
+                  <Image source={{ uri: activeUser.avatarUrl }} className="h-full w-full" />
+                ) : (
+                  <Text className="font-figtree-semibold text-body text-white">{activeUserId ? activeUserId.toString() : '?'}</Text>
+                )}
               </View>
+            </View>
+            <View className="absolute -bottom-0.5 -right-0.5 h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-white bg-nanny-blue">
+              <Ionicons name="person" size={8} color="white" />
             </View>
           </TouchableOpacity>
         </View>
-        
+
         {/* El administrador no tiene hijos: ve el resumen de moderación en su lugar */}
         {isAdmin && activeUserId ? (
           <AdminHome adminId={activeUserId} />
         ) : loading ? (
-          <ActivityIndicator size="large" color="#654875" />
+          <ActivityIndicator size="large" color={COLORS.primary} />
         ) : (
           <>
             {/* Child Selector */}
             {children.length > 0 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-6">
-                <View className="flex-row gap-3">
-                  {children.map((child) => (
-                    <TouchableOpacity
-                      key={child.id}
-                      onPress={() => setActiveChildId(child.id)}
-                      className={`flex-row items-center gap-2 px-4 py-2 rounded-full font-medium ${
-                        activeChildId === child.id ? 'bg-nanny-blue' : 'bg-nanny-card'
-                      }`}
-                    >
-                      <View className="w-6 h-6 rounded-full bg-nanny-soft items-center justify-center overflow-hidden">
-                        <Text className="text-caption font-semibold text-nanny-blue">{child?.name?.charAt(0) || '?'}</Text>
-                      </View>
-                      <Text className={`text-body font-semibold ${activeChildId === child.id ? 'text-white' : 'text-nanny-text'}`}>
-                        {child.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-9 flex-row">
+                <View className="flex-row gap-2">
+                  {children.map((child) => {
+                    const active = activeChildId === child.id;
+                    return (
+                      <TouchableOpacity
+                        key={child.id}
+                        onPress={() => setActiveChildId(child.id)}
+                        className={`flex-row items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4 ${active ? 'bg-nanny-blue' : 'bg-white/70'}`}
+                      >
+                        {/* Foto del menor (Child.avatarUrl); sin foto se muestra un icono neutro */}
+                        <View className="h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-nanny-soft">
+                          {child.avatarUrl ? (
+                            <Image source={{ uri: child.avatarUrl }} className="h-full w-full" resizeMode="cover" />
+                          ) : (
+                            <Ionicons name="happy-outline" size={16} color={COLORS.primary} />
+                          )}
+                        </View>
+                        <Text className={`font-figtree-medium text-[15px] ${active ? 'text-white' : 'text-nanny-text'}`}>
+                          {child.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </ScrollView>
             )}
 
-            {/* Stats Cards */}
             {activeChild && (
-              <View className="flex-row gap-4 mb-6">
-                {/* Peso */}
-                <View className="flex-1 bg-nanny-card p-4 rounded-3xl relative" style={SHADOWS.card}>
-                  <TouchableOpacity 
-                    onPress={() => setModalPesoVisible(true)}
-                    className="absolute top-4 right-4 w-10 h-10 bg-nanny-soft rounded-full items-center justify-center">                    
-                    <Ionicons name="add" size={16} color="#654875" />
-                  </TouchableOpacity>
-                  <Text className="text-nanny-muted text-body font-medium mb-2">Peso actual</Text>
-                  <View className="flex-row items-baseline gap-1 mb-1">
-                    <Text className="text-title font-bold text-nanny-text">
-                      {pesoActual ?? '--'}
-                    </Text>
-                    <Text className="text-nanny-text font-medium text-body">kg</Text>
+              <>
+                {/* Resumen de crecimiento: el chevron despliega la curva completa con percentiles OMS */}
+                <View className="mb-8 flex-row items-center justify-between">
+                  <View className="flex-1 pr-3">
+                    <View className="flex-row items-center">
+                      <Text className="font-figtree-medium text-display text-nanny-text" style={{ flexShrink: 1 }}>
+                        {growthTitle}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => setShowGrowthChart((prev) => !prev)}
+                        className="ml-3 h-10 w-10 items-center justify-center rounded-full bg-nanny-blue"
+                        style={SHADOWS.floating}
+                      >
+                        <Ionicons name={showGrowthChart ? 'chevron-up' : 'chevron-down'} size={20} color="white" />
+                      </TouchableOpacity>
+                    </View>
+                    <Text className="mt-3 font-figtree text-[13px] text-nanny-muted">{growthMessage}</Text>
                   </View>
-                  <Text className="text-nanny-green text-caption font-medium mb-1">
-                    {difPeso != null
-                      ? `${Number(difPeso) > 0 ? `+${difPeso}` : difPeso} kg respecto al anterior`
-                      : 'No hay registros anteriores'}
-                  </Text>
-
-                  {proyeccionPeso && (
-                    <Text className="text-nanny-red text-caption font-medium mb-1">
-                      Previsión {formatMonthYearLong(proyeccionPeso.date)}: {proyeccionPeso.value} kg
-                    </Text>
-                  )}
+                  <Sparkline values={sparklineValues} />
                 </View>
 
-                {/* Altura */}
-                <View className="flex-1 bg-nanny-card p-4 rounded-3xl relative" style={SHADOWS.card}>
-                  <TouchableOpacity 
-                    onPress={() => setModalAlturaVisible(true)}
-                    className="absolute top-4 right-4 w-10 h-10 bg-nanny-soft rounded-full items-center justify-center">
-                    <Ionicons name="add" size={16} color="#654875" />
-                  </TouchableOpacity>
-                  <Text className="text-nanny-muted text-body font-medium mb-2">Altura actual</Text>
-                  <View className="flex-row items-baseline gap-1 mb-1">
-                    <Text className="text-title font-bold text-nanny-text">
-                      {alturaActual ?? '--'}
-                    </Text>
-                    <Text className="text-nanny-text font-medium text-body">cm</Text>
-                  </View>
-                  <Text className="text-nanny-green text-caption font-medium mb-1">
-                    {difAltura != null
-                      ? `${Number(difAltura) > 0 ? `+${difAltura}` : difAltura} cm respecto al anterior`
-                      : 'No hay registro anterior'}
-                  </Text>
+                {showGrowthChart && (
+                  <GrowthChart
+                    data={growth.data}
+                    loading={growth.loading}
+                    error={growth.error}
+                    onSelectSex={growth.setSex}
+                    onAddMeasurement={(metric) => metric === 'weight' ? setModalPesoVisible(true) : setModalAlturaVisible(true)}
+                  />
+                )}
 
-                  {proyeccionAltura && (
-                    <Text className="text-nanny-red text-caption font-medium mb-1">
-                      Previsión {formatMonthYearLong(proyeccionAltura.date)}: {proyeccionAltura.value} cm
-                    </Text>
-                  )}
+                {/* Stats Cards */}
+                <View className="mb-6 flex-row gap-3">
+                  <StatCard
+                    label="Peso actual"
+                    value={pesoActual}
+                    unit="kg"
+                    change={cambioPeso}
+                    projection={proyeccionPeso ? `${formatNumber(proyeccionPeso.value)} kg en ${formatMonthYear(proyeccionPeso.date)}` : null}
+                    onAdd={() => setModalPesoVisible(true)}
+                  />
+                  <StatCard
+                    label="Altura actual"
+                    value={alturaActual}
+                    unit="cm"
+                    change={cambioAltura}
+                    projection={proyeccionAltura ? `${formatNumber(proyeccionAltura.value)} cm en ${formatMonthYear(proyeccionAltura.date)}` : null}
+                    onAdd={() => setModalAlturaVisible(true)}
+                  />
                 </View>
-              </View>
+              </>
             )}
 
-            {/* Curva de crecimiento con percentiles OMS */}
-            <GrowthChart
-              data={growth.data}
-              loading={growth.loading}
-              error={growth.error}
-              onSelectSex={growth.setSex}
-              onAddMeasurement={(metric) => metric === 'weight' ? setModalPesoVisible(true) : setModalAlturaVisible(true)}
+            {/* Lista de tareas */}
+            <View className="mb-3">
+              <SectionTitle>Lista de Tareas</SectionTitle>
+            </View>
+            <SegmentedTabs
+              options={[
+                { key: 'pending', label: 'Pendientes', icon: 'time-outline' },
+                { key: 'completed', label: 'Completadas', icon: 'checkmark-circle-outline' },
+              ]}
+              value={checklistTab}
+              onChange={setChecklistTab}
             />
-
-            {/* Checklist */}
-            <View className="mb-6 rounded-3xl bg-nanny-card" style={SHADOWS.card}>
-            <View className="overflow-hidden rounded-3xl">
-              <Text className="font-semibold text-subtitle text-nanny-text px-4 pt-4 pb-3">ToDoList</Text>
-              <View className="mx-4 mb-3 flex-row rounded-2xl bg-nanny-soft p-1">
+            <View className="mb-3 flex-row items-center gap-3">
+              <TextInput
+                value={newTaskTitle}
+                onChangeText={setNewTaskTitle}
+                placeholder="Añadir una tarea..."
+                placeholderTextColor={COLORS.subtle}
+                className="min-w-0 flex-1 rounded-2xl bg-nanny-card px-4 font-figtree text-body text-nanny-text"
+                style={{ height: 48 }}
+                onSubmitEditing={addChecklistItem}
+                onFocus={focusChecklistInput}
+                returnKeyType="done"
+              />
+              <TouchableOpacity
+                onPress={addChecklistItem}
+                disabled={!newTaskTitle.trim() || !activeChildId}
+                className={`h-12 w-12 items-center justify-center rounded-2xl ${
+                  newTaskTitle.trim() && activeChildId ? 'bg-nanny-blue' : 'bg-nanny-disabled'
+                }`}
+              >
+                <Ionicons name="add" size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+            {visibleChecklist.map((item) => (
+              <View key={item.id} className="mb-2.5 flex-row items-center rounded-2xl bg-nanny-card px-4 py-4" style={SHADOWS.card}>
                 <TouchableOpacity
-                  onPress={() => setChecklistTab('pending')}
-                  className={`flex-1 items-center rounded-xl py-2 ${checklistTab === 'pending' ? 'bg-nanny-bg' : ''}`}
-                >
-                  <Ionicons name="time-outline" size={22} color={checklistTab === 'pending' ? '#b87427' : '#6E5D78'} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setChecklistTab('completed')}
-                  className={`flex-1 items-center rounded-xl py-2 ${checklistTab === 'completed' ? 'bg-nanny-bg' : ''}`}
-                >
-                  <Ionicons name="checkmark-circle-outline" size={22} color={checklistTab === 'completed' ? '#4e8c67' : '#6E5D78'} />
-                </TouchableOpacity>
-              </View>
-                <View className="mx-4 mb-3 flex-row items-center gap-3">
-                <TextInput
-                  value={newTaskTitle}
-                  onChangeText={setNewTaskTitle}
-                  placeholder="Añadir una tarea..."
-                  placeholderTextColor="#8F8296"
-                  className="min-w-0 flex-1 rounded-2xl border border-nanny-border bg-nanny-bg px-4 py-2 text-body text-nanny-text"
-                  onSubmitEditing={addChecklistItem}
-                  onFocus={focusChecklistInput}
-                  returnKeyType="done"
-                />
-                <TouchableOpacity
-                  onPress={addChecklistItem}
-                  disabled={!newTaskTitle.trim() || !activeChildId}
-                  className={`h-12 w-12 items-center justify-center rounded-2xl ${
-                    newTaskTitle.trim() && activeChildId ? 'bg-nanny-blue' : 'bg-nanny-soft'
+                  onPress={() => toggleChecklistItem(item)}
+                  className={`mr-3.5 h-6 w-6 items-center justify-center rounded-md ${
+                    item.isCompleted ? 'bg-nanny-blue' : 'bg-nanny-card'
                   }`}
+                  style={{ borderWidth: 1.5, borderColor: item.isCompleted ? COLORS.primary : COLORS.borderStrong }}
                 >
-                  <Ionicons name="add" size={30} color="white" />
+                  {item.isCompleted && <Ionicons name="checkmark" size={16} color="white" />}
                 </TouchableOpacity>
-              </View>
-              {visibleChecklist.map((item) => (
-                <View key={item.id} className="flex-row items-center border-t border-nanny-border px-4 py-4">
-                  <TouchableOpacity onPress={() => toggleChecklistItem(item)} className={`mr-4 h-10 w-10 items-center justify-center rounded-xl border-2 ${item.isCompleted ? 'border-nanny-blue bg-nanny-blue' : 'border-nanny-border-strong bg-nanny-bg'}`}>
-                    {item.isCompleted && <Ionicons name="checkmark" size={24} color="white" />}
-                  </TouchableOpacity>
-                  {editingTaskId === item.id ? (
-                    <TextInput
-                      value={editingTaskTitle}
-                      onChangeText={setEditingTaskTitle}
-                      autoFocus
-                      onFocus={focusChecklistInput}
-                      className="flex-1 rounded-lg border border-nanny-border-strong bg-nanny-bg px-2 py-2 text-body text-nanny-text"
-                    />
-                  ) : (
-                    <Text className={`flex-1 text-body text-nanny-text ${item.isCompleted ? 'line-through text-nanny-muted' : ''}`}>{item.title}</Text>
-                  )}
-                  {editingTaskId === item.id ? (
-                    <>
-                      <TouchableOpacity onPress={() => saveChecklistEdit(item)} className="ml-3">
-                        <Ionicons name="checkmark" size={24} color="#4e8c67" />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => setEditingTaskId(null)} className="ml-3">
-                        <Ionicons name="close" size={24} color="#6E5D78" />
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    <>
-                      <TouchableOpacity onPress={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); }} className="ml-3">
-                        <Ionicons name="pencil-outline" size={23} color="#654875" />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => deleteChecklistItem(item.id)} className="ml-4">
-                        <Ionicons name="trash-outline" size={23} color="#c65342" />
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              ))}
-            </View>
-            </View>
-            {/* Recomendaciones */}
-            <View className="mb-6 rounded-3xl bg-nanny-card" style={SHADOWS.card}>
-            <View className="overflow-hidden rounded-3xl">
-              <View className="flex-row items-center justify-between px-4 pt-4 pb-3">
-                <Text className="font-semibold text-subtitle text-nanny-text">Recomendaciones</Text>
-                {activeUser?.role !== 'PRO' && (
-                  <View className="flex-row items-center rounded-full bg-[#b87427]/15 px-2.5 py-1">
-                    <Ionicons name="sparkles" size={13} color="#b87427" />
-                    <Text className="ml-1 text-caption font-semibold text-[#b87427]">PRO</Text>
-                  </View>
+                {editingTaskId === item.id ? (
+                  <TextInput
+                    value={editingTaskTitle}
+                    onChangeText={setEditingTaskTitle}
+                    autoFocus
+                    onFocus={focusChecklistInput}
+                    className="flex-1 rounded-lg border border-nanny-border-strong bg-nanny-bg px-2 py-1.5 font-figtree text-body text-nanny-text"
+                  />
+                ) : (
+                  <Text className={`flex-1 font-figtree text-body ${item.isCompleted ? 'text-nanny-muted line-through' : 'text-nanny-text'}`}>
+                    {item.title}
+                  </Text>
+                )}
+                {editingTaskId === item.id ? (
+                  <>
+                    <TouchableOpacity onPress={() => saveChecklistEdit(item)} className="ml-3">
+                      <Ionicons name="checkmark" size={22} color={COLORS.green} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setEditingTaskId(null)} className="ml-3">
+                      <Ionicons name="close" size={22} color={COLORS.muted} />
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <TouchableOpacity onPress={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); }} className="ml-3">
+                      <Ionicons name="create-outline" size={20} color={COLORS.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => deleteChecklistItem(item.id)} className="ml-4">
+                      <Ionicons name="trash-outline" size={19} color={COLORS.danger} />
+                    </TouchableOpacity>
+                  </>
                 )}
               </View>
+            ))}
 
-              {/* Selector de pestañas siempre visible, para elegir seccion de articulos/libros y comidas */}
-              <View className="mx-4 mb-3 flex-row rounded-2xl bg-nanny-soft p-1">
-                <TouchableOpacity
-                  onPress={() => setRecomendacionesTab('articulos')}
-                  className={`flex-1 items-center rounded-xl py-2 ${recomendacionesTab === 'articulos' ? 'bg-nanny-bg' : ''}`}
-                >
-                  <Ionicons
-                    name="book-outline"
-                    size={22}
-                    color={recomendacionesTab === 'articulos' ? '#b87427' : '#6E5D78'}
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setRecomendacionesTab('comidas')}
-                  className={`flex-1 items-center rounded-xl py-2 ${recomendacionesTab === 'comidas' ? 'bg-nanny-bg' : ''}`}
-                >
-                  <Ionicons
-                    name="nutrition-outline"
-                    size={22}
-                    color={recomendacionesTab === 'comidas' ? '#b87427' : '#6E5D78'}
-                  />
-                </TouchableOpacity>
+            {/* Recomendaciones */}
+            <View className="mb-3 mt-5 flex-row items-center">
+              <SectionTitle>Recomendaciones</SectionTitle>
+              <View className="ml-2.5 rounded-full bg-nanny-card px-2 py-0.5">
+                <Text className="font-figtree-bold text-[11px] tracking-wider text-nanny-blue">PRO</Text>
               </View>
+            </View>
 
-              {/* Contenido condicionado al rol PRO / Admin */}
+            {/* Selector de pestañas siempre visible, para elegir sección de lectura (libro y artículos) o recetas */}
+            <SegmentedTabs
+              options={[
+                { key: 'articulos', label: 'Lectura' },
+                { key: 'comidas', label: 'Recetas' },
+              ]}
+              value={recomendacionesTab}
+              onChange={setRecomendacionesTab}
+              activeClassName="bg-nanny-primary-dark"
+            />
+
+            {/* Contenido condicionado al rol PRO / Admin */}
+            <View className="mt-2">
               {activeUser?.role === 'PRO' || isAdmin ? (
                 activeChildAge > 6 ? (
-                  <View className="mx-4 mb-4 items-center justify-center rounded-2xl border border-nanny-border bg-nanny-bg p-5">
-                    <View className="mb-2.5 h-12 w-12 items-center justify-center rounded-full bg-nanny-soft/70">
-                      <Ionicons name="information-circle-outline" size={26} color="#654875" />
-                    </View>
-                    <Text className="text-body font-semibold text-nanny-text text-center">
-                      No hay información para niños de esta edad
-                    </Text>
-                    <Text className="mt-1 text-center text-caption text-nanny-muted px-2">
-                      Las recomendaciones actuales están disponibles para niños de hasta 6 años.
-                    </Text>
-                  </View>
+                  <NoticeCard
+                    icon="information-circle-outline"
+                    title="No hay información para niños de esta edad"
+                    message="Las recomendaciones actuales están disponibles para niños de hasta 6 años."
+                  />
                 ) : recomendacionesTab === 'articulos' ? (
-                  <View className="mx-4 mb-4 gap-4">
+                  <View className="gap-5">
                     {/* Sección Libro del Mes */}
                     <View>
-                      <View className="mb-2 flex-row items-center gap-1.5">
-                        <Ionicons name="book" size={17} color="#b87427" />
-                        <Text className="text-body font-semibold text-nanny-text">Libro del mes</Text>
-                      </View>
+                      <SubsectionTitle>Libro del mes</SubsectionTitle>
                       {books.length > 0 ? (
                         <TouchableOpacity
                           activeOpacity={0.85}
                           onPress={() => setShowLibroSinopsis((prev) => !prev)}
-                          className="rounded-2xl border border-nanny-border bg-nanny-bg p-4"
+                          className="rounded-[24px] bg-nanny-card p-3.5"
+                          style={SHADOWS.card}
                         >
-                          <View className="flex-row gap-3.5">
+                          <View className="flex-row gap-4">
                             <BookCoverImage uri={books[0].imageUrl} />
-                            <View className="flex-1 justify-between py-1">
-                              <View>
-                                <Text className="text-body font-semibold text-nanny-text leading-snug">
-                                  {books[0].title}
-                                </Text>
-                                <Text className="mt-1 text-caption font-semibold text-nanny-muted">
-                                  Por {books[0].authors?.join(', ')}
+                            <View className="flex-1 py-1">
+                              <View className="self-start rounded-full bg-nanny-soft px-2.5 py-0.5">
+                                <Text className="font-figtree-medium text-[12px] text-nanny-primary-dark">
+                                  {formatMonthChip(new Date())}
                                 </Text>
                               </View>
-                              <View className="mt-3 w-36 flex-row items-center justify-end self-end">
-                                <Text className="mr-1 text-caption font-semibold text-[#b87427]">
+                              <Text className="mt-2.5 font-figtree-semibold text-[15px] leading-[21px] text-nanny-text">
+                                {books[0].title}
+                              </Text>
+                              <Text className="mt-1 font-figtree text-[13px] text-nanny-muted">
+                                {books[0].authors?.join(', ')}
+                              </Text>
+                              <View className="mt-3 flex-row items-center">
+                                <Text className="mr-1 font-figtree-medium text-[13px] text-nanny-blue">
                                   {showLibroSinopsis ? 'Ocultar sinopsis' : 'Ver sinopsis'}
                                 </Text>
                                 <Ionicons
                                   name={showLibroSinopsis ? 'chevron-up' : 'chevron-down'}
                                   size={14}
-                                  color="#b87427"
+                                  color={COLORS.primary}
                                 />
                               </View>
                             </View>
                           </View>
                           {showLibroSinopsis && (
-                            <View className="mt-3.5 border-t border-nanny-border/70 pt-3">
-                              <Text className="mb-1 text-caption font-semibold uppercase tracking-wider text-nanny-muted">
+                            <View className="mt-3.5 border-t border-nanny-border pt-3">
+                              <Text className="mb-1 font-figtree-semibold text-[11px] uppercase tracking-wider text-nanny-muted">
                                 Sinopsis
                               </Text>
-                              <Text
-                                style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
-                                className="w-full text-caption leading-relaxed text-nanny-text"
-                              >
+                              <Text className="font-figtree text-[13px] leading-[19px] text-nanny-text">
                                 {books[0].synopsis}
                               </Text>
                             </View>
                           )}
                         </TouchableOpacity>
                       ) : (
-                        <View className="rounded-2xl border border-nanny-border bg-nanny-bg p-4">
-                          <Text className="text-caption text-nanny-muted">Cargando libro recomendado...</Text>
+                        <View className="rounded-[24px] bg-nanny-card p-4" style={SHADOWS.card}>
+                          <Text className="font-figtree text-[13px] text-nanny-muted">Cargando libro recomendado...</Text>
                         </View>
                       )}
                     </View>
 
-                    {/* Sección Artículos Semanales */}
+                    {/* Sección Artículos de la semana */}
                     <View>
-                      <View className="mb-2 flex-row items-center gap-1.5">
-                        <Ionicons name="newspaper" size={17} color="#654875" />
-                        <Text className="text-body font-semibold text-nanny-text">Artículos semanales</Text>
-                      </View>
+                      <SubsectionTitle>Artículos de la semana</SubsectionTitle>
                       {recLoading ? (
-                        <ActivityIndicator size="small" color="#654875" />
+                        <ActivityIndicator size="small" color={COLORS.primary} />
                       ) : articles.length > 0 ? (
                         <View className="gap-3">
                           {articles.map((art) => (
-                            <View key={art.id} className="rounded-2xl border border-nanny-border bg-nanny-bg p-4">
-                              <Text className="text-body font-semibold text-nanny-text leading-snug">
+                            <View key={art.id} className="rounded-[24px] bg-nanny-card p-4" style={SHADOWS.card}>
+                              {art.source ? (
+                                <Text className="mb-1.5 font-figtree-medium text-[11px] uppercase tracking-wide text-nanny-muted">
+                                  {art.source}
+                                </Text>
+                              ) : null}
+                              <Text className="font-figtree-semibold text-[16px] leading-[22px] text-nanny-text">
                                 {art.title}
                               </Text>
-                              <Text
-                                style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
-                                className="mt-2 w-full text-caption leading-relaxed text-nanny-text"
-                              >
+                              <Text className="mt-2 font-figtree text-[13px] leading-[19px] text-nanny-muted">
                                 {art.description}
                               </Text>
                               <TouchableOpacity
@@ -844,161 +1007,148 @@ export default function HomeScreen() {
                                     console.error('Error abriendo enlace:', err),
                                   )
                                 }
-                                className="mt-3 flex-row items-center self-start rounded-xl bg-nanny-blue/15 px-3 py-1.5 active:opacity-70"
+                                className="mt-3.5 flex-row items-center self-start rounded-full bg-nanny-soft/70 px-3.5 py-2 active:opacity-70"
                               >
-                                <Text className="mr-1.5 text-caption font-semibold text-nanny-blue">
-                                  Leer artículo {art.source ? `(${art.source})` : ''}
+                                <Text className="mr-1.5 font-figtree-medium text-[13px] text-nanny-primary-dark">
+                                  Leer artículo
                                 </Text>
-                                <Ionicons name="open-outline" size={13} color="#654875" />
+                                <Ionicons name="open-outline" size={14} color={COLORS.primaryDark} />
                               </TouchableOpacity>
                             </View>
                           ))}
                         </View>
                       ) : (
-                        <Text className="text-caption text-nanny-muted">No hay artículos para mostrar.</Text>
+                        <Text className="font-figtree text-[13px] text-nanny-muted">No hay artículos para mostrar.</Text>
                       )}
                     </View>
                   </View>
                 ) : (
-                  //Sección de recetas recomendadas
-                  <View className="mx-4 mb-4 gap-4">
-                    <View className="mb-1 flex-row items-center gap-1.5">
-                      <Ionicons name="restaurant" size={17} color="#b87427" />
-                      <Text className="text-body font-semibold text-nanny-text">Recetas de la semana</Text>
-                    </View>
+                  // Sección de recetas recomendadas
+                  <View>
+                    <SubsectionTitle>Recetas de la semana</SubsectionTitle>
 
                     {recLoading ? (
-                      <ActivityIndicator size="small" color="#b87427" />
+                      <ActivityIndicator size="small" color={COLORS.primary} />
                     ) : recipes.length > 0 ? (
-                      recipes.map((receta) => {
-                        const isExpanded = expandedRecipeId === receta.id;
-                        return (
-                          <TouchableOpacity
-                            key={receta.id}
-                            activeOpacity={0.85}
-                            onPress={() => setExpandedRecipeId(isExpanded ? null : receta.id)}
-                            className="rounded-2xl border border-nanny-border bg-nanny-bg p-4"
-                          >
-                          {/* Cabecera de la receta */}
-                          <View className="flex-row gap-3.5">
-                            <Image
-                              source={{ uri: receta.imageUrl }}
-                              style={{ width: 96, height: 96 }}
-                              className="h-24 w-24 rounded-xl bg-nanny-surface"
-                              resizeMode="cover"
-                            />
-                            <View className="flex-1 justify-between py-0.5">
-                              <View>
-                                <Text className="text-body font-semibold text-nanny-text leading-snug">
-                                  {receta.name}
-                                </Text>
-                                <View className="mt-2 flex-row flex-wrap items-center gap-3">
-                                  <View className="flex-row items-center">
-                                    <Ionicons name="time-outline" size={14} color="#6E5D78" />
-                                    <Text className="ml-1 text-caption text-nanny-muted">{receta.time}</Text>
+                      <View className="gap-3">
+                        {recipes.map((receta) => {
+                          const isExpanded = expandedRecipeId === receta.id;
+                          return (
+                            <TouchableOpacity
+                              key={receta.id}
+                              activeOpacity={0.85}
+                              onPress={() => setExpandedRecipeId(isExpanded ? null : receta.id)}
+                              className="rounded-[24px] bg-nanny-card p-3.5"
+                              style={SHADOWS.card}
+                            >
+                              {/* Cabecera de la receta */}
+                              <View className="flex-row gap-4">
+                                <Image
+                                  source={{ uri: receta.imageUrl }}
+                                  style={{ width: 96, height: 96 }}
+                                  className="rounded-xl bg-nanny-surface"
+                                  resizeMode="cover"
+                                />
+                                <View className="flex-1 py-1">
+                                  <Text className="font-figtree-semibold text-[15px] leading-[21px] text-nanny-text">
+                                    {receta.name}
+                                  </Text>
+                                  <View className="mt-2 flex-row flex-wrap items-center gap-3">
+                                    <View className="flex-row items-center">
+                                      <Ionicons name="time-outline" size={14} color={COLORS.muted} />
+                                      <Text className="ml-1 font-figtree text-[13px] text-nanny-muted">{receta.time}</Text>
+                                    </View>
+                                    <View className="flex-row items-center">
+                                      <Ionicons name="speedometer-outline" size={14} color={COLORS.muted} />
+                                      <Text className="ml-1 font-figtree text-[13px] text-nanny-muted">{receta.difficulty}</Text>
+                                    </View>
                                   </View>
-                                  <View className="flex-row items-center">
-                                    <Ionicons name="speedometer-outline" size={14} color="#6E5D78" />
-                                    <Text className="ml-1 text-caption text-nanny-muted">{receta.difficulty}</Text>
+                                  <View className="mt-3 flex-row items-center">
+                                    <Text className="mr-1 font-figtree-medium text-[13px] text-nanny-blue">
+                                      {isExpanded ? 'Ocultar receta' : 'Ver receta'}
+                                    </Text>
+                                    <Ionicons
+                                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                                      size={14}
+                                      color={COLORS.primary}
+                                    />
                                   </View>
                                 </View>
                               </View>
 
-                              {/* Botón ver receta a la derecha, tamaño fijo y sin fondo */}
-                              <View className="mt-2 w-32 flex-row items-center justify-end self-end">
-                                <Text className="mr-1 text-caption font-semibold text-[#b87427]">
-                                  {isExpanded ? 'Ocultar receta' : 'Ver receta'}
-                                </Text>
-                                <Ionicons
-                                  name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                                  size={14}
-                                  color="#b87427"
-                                />
-                              </View>
-                            </View>
-                          </View>
-
-                          {/* Instrucciones desplegables: Ingredientes y Pasos */}
-                          {isExpanded && (
-                            <View className="mt-3.5 border-t border-nanny-border/70 pt-3">
-                              {/* Raciones */}
-                              <View className="mb-3 flex-row items-center gap-1.5 self-start rounded-lg bg-nanny-soft/50 px-2.5 py-1">
-                                <Ionicons name="people-outline" size={14} color="#654875" />
-                                <Text className="text-caption font-semibold text-nanny-text">
-                                  {receta.servings}
-                                </Text>
-                              </View>
-
-                              {/* Ingredientes */}
-                              <Text className="mb-1.5 text-caption font-semibold uppercase tracking-wider text-nanny-muted">
-                                Ingredientes
-                              </Text>
-                              <View className="mb-3.5 gap-1.5">
-                                {receta.ingredients.map((ingrediente: string, idx: number) => (
-                                  <View key={idx} className="flex-row items-start">
-                                    <Text className="mr-2 text-caption font-semibold text-[#b87427]">•</Text>
-                                    <Text className="flex-1 text-caption text-nanny-text leading-relaxed">
-                                      {ingrediente}
+                              {/* Instrucciones desplegables: Ingredientes y Pasos */}
+                              {isExpanded && (
+                                <View className="mt-3.5 border-t border-nanny-border pt-3">
+                                  {/* Raciones */}
+                                  <View className="mb-3 flex-row items-center gap-1.5 self-start rounded-full bg-nanny-soft px-2.5 py-1">
+                                    <Ionicons name="people-outline" size={14} color={COLORS.primary} />
+                                    <Text className="font-figtree-semibold text-[12px] text-nanny-text">
+                                      {receta.servings}
                                     </Text>
                                   </View>
-                                ))}
-                              </View>
 
-                              {/* Pasos de preparación */}
-                              <Text className="mb-1.5 text-caption font-semibold uppercase tracking-wider text-nanny-muted">
-                                Preparación paso a paso
-                              </Text>
-                              <View className="gap-2.5">
-                                {receta.steps.map((paso: string, idx: number) => (
-                                  <View key={idx} className="flex-row items-start gap-2">
-                                    <View className="h-5 w-5 items-center justify-center rounded-full bg-nanny-soft mt-0.5">
-                                      <Text className="text-[10px] font-bold text-nanny-text">{idx + 1}</Text>
-                                    </View>
-                                    <Text
-                                      style={{ textAlign: 'justify', width: '100%', alignSelf: 'stretch' }}
-                                      className="flex-1 text-caption leading-relaxed text-nanny-text"
-                                    >
-                                      {paso}
-                                    </Text>
+                                  {/* Ingredientes */}
+                                  <Text className="mb-1.5 font-figtree-semibold text-[11px] uppercase tracking-wider text-nanny-muted">
+                                    Ingredientes
+                                  </Text>
+                                  <View className="mb-3.5 gap-1.5">
+                                    {receta.ingredients.map((ingrediente: string, idx: number) => (
+                                      <View key={idx} className="flex-row items-start">
+                                        <Text className="mr-2 font-figtree-semibold text-[13px] text-nanny-blue">•</Text>
+                                        <Text className="flex-1 font-figtree text-[13px] leading-[19px] text-nanny-text">
+                                          {ingrediente}
+                                        </Text>
+                                      </View>
+                                    ))}
                                   </View>
-                                ))}
-                              </View>
-                            </View>
-                          )}
-                        </TouchableOpacity>
-                        );
-                      })
+
+                                  {/* Pasos de preparación */}
+                                  <Text className="mb-1.5 font-figtree-semibold text-[11px] uppercase tracking-wider text-nanny-muted">
+                                    Preparación paso a paso
+                                  </Text>
+                                  <View className="gap-2.5">
+                                    {receta.steps.map((paso: string, idx: number) => (
+                                      <View key={idx} className="flex-row items-start gap-2">
+                                        <View className="mt-0.5 h-5 w-5 items-center justify-center rounded-full bg-nanny-soft">
+                                          <Text className="font-figtree-bold text-[10px] text-nanny-text">{idx + 1}</Text>
+                                        </View>
+                                        <Text className="flex-1 font-figtree text-[13px] leading-[19px] text-nanny-text">
+                                          {paso}
+                                        </Text>
+                                      </View>
+                                    ))}
+                                  </View>
+                                </View>
+                              )}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
                     ) : (
-                      <Text className="text-caption text-nanny-muted">No hay recetas para mostrar.</Text>
+                      <Text className="font-figtree text-[13px] text-nanny-muted">No hay recetas para mostrar.</Text>
                     )}
                   </View>
                 )
               ) : (
                 /* Aviso para usuarios que no son PRO */
-                <View className="mx-4 mb-4 items-center justify-center rounded-2xl border border-nanny-border bg-nanny-bg p-5">
-                  <View className="mb-2.5 h-12 w-12 items-center justify-center rounded-full bg-nanny-soft/70">
-                    <Ionicons name="lock-closed" size={24} color="#b87427" />
-                  </View>
-                  <Text className="text-body font-semibold text-nanny-text text-center">
-                    Función exclusiva para usuarios PRO
-                  </Text>
-                  <Text className="mt-1 text-center text-caption text-nanny-muted px-2">
-                    {recomendacionesTab === 'articulos'
-                      ? 'Accede a artículos, guías y lecturas recomendadas según la edad y desarrollo de tu hijo.'
-                      : 'Descubre recetas saludables y recomendaciones de alimentación adaptadas a su etapa.'}
-                  </Text>
+                <NoticeCard
+                  icon="lock-closed"
+                  title="Función exclusiva para usuarios PRO"
+                  message={recomendacionesTab === 'articulos'
+                    ? 'Accede a artículos, guías y lecturas recomendadas según la edad y desarrollo de tu hijo.'
+                    : 'Descubre recetas saludables y recomendaciones de alimentación adaptadas a su etapa.'}
+                >
                   <TouchableOpacity
                     onPress={() => {
                       // Acción futura: abrir modal de suscripción
                     }}
-                    className="mt-4 flex-row items-center rounded-xl bg-[#b87427] px-5 py-2.5 shadow-sm active:opacity-80"
+                    className="mt-4 flex-row items-center rounded-full bg-nanny-blue px-5 py-2.5 active:opacity-80"
                   >
                     <Ionicons name="star" size={16} color="white" />
-                    <Text className="ml-2 text-body font-semibold text-white">Hazte PRO</Text>
+                    <Text className="ml-2 font-figtree-semibold text-body text-white">Hazte PRO</Text>
                   </TouchableOpacity>
-                </View>
+                </NoticeCard>
               )}
-            </View>
             </View>
           </>
         )}
@@ -1009,7 +1159,7 @@ export default function HomeScreen() {
         <View className="flex-1 justify-end bg-black/50">
           <View className="bg-white rounded-t-3xl p-6 min-h-[300px]">
             <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-subtitle font-semibold">Elegir Usuario</Text>
+              <Text className="font-figtree-semibold text-subtitle text-nanny-text">Elegir Usuario</Text>
               <TouchableOpacity onPress={() => setIsUserModalVisible(false)}>
                 <Ionicons name="close" size={24} color="black" />
               </TouchableOpacity>
@@ -1023,7 +1173,7 @@ export default function HomeScreen() {
                 className="mb-4 flex-row items-center rounded-2xl bg-nanny-bg px-4 py-3"
               >
                 <Ionicons name="person-circle-outline" size={24} color="#654875" />
-                <Text className="ml-3 text-body font-semibold text-nanny-text">Editar mi perfil</Text>
+                <Text className="ml-3 font-figtree-semibold text-body text-nanny-text">Editar mi perfil</Text>
                 <Ionicons name="chevron-forward" size={20} color="#6E5D78" style={{ marginLeft: 'auto' }} />
               </TouchableOpacity>
             )}
@@ -1031,13 +1181,13 @@ export default function HomeScreen() {
               <ActivityIndicator size="large" color="#654875" />
             ) : usersError ? (
               <View>
-                <Text className="mb-4 text-center text-body text-red-400">{usersError}</Text>
+                <Text className="mb-4 text-center font-figtree text-body text-red-400">{usersError}</Text>
                 <TouchableOpacity onPress={fetchUsers} className="self-center rounded-xl bg-nanny-blue px-5 py-3">
-                  <Text className="font-semibold text-white">Reintentar</Text>
+                  <Text className="font-figtree-semibold text-white">Reintentar</Text>
                 </TouchableOpacity>
               </View>
             ) : users.length === 0 ? (
-              <Text className="text-center text-body text-nanny-muted">No hay usuarios disponibles.</Text>
+              <Text className="text-center font-figtree text-body text-nanny-muted">No hay usuarios disponibles.</Text>
             ) : (
               <FlatList
                 data={users}
@@ -1048,14 +1198,14 @@ export default function HomeScreen() {
                     className="flex-row items-center justify-between border-b border-nanny-border p-4"
                   >
                     <View className="flex-row items-center">
-                      <Text className="text-body">{[item.name, item.surname].filter(Boolean).join(' ')}</Text>
+                      <Text className="font-figtree text-body text-nanny-text">{[item.name, item.surname].filter(Boolean).join(' ')}</Text>
                       {item.role === 'ADMIN' && (
-                        <Text className="ml-2 rounded-full bg-nanny-blue/15 px-2 py-0.5 text-caption font-semibold text-nanny-blue">
+                        <Text className="ml-2 rounded-full bg-nanny-blue/15 px-2 py-0.5 font-figtree-semibold text-caption text-nanny-blue">
                           Admin
                         </Text>
                       )}
                       {item.isPediatrician && (
-                        <Text className="ml-2 rounded-full bg-nanny-green/15 px-2 py-0.5 text-caption font-semibold text-nanny-green">
+                        <Text className="ml-2 rounded-full bg-nanny-green/15 px-2 py-0.5 font-figtree-semibold text-caption text-nanny-green">
                           Pediatra
                         </Text>
                       )}

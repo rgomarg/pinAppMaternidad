@@ -145,7 +145,8 @@ model Child {
   bloodGroup    String?
   allergies     String?
   sex           Sex?     // Necesario para comparar con las curvas de la OMS (distintas para niños y niñas)
-  
+  avatarUrl     String?  // Foto del menor (URL remota o data URI), se muestra en los chips de la Home
+
   // Relación con el padre/madre (User)
   parentId      Int
   parent        User      @relation(fields: [parentId], references: [id], onDelete: Cascade)
