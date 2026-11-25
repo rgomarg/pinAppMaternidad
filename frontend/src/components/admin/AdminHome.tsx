@@ -31,7 +31,7 @@ export default function AdminHome({ adminId }: { adminId: number }) {
     navigation.navigate('Foro', { screen: 'AdminPanel', params: { tab }, initial: false });
 
   if (error) return <Text className="mt-12 text-center text-nanny-muted">{error}</Text>;
-  if (!summary) return <ActivityIndicator size="large" color="#654875" style={{ marginTop: 48 }} />;
+  if (!summary) return <ActivityIndicator size="large" color="#46424A" style={{ marginTop: 48 }} />;
 
   const count = <T extends { status: string }>(items: T[], status: string) =>
     items.filter((item) => item.status === status).length;
@@ -101,7 +101,7 @@ function StatTile({
   const highlighted = alert && value > 0;
   return (
     <View style={[{ width: '47%' }, SHADOWS.card]} className="rounded-3xl bg-nanny-card p-4">
-      <Ionicons name={icon} size={18} color={highlighted ? '#cc7a66' : '#654875'} />
+      <Ionicons name={icon} size={18} color={highlighted ? '#cc7a66' : '#46424A'} />
       <Text className={`mt-2 text-title font-bold ${highlighted ? 'text-nanny-red' : 'text-nanny-text'}`}>{value}</Text>
       <Text className="text-body font-medium text-nanny-muted">{label}</Text>
     </View>
@@ -126,13 +126,13 @@ function ShortcutButton({
       accessibilityRole="button"
     >
       <View className="h-10 w-10 items-center justify-center rounded-full bg-nanny-blue/15">
-        <Ionicons name={icon} size={20} color="#654875" />
+        <Ionicons name={icon} size={20} color="#46424A" />
       </View>
       <View className="ml-4 flex-1">
         <Text className="text-body font-semibold text-nanny-text">{title}</Text>
         <Text className="text-body text-nanny-muted">{subtitle}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color="#6E5D78" />
+      <Ionicons name="chevron-forward" size={18} color="#5A5A5E" />
     </TouchableOpacity>
   );
 }

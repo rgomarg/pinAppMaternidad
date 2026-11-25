@@ -469,7 +469,7 @@ export default function HomeScreen() {
         name: 'default',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#654875',
+        lightColor: '#46424A',
         sound: 'default',
       }).catch(() => {});
     }
@@ -1172,13 +1172,13 @@ export default function HomeScreen() {
                 }}
                 className="mb-4 flex-row items-center rounded-2xl bg-nanny-bg px-4 py-3"
               >
-                <Ionicons name="person-circle-outline" size={24} color="#654875" />
+                <Ionicons name="person-circle-outline" size={24} color="#46424A" />
                 <Text className="ml-3 font-figtree-semibold text-body text-nanny-text">Editar mi perfil</Text>
-                <Ionicons name="chevron-forward" size={20} color="#6E5D78" style={{ marginLeft: 'auto' }} />
+                <Ionicons name="chevron-forward" size={20} color="#5A5A5E" style={{ marginLeft: 'auto' }} />
               </TouchableOpacity>
             )}
             {usersLoading ? (
-              <ActivityIndicator size="large" color="#654875" />
+              <ActivityIndicator size="large" color="#46424A" />
             ) : usersError ? (
               <View>
                 <Text className="mb-4 text-center font-figtree text-body text-red-400">{usersError}</Text>

@@ -81,7 +81,7 @@ export default function NewThreadScreen() {
         <Text className="text-subtitle font-figtree-semibold text-nanny-text">Nuevo hilo</Text>
         <TouchableOpacity onPress={publish} disabled={saving} accessibilityRole="button">
           {saving ? (
-            <ActivityIndicator color="#654875" />
+            <ActivityIndicator color="#46424A" />
           ) : (
             <Text className={`text-body font-figtree-semibold ${submitted && !isValid ? 'text-nanny-muted' : 'text-nanny-blue'}`}>
               Publicar
@@ -97,7 +97,7 @@ export default function NewThreadScreen() {
           onChangeText={setTitle}
           maxLength={MAX_TITLE}
           placeholder="¿Sobre qué quieres preguntar?"
-          placeholderTextColor="#8F8296"
+          placeholderTextColor="#9E9EA3"
           className="font-figtree mb-1 rounded-2xl bg-white px-4 py-3 text-body text-nanny-text"
         />
         <View className="mb-5 flex-row">
@@ -113,7 +113,7 @@ export default function NewThreadScreen() {
           onChangeText={setContent}
           maxLength={MAX_CONTENT}
           placeholder="Cuenta tu situación con el detalle que quieras"
-          placeholderTextColor="#8F8296"
+          placeholderTextColor="#9E9EA3"
           multiline
           textAlignVertical="top"
           style={{ minHeight: 160 }}

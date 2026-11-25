@@ -44,7 +44,7 @@ export default function ReplyComposer({ replyingTo, onCancelReply, onSend }: Pro
           placeholderTextColor={COLORS.subtle}
           multiline
           style={[{ minHeight: 44, maxHeight: 120 }, SHADOWS.card]}
-          className="flex-1 rounded-2xl bg-[#FBF8FC] px-4 py-2.5 font-figtree text-[16px] text-nanny-text"
+          className="flex-1 rounded-2xl bg-[#F7F7F5] px-4 py-2.5 font-figtree text-[16px] text-nanny-text"
         />
         <TouchableOpacity
           onPress={send}

@@ -10,22 +10,22 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'nanny-bg': '#F8EFF5',          // campos y chips dentro de tarjetas (el fondo de pantalla es un degradado)
+        'nanny-bg': '#F4F4F2',          // campos y chips dentro de tarjetas (el fondo de pantalla es un degradado)
         'nanny-card': '#FFFFFF',        // tarjetas y superficies
-        'nanny-surface': '#F4ECF6',     // campos, chips y paneles dentro de una tarjeta
-        'nanny-text': '#2D1E36',        // texto principal
-        'nanny-muted': '#6E5D78',       // texto secundario
-        'nanny-subtle': '#8F8296',      // texto terciario y placeholders
-        'nanny-blue': '#654875',        // color de marca (se mantiene el nombre para no tocar las clases)
-        'nanny-primary-dark': '#4C3459',
-        'nanny-soft': '#EAE0F2',        // fondo suave de marca
-        'nanny-border': '#E7DAEA',      // bordes y separadores
-        'nanny-border-strong': '#D5C3DD',
+        'nanny-surface': '#F4F4F2',     // campos, chips y paneles dentro de una tarjeta
+        'nanny-text': '#1C1C1E',        // texto principal
+        'nanny-muted': '#5A5A5E',       // texto secundario
+        'nanny-subtle': '#9E9EA3',      // texto terciario y placeholders
+        'nanny-blue': '#46424A',        // color principal: gris carbón (se mantiene el nombre para no tocar las clases)
+        'nanny-primary-dark': '#2E2B31',
+        'nanny-soft': '#CFE7F9',        // fondo suave de marca
+        'nanny-border': '#E6E6E3',      // bordes y separadores
+        'nanny-border-strong': '#D0D0CC',
         'nanny-green': '#65a882',
         'nanny-red': '#cc7a66',
         'nanny-green-muted': '#5E8A6E',
         'nanny-danger': '#C0563F',
-        'nanny-disabled': '#B8A7C6'
+        'nanny-disabled': '#C4C4C4'
       },
       // Figtree: cada grosor es una familia (ver FONTS en src/theme.ts)
       fontFamily: {

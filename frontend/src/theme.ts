@@ -11,32 +11,33 @@
 
 export const COLORS = {
   /** Fondo de respaldo de las pantallas (debajo del degradado) */
-  background: '#F0C6D4',
-  /** Degradado del fondo de pantalla: arriba (rosa) → abajo (lila) */
-  gradientStart: '#F7A9B8',
-  gradientEnd: '#E9DDF7',
+  background: '#E6EBD0',
+  /** Degradado del fondo de pantalla: arriba (amarillo) → centro (verde agua) → abajo (azul cielo) */
+  gradientStart: '#F3E496',
+  gradientMid: '#D6E4D8',
+  gradientEnd: '#A3CFF2',
   /** Campos y chips dentro de las tarjetas blancas */
-  field: '#F8EFF5',
+  field: '#F4F4F2',
   /** Tarjetas y superficies principales */
   surface: '#FFFFFF',
   /** Campos, chips y paneles dentro de una tarjeta */
-  surfaceAlt: '#F4ECF6',
+  surfaceAlt: '#F4F4F2',
   /** Color de marca: botones, enlaces, pestaña activa */
-  primary: '#654875',
+  primary: '#46424A',
   /** Variante oscura del color de marca (texto sobre fondos claros de marca) */
-  primaryDark: '#4C3459',
+  primaryDark: '#2E2B31',
   /** Fondo suave de marca: chips seleccionados, insignias, avisos informativos */
-  primarySoft: '#EAE0F2',
+  primarySoft: '#CFE7F9',
   /** Texto principal */
-  text: '#2D1E36',
+  text: '#1C1C1E',
   /** Texto secundario */
-  muted: '#6E5D78',
+  muted: '#5A5A5E',
   /** Texto terciario y marcadores de posición */
-  subtle: '#8F8296',
+  subtle: '#9E9EA3',
   /** Bordes y separadores */
-  border: '#E7DAEA',
+  border: '#E6E6E3',
   /** Bordes con más contraste (campos activos, controles) */
-  borderStrong: '#D5C3DD',
+  borderStrong: '#D0D0CC',
   // Colores con significado (se mantienen respecto al diseño anterior)
   green: '#65a882',
   red: '#cc7a66',
@@ -45,8 +46,8 @@ export const COLORS = {
   /** Rojo teja para acciones de borrar */
   danger: '#C0563F',
   /** Botón deshabilitado y elementos inactivos de la barra inferior */
-  disabled: '#B8A7C6',
-  tabInactive: '#9C8FA8',
+  disabled: '#C4C4C4',
+  tabInactive: '#A0A0A0',
 } as const;
 
 /**
@@ -75,21 +76,21 @@ export const TYPOGRAPHY = {
 } as const;
 
 /**
- * Sombras suaves teñidas de morado para tarjetas y botones flotantes.
+ * Sombras suaves neutras para tarjetas y botones flotantes.
  * Se aplican con style={SHADOWS.card}.
  */
 export const SHADOWS = {
   card: {
-    shadowColor: '#654875',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 14,
     elevation: 3,
   },
   floating: {
-    shadowColor: '#654875',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
   },

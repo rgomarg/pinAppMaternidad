@@ -199,7 +199,7 @@ export default function ActualizarAlturaModal({
             {/* Tarjeta de perfil (Niño) */}
             <View className="flex-row items-center bg-nanny-card p-4 rounded-3xl mb-5" style={SHADOWS.card}>
               <View className="w-12 h-12 bg-nanny-soft rounded-full mr-4 overflow-hidden items-center justify-center">
-                <Ionicons name="person" size={24} color="#6E5D78" />
+                <Ionicons name="person" size={24} color="#5A5A5E" />
               </View>
               <View>
                 <Text className="font-semibold text-nanny-text text-body">{childName}</Text>
@@ -220,7 +220,7 @@ export default function ActualizarAlturaModal({
                 <TextInput
                   className="flex-1 text-body text-nanny-text font-medium"
                   placeholder="Ej. 118.5"
-                  placeholderTextColor="#8F8296"
+                  placeholderTextColor="#9E9EA3"
                   keyboardType="decimal-pad"
                   value={nuevaAltura}
                   onChangeText={setNuevaAltura}
@@ -228,10 +228,10 @@ export default function ActualizarAlturaModal({
                 {/* Botones de flechas (estilo spinner funcional) */}
                 <View className="flex-col bg-white rounded px-1.5 py-1 ml-2 mr-3 justify-center items-center shadow-sm">
                   <TouchableOpacity onPress={handleIncrement} hitSlop={{ top: 5, bottom: 2, left: 5, right: 5 }}>
-                    <Ionicons name="caret-up" size={12} color="#654875" />
+                    <Ionicons name="caret-up" size={12} color="#46424A" />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={handleDecrement} hitSlop={{ top: 2, bottom: 5, left: 5, right: 5 }}>
-                    <Ionicons name="caret-down" size={12} color="#654875" />
+                    <Ionicons name="caret-down" size={12} color="#46424A" />
                   </TouchableOpacity>
                 </View>
                 <Text className="text-nanny-text font-semibold text-body">cm</Text>
@@ -262,7 +262,7 @@ export default function ActualizarAlturaModal({
                 <Ionicons 
                   name={showDatePicker ? "chevron-up" : "calendar-outline"} 
                   size={20} 
-                  color="#2D1E36" 
+                  color="#1C1C1E" 
                 />
               </TouchableOpacity>
 
@@ -286,14 +286,14 @@ export default function ActualizarAlturaModal({
                     onDayPress={handleDayPress}
                     theme={{
                       calendarBackground: 'transparent',
-                      textSectionTitleColor: '#654875',
-                      selectedDayBackgroundColor: '#654875',
+                      textSectionTitleColor: '#46424A',
+                      selectedDayBackgroundColor: '#46424A',
                       selectedDayTextColor: '#ffffff',
-                      todayTextColor: '#654875',
-                      dayTextColor: '#2D1E36',
-                      textDisabledColor: '#8F8296',
-                      arrowColor: '#654875',
-                      monthTextColor: '#2D1E36',
+                      todayTextColor: '#46424A',
+                      dayTextColor: '#1C1C1E',
+                      textDisabledColor: '#9E9EA3',
+                      arrowColor: '#46424A',
+                      monthTextColor: '#1C1C1E',
                       textDayFontSize: 14,
                       textMonthFontSize: 16,
                       textDayHeaderFontSize: 12,
@@ -302,11 +302,11 @@ export default function ActualizarAlturaModal({
                       <Ionicons 
                         name={direction === 'left' ? 'chevron-back' : 'chevron-forward'} 
                         size={20} 
-                        color="#654875" 
+                        color="#46424A" 
                       />
                     )}
                     markedDates={{
-                      [toYMD(fecha)]: { selected: true, selectedColor: '#654875' },
+                      [toYMD(fecha)]: { selected: true, selectedColor: '#46424A' },
                     }}
                   />
                 </View>
@@ -315,7 +315,7 @@ export default function ActualizarAlturaModal({
 
             {/* Mensaje de Info inferior */}
             <View className="flex-row bg-nanny-soft border border-nanny-border-strong rounded-xl p-4 mt-2 mb-6">
-              <Ionicons name="information-circle-outline" size={22} color="#654875" style={{ marginTop: -1 }} />
+              <Ionicons name="information-circle-outline" size={22} color="#46424A" style={{ marginTop: -1 }} />
               <Text className="text-nanny-blue text-body ml-3 flex-1 leading-5 font-medium">
                 La nueva medición se añadirá a la curva de crecimiento y actualizará el valor actual de altura.
               </Text>

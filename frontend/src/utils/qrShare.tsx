@@ -597,7 +597,7 @@ export async function removeSharedChild(
 export function QRCodeSvg({
   value,
   size = 240,
-  color = '#2D1E36',
+  color = '#1C1C1E',
   backgroundColor = '#ffffff',
 }: {
   value: string;

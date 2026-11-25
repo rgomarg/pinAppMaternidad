@@ -507,7 +507,7 @@ export default function CrearEventoScreen() {
         <Text className="text-subtitle font-semibold text-nanny-text">Añadir evento</Text>
         <TouchableOpacity onPress={handleSave} disabled={saving}>
           {saving ? (
-            <ActivityIndicator size="small" color="#654875" />
+            <ActivityIndicator size="small" color="#46424A" />
           ) : (
             <Text className="text-body font-semibold text-nanny-blue">Guardar</Text>
           )}
@@ -617,7 +617,7 @@ export default function CrearEventoScreen() {
               <Ionicons
                 name={isSymptomsDropdownOpen ? 'chevron-up' : 'chevron-down'}
                 size={22}
-                color="#6E5D78"
+                color="#5A5A5E"
               />
             </TouchableOpacity>
 
@@ -626,17 +626,17 @@ export default function CrearEventoScreen() {
               <View className="mt-2 rounded-2xl border border-nanny-border bg-nanny-bg p-3 shadow-sm">
                 {/* Buscador rápido de síntomas */}
                 <View className="mb-2.5 flex-row items-center rounded-xl border border-nanny-border bg-nanny-card px-3 py-2">
-                  <Ionicons name="search" size={16} color="#6E5D78" style={{ marginRight: 6 }} />
+                  <Ionicons name="search" size={16} color="#5A5A5E" style={{ marginRight: 6 }} />
                   <TextInput
                     value={symptomSearch}
                     onChangeText={setSymptomSearch}
                     placeholder="Buscar síntoma (ej. fiebre, tos...)"
-                    placeholderTextColor="#8F8296"
+                    placeholderTextColor="#9E9EA3"
                     className="flex-1 text-body text-nanny-text p-0"
                   />
                   {symptomSearch.length > 0 && (
                     <TouchableOpacity onPress={() => setSymptomSearch('')}>
-                      <Ionicons name="close-circle" size={16} color="#6E5D78" />
+                      <Ionicons name="close-circle" size={16} color="#5A5A5E" />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -672,7 +672,7 @@ export default function CrearEventoScreen() {
                         {isSel ? (
                           <Ionicons name="checkmark-circle" size={20} color="#cc7a66" />
                         ) : (
-                          <Ionicons name="add-circle-outline" size={20} color="#D5C3DD" />
+                          <Ionicons name="add-circle-outline" size={20} color="#D0D0CC" />
                         )}
                       </TouchableOpacity>
                     );
@@ -753,7 +753,7 @@ export default function CrearEventoScreen() {
                   ? 'Ej. Revisión de los 6 meses'
                   : 'Ej. Resfriado común'
               }
-              placeholderTextColor="#8F8296"
+              placeholderTextColor="#9E9EA3"
               className="mb-6 rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5 text-body text-nanny-text"
             />
           </>
@@ -810,7 +810,7 @@ export default function CrearEventoScreen() {
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     className="ml-1.5"
                   >
-                    <Ionicons name="information-circle-outline" size={18} color="#6E5D78" />
+                    <Ionicons name="information-circle-outline" size={18} color="#5A5A5E" />
                   </TouchableOpacity>
                 </View>
                 <TextInput
@@ -820,7 +820,7 @@ export default function CrearEventoScreen() {
                     setShowDoseTip(false);
                   }}
                   placeholder="Ej. 2.5 ml"
-                  placeholderTextColor="#8F8296"
+                  placeholderTextColor="#9E9EA3"
                   className="rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5 text-body text-nanny-text"
                 />
                 {showDoseTip && (
@@ -838,7 +838,7 @@ export default function CrearEventoScreen() {
                   onChangeText={setIntervalHours}
                   keyboardType="numeric"
                   placeholder="Ej. 8"
-                  placeholderTextColor="#8F8296"
+                  placeholderTextColor="#9E9EA3"
                   className="rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5 text-body text-nanny-text"
                 />
               </View>
@@ -871,7 +871,7 @@ export default function CrearEventoScreen() {
               className="flex-row items-center justify-between rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5"
             >
               <Text className="text-body text-nanny-text">{formatDateStr(date)}</Text>
-              <Ionicons name="calendar-outline" size={20} color="#2D1E36" />
+              <Ionicons name="calendar-outline" size={20} color="#1C1C1E" />
             </TouchableOpacity>
           </View>
 
@@ -885,7 +885,7 @@ export default function CrearEventoScreen() {
               className="flex-row items-center justify-between rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5"
             >
               <Text className="text-body text-nanny-text">{formatTimeStr(date)}</Text>
-              <Ionicons name="time-outline" size={20} color="#2D1E36" />
+              <Ionicons name="time-outline" size={20} color="#1C1C1E" />
             </TouchableOpacity>
           </View>
         </View>
@@ -953,7 +953,7 @@ export default function CrearEventoScreen() {
                   <Ionicons
                     name="calendar-outline"
                     size={20}
-                    color={endDate ? '#2D1E36' : '#8F8296'}
+                    color={endDate ? '#1C1C1E' : '#9E9EA3'}
                   />
                 </TouchableOpacity>
               </View>
@@ -980,7 +980,7 @@ export default function CrearEventoScreen() {
                   <Ionicons
                     name="time-outline"
                     size={20}
-                    color={endDate ? '#2D1E36' : '#8F8296'}
+                    color={endDate ? '#1C1C1E' : '#9E9EA3'}
                   />
                 </TouchableOpacity>
               </View>
@@ -1023,7 +1023,7 @@ export default function CrearEventoScreen() {
               value={instructions}
               onChangeText={setInstructions}
               placeholder="Ej. Tomar después de las comidas o con abundante agua"
-              placeholderTextColor="#8F8296"
+              placeholderTextColor="#9E9EA3"
               multiline
               numberOfLines={3}
               style={{ minHeight: 80, textAlignVertical: 'top' }}
@@ -1037,7 +1037,7 @@ export default function CrearEventoScreen() {
               value={notes}
               onChangeText={setNotes}
               placeholder="Describe lo que quieras: intensidad, temperatura, comportamiento, indicaciones..."
-              placeholderTextColor="#8F8296"
+              placeholderTextColor="#9E9EA3"
               multiline
               numberOfLines={4}
               style={{ minHeight: 100, textAlignVertical: 'top' }}
@@ -1051,7 +1051,7 @@ export default function CrearEventoScreen() {
               value={notes}
               onChangeText={setNotes}
               placeholder="Añade indicaciones o información relevante"
-              placeholderTextColor="#8F8296"
+              placeholderTextColor="#9E9EA3"
               multiline
               numberOfLines={4}
               style={{ minHeight: 100, textAlignVertical: 'top' }}
@@ -1075,7 +1075,7 @@ export default function CrearEventoScreen() {
               <Switch
                 value={enableNotification}
                 onValueChange={handleToggleNotification}
-                trackColor={{ false: '#E7DAEA', true: '#654875' }}
+                trackColor={{ false: '#E6E6E3', true: '#46424A' }}
               />
             </View>
 
@@ -1124,7 +1124,7 @@ export default function CrearEventoScreen() {
                           name: 'default',
                           importance: Notifications.AndroidImportance.MAX,
                           vibrationPattern: [0, 250, 250, 250],
-                          lightColor: '#654875',
+                          lightColor: '#46424A',
                           sound: 'default',
                         }).catch(() => {});
                       }
@@ -1148,7 +1148,7 @@ export default function CrearEventoScreen() {
                   }}
                   className="mt-3.5 flex-row items-center justify-center rounded-xl border border-nanny-blue bg-nanny-soft py-2.5 px-4"
                 >
-                  <Ionicons name="notifications-outline" size={16} color="#654875" />
+                  <Ionicons name="notifications-outline" size={16} color="#46424A" />
                   <Text className="ml-2 text-caption font-semibold text-nanny-blue">
                     Probar alerta ahora (sonará en 2s)
                   </Text>

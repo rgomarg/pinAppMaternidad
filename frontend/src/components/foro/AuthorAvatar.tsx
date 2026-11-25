@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, Text, View } from 'react-native';
 import type { Author } from '../../api/forum';
 
-const COLORS = ['#654875', '#65a882', '#cc7a66', '#a38b6d', '#8a76a8'];
+const COLORS = ['#46424A', '#65a882', '#cc7a66', '#a38b6d', '#6D9CC9'];
 
 export default function AuthorAvatar({ author, size = 36 }: { author: Author; size?: number }) {
   const initials = author.name

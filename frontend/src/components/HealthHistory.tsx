@@ -15,7 +15,7 @@ const palette = {
   text: COLORS.text,
   muted: COLORS.muted,
   blue: COLORS.primary,
-  line: '#D9CCE3',
+  line: '#D6D6D2',
   chip: COLORS.surface,
   chipBorder: COLORS.border,
 };

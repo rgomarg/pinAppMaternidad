@@ -68,7 +68,7 @@ type CalendarEvent = {
 const EVENT_COLORS = {
   MEDICINE: '#4B8862',
   MEDICAL_APPOINTMENT: '#C0705A',
-  GENERAL: '#7C5BB0',
+  GENERAL: '#4A86C5',
   VACCINE: '#C4831D',
   CONDITION: '#B84D8B',
 } as const;
@@ -139,9 +139,9 @@ const getEventVisuals = (type?: string) => {
     default:
       return {
         icon: 'calendar-outline' as const,
-        bg: 'bg-[#F0ECF8]',
-        border: 'border-[#D9D0EC]',
-        color: '#7C5BB0',
+        bg: 'bg-[#EAF3FB]',
+        border: 'border-[#C9DFF3]',
+        color: '#4A86C5',
         badge: 'General',
       };
   }
@@ -329,7 +329,7 @@ export default function CalendarioScreen() {
           .map((type) => ({ key: type, color: EVENT_COLORS[type] })),
       };
     });
-    marked[selectedDate] = { ...marked[selectedDate], selected: true, selectedColor: '#654875' };
+    marked[selectedDate] = { ...marked[selectedDate], selected: true, selectedColor: '#46424A' };
     return marked;
   }, [events, selectedChildId, selectedDate, visibleMonth]);
 
@@ -517,7 +517,7 @@ export default function CalendarioScreen() {
             {loadingChildren ? (
             <ActivityIndicator
               className="mt-7 self-start"
-              color="#654875"
+              color="#46424A"
             />
           ) : childrenError ? (
             <Text className="mt-5 text-body text-[#C0705A]">
@@ -607,7 +607,7 @@ export default function CalendarioScreen() {
               </Text>
             )}
             renderArrow={(direction: 'left' | 'right') => (
-              <Ionicons name={direction === 'left' ? 'chevron-back' : 'chevron-forward'} size={22} color="#654875" />
+              <Ionicons name={direction === 'left' ? 'chevron-back' : 'chevron-forward'} size={22} color="#46424A" />
             )}
             markedDates={markedDates}
           />
@@ -631,7 +631,7 @@ export default function CalendarioScreen() {
         <View className="px-1 mt-6">
           <Text className="text-body font-semibold text-nanny-muted">{formatLongDate(selectedDate)}</Text>
           {loadingEvents ? (
-            <ActivityIndicator className="mt-6" color="#654875" />
+            <ActivityIndicator className="mt-6" color="#46424A" />
           ) : eventsError ? (
             <Text className="mt-5 text-center text-nanny-muted">{eventsError}</Text>
           ) : eventsForSelectedChild.length === 0 ? (
@@ -694,9 +694,9 @@ export default function CalendarioScreen() {
                       borderRadius: 22,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      backgroundColor: hasNotification ? '#EAE0F2' : '#FFFFFF',
+                      backgroundColor: hasNotification ? '#CFE7F9' : '#FFFFFF',
                       borderWidth: 1.5,
-                      borderColor: hasNotification ? '#654875' : '#E7DAEA',
+                      borderColor: hasNotification ? '#46424A' : '#E6E6E3',
                       shadowColor: '#000',
                       shadowOffset: { width: 0, height: 1 },
                       shadowOpacity: 0.08,
@@ -711,12 +711,12 @@ export default function CalendarioScreen() {
                     }
                   >
                     {isToggling ? (
-                      <ActivityIndicator size="small" color="#654875" />
+                      <ActivityIndicator size="small" color="#46424A" />
                     ) : (
                       <Ionicons
                         name={hasNotification ? 'notifications' : 'notifications-off-outline'}
                         size={20}
-                        color={hasNotification ? '#654875' : '#6E5D78'}
+                        color={hasNotification ? '#46424A' : '#5A5A5E'}
                       />
                     )}
                   </TouchableOpacity>}

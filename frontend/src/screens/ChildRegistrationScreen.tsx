@@ -80,7 +80,7 @@ function TagListInput({
                 <TextInput
                     className={`flex-1 ${inputClass}`}
                     placeholder={placeholder}
-                    placeholderTextColor="#8F8296"
+                    placeholderTextColor="#9E9EA3"
                     value={text}
                     onChangeText={setText}
                     onSubmitEditing={add}
@@ -135,14 +135,14 @@ function MedicineListInput({
                 <TextInput
                     className={`flex-1 ${inputClass}`}
                     placeholder="Medicamento"
-                    placeholderTextColor="#8F8296"
+                    placeholderTextColor="#9E9EA3"
                     value={name}
                     onChangeText={setName}
                 />
                 <TextInput
                     className={`w-28 ${inputClass}`}
                     placeholder="Dosis"
-                    placeholderTextColor="#8F8296"
+                    placeholderTextColor="#9E9EA3"
                     value={dosage}
                     onChangeText={setDosage}
                     onSubmitEditing={add}
@@ -316,7 +316,7 @@ export default function ChildRegistrationScreen() {
                 <TextInput
                     className={inputClass}
                     placeholder="Nombre"
-                    placeholderTextColor="#8F8296"
+                    placeholderTextColor="#9E9EA3"
                     value={name}
                     onChangeText={setName}
                 />
@@ -325,7 +325,7 @@ export default function ChildRegistrationScreen() {
                 <TextInput
                     className={inputClass}
                     placeholder="Apellidos"
-                    placeholderTextColor="#8F8296"
+                    placeholderTextColor="#9E9EA3"
                     value={surname}
                     onChangeText={setSurname}
                 />
@@ -338,7 +338,7 @@ export default function ChildRegistrationScreen() {
                     <Text className={birthDate ? "text-body text-nanny-text" : "text-body text-nanny-subtle"}>
                         {birthDate ? formatDate(birthDate) : "dd/mm/aaaa"}
                     </Text>
-                    <Ionicons name="calendar-outline" size={20} color="#2D1E36" />
+                    <Ionicons name="calendar-outline" size={20} color="#1C1C1E" />
                 </TouchableOpacity>
                 {Platform.OS === "ios" && showIosPicker && (
                     <DateTimePicker
@@ -366,7 +366,7 @@ export default function ChildRegistrationScreen() {
                                 <Ionicons
                                     name={option.icon}
                                     size={18}
-                                    color={selected ? "#ffffff" : "#6E5D78"}
+                                    color={selected ? "#ffffff" : "#5A5A5E"}
                                 />
                                 <Text
                                     className={`font-semibold ${selected ? "text-white" : "text-nanny-muted"}`}
@@ -410,7 +410,7 @@ export default function ChildRegistrationScreen() {
                         <TextInput
                             className={inputClass}
                             placeholder="ej. 22.5"
-                            placeholderTextColor="#8F8296"
+                            placeholderTextColor="#9E9EA3"
                             keyboardType="decimal-pad"
                             value={weight}
                             onChangeText={setWeight}
@@ -421,7 +421,7 @@ export default function ChildRegistrationScreen() {
                         <TextInput
                             className={inputClass}
                             placeholder="ej. 118"
-                            placeholderTextColor="#8F8296"
+                            placeholderTextColor="#9E9EA3"
                             keyboardType="decimal-pad"
                             value={height}
                             onChangeText={setHeight}

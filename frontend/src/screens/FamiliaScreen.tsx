@@ -607,7 +607,7 @@ function ChildPickerScreen() {
         {userId !== null && (
           <TouchableOpacity
             onPress={() => navigation.navigate('RegistroHijo', { userId })}
-            className="flex-row items-center justify-center rounded-full border-[1.5px] border-dashed border-[#BFAFCB] bg-white/30 py-4"
+            className="flex-row items-center justify-center rounded-full border-[1.5px] border-dashed border-[#B5B5B0] bg-white/30 py-4"
             accessibilityRole="button"
             accessibilityLabel="Añadir niño o niña"
           >
@@ -728,7 +728,7 @@ function ShareQrScreen() {
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 28, paddingBottom: 48 }}>
         <View className="items-center">
           <View className="items-center justify-center rounded-3xl border border-nanny-border bg-white p-6" style={SHADOWS.card}>
-            <QRCodeSvg value={inviteCode} size={230} color="#2D1E36" backgroundColor="#ffffff" />
+            <QRCodeSvg value={inviteCode} size={230} color="#1C1C1E" backgroundColor="#ffffff" />
           </View>
         </View>
 
@@ -968,7 +968,7 @@ function ScanQrScreen() {
             className="items-center rounded-3xl border-2 border-dashed border-nanny-border-strong bg-white/40 px-6 py-10"
           >
             <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-nanny-soft">
-              <Ionicons name="qr-code-outline" size={30} color="#654875" />
+              <Ionicons name="qr-code-outline" size={30} color="#46424A" />
             </View>
             <Text style={{ color: palette.text }} className="text-center text-subtitle font-figtree-semibold">
               Abrir cámara o elegir imagen
@@ -990,7 +990,7 @@ function ScanQrScreen() {
             value={codeInput}
             onChangeText={setCodeInput}
             placeholder="HC1... o enlace de invitación"
-            placeholderTextColor="#6E5D78"
+            placeholderTextColor="#5A5A5E"
             multiline
             autoCapitalize="none"
             autoCorrect={false}
@@ -1003,7 +1003,7 @@ function ScanQrScreen() {
             disabled={!canSubmit}
             accessibilityRole="button"
             accessibilityLabel="Vincular menor"
-            style={{ backgroundColor: canSubmit ? palette.blue : '#D5C3DD' }}
+            style={{ backgroundColor: canSubmit ? palette.blue : '#D0D0CC' }}
             className="mt-5 items-center justify-center rounded-2xl py-4"
           >
             <Text className="text-body font-figtree-semibold text-white">
@@ -1178,7 +1178,7 @@ function ChildProfileScreen() {
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 48 }}>
         {/* Tarjeta del menor */}
         <View className="mb-8 flex-row items-center rounded-[28px] bg-nanny-card px-5 py-5" style={SHADOWS.card}>
-          <Avatar child={data} size={72} ringColor="#E58AA8" />
+          <Avatar child={data} size={72} ringColor="#A3CFF2" />
           <View className="ml-4 flex-1">
             <Text style={{ color: palette.text }} className="font-figtree-medium text-[24px]">{fullName}</Text>
             <Text style={{ color: palette.muted }} className="mt-0.5 font-figtree text-[14px]">
@@ -1323,7 +1323,7 @@ function ChildProfileScreen() {
                 style={SHADOWS.card}
               >
                 <View
-                  style={{ backgroundColor: active ? VACCINE_PENDING : '#B9AEC2' }}
+                  style={{ backgroundColor: active ? VACCINE_PENDING : '#C4C4C4' }}
                   className="mr-3.5 mt-2 h-2 w-2 rounded-full"
                 />
                 <View className="flex-1">
@@ -1337,7 +1337,7 @@ function ChildProfileScreen() {
                   ) : null}
                 </View>
                 <View className="flex-row items-start">
-                  <View className={`rounded-full px-2.5 py-0.5 ${active ? 'bg-nanny-soft' : 'bg-[#EDE7F0]'}`}>
+                  <View className={`rounded-full px-2.5 py-0.5 ${active ? 'bg-nanny-soft' : 'bg-[#EEEEEC]'}`}>
                     <Text style={{ color: active ? COLORS.primaryDark : palette.muted }} className="font-figtree-medium text-[13px]">
                       {active ? 'Activo' : 'Finalizado'}
                     </Text>
@@ -1419,7 +1419,7 @@ function Field({
           setShowTip(false);
         }}
         placeholder={placeholder}
-        placeholderTextColor="#8F8296"
+        placeholderTextColor="#9E9EA3"
         multiline={multiline}
         onFocus={() => {
           if (scrollIntoViewOnFocus && scrollToInput && inputRef.current) {
@@ -1454,7 +1454,7 @@ function DateField({
     <View className="mb-6">
       <Text style={{ color: palette.muted }} className="font-figtree mb-2 text-body">{label}</Text>
       <TouchableOpacity onPress={() => setOpen(true)} className="flex-row items-center justify-between rounded-3xl border border-nanny-border bg-nanny-card px-6 py-4">
-        <Text style={{ color: value ? palette.text : '#8F8296' }} className="font-figtree text-body">{value ? value.toLocaleDateString('es-ES') : 'dd/mm/aaaa'}</Text>
+        <Text style={{ color: value ? palette.text : '#9E9EA3' }} className="font-figtree text-body">{value ? value.toLocaleDateString('es-ES') : 'dd/mm/aaaa'}</Text>
         <Ionicons name="calendar-outline" size={22} color={palette.text} />
       </TouchableOpacity>
       {open && (
@@ -1500,7 +1500,7 @@ function FormLayout({
       <Header
         title={title}
         onBack={() => navigation.goBack()}
-        action={<TouchableOpacity onPress={onSave} disabled={saving}><Text style={{ color: saving ? '#D5C3DD' : palette.blue }} className="font-figtree-semibold text-[16px]">Guardar</Text></TouchableOpacity>}
+        action={<TouchableOpacity onPress={onSave} disabled={saving}><Text style={{ color: saving ? '#D0D0CC' : palette.blue }} className="font-figtree-semibold text-[16px]">Guardar</Text></TouchableOpacity>}
       />
       <KeyboardAvoidingView
         behavior="height"
@@ -1585,7 +1585,7 @@ function AddVaccineScreen() {
           <TouchableOpacity
             key={String(value)}
             onPress={() => handleSetApplied(value)}
-            style={{ borderColor: applied === value ? palette.blue : '#E7DAEA', backgroundColor: applied === value ? '#EAE0F2' : palette.card }}
+            style={{ borderColor: applied === value ? palette.blue : '#E6E6E3', backgroundColor: applied === value ? '#CFE7F9' : palette.card }}
             className="flex-1 items-center rounded-3xl border p-4"
           >
             <Text style={{ color: applied === value ? palette.blue : palette.muted }} className="text-body font-figtree-semibold">{value ? 'Aplicada' : 'Pendiente'}</Text>
@@ -1659,7 +1659,7 @@ function AddAllergyScreen() {
               onPress={() => setSeverity(option)}
               accessibilityRole="radio"
               accessibilityState={{ selected }}
-              style={{ borderColor: selected ? optionColor : '#E7DAEA', backgroundColor: selected ? '#fff7ed' : palette.card }}
+              style={{ borderColor: selected ? optionColor : '#E6E6E3', backgroundColor: selected ? '#fff7ed' : palette.card }}
               className="flex-1 items-center rounded-3xl border p-4"
             >
               <Text style={{ color: selected ? optionColor : palette.muted }} className="text-body font-figtree-semibold">

@@ -269,7 +269,7 @@ export default function AdminPanelScreen() {
           accessibilityRole="button"
           accessibilityLabel="Volver al foro"
         >
-          <Ionicons name="chevron-back" size={18} color="#654875" />
+          <Ionicons name="chevron-back" size={18} color="#46424A" />
           <Text className="font-figtree ml-1 text-body text-nanny-blue">Foro</Text>
         </TouchableOpacity>
         <Text className="mb-1 text-body font-figtree-medium text-nanny-muted">Administración</Text>
@@ -298,7 +298,7 @@ export default function AdminPanelScreen() {
         </View>
 
         <View className="mb-3 flex-row items-center rounded-2xl bg-white px-4">
-          <Ionicons name="search" size={16} color="#6E5D78" />
+          <Ionicons name="search" size={16} color="#5A5A5E" />
           <TextInput
             value={search}
             onChangeText={setSearch}
@@ -309,7 +309,7 @@ export default function AdminPanelScreen() {
                   ? 'Buscar en el motivo del reporte'
                   : 'Buscar por nombre o email'
             }
-            placeholderTextColor="#6E5D78"
+            placeholderTextColor="#5A5A5E"
             className="font-figtree ml-2 flex-1 py-3 text-body text-nanny-text"
             autoCapitalize="none"
             autoCorrect={false}
@@ -317,7 +317,7 @@ export default function AdminPanelScreen() {
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch('')} accessibilityLabel="Borrar búsqueda">
-              <Ionicons name="close-circle" size={16} color="#6E5D78" />
+              <Ionicons name="close-circle" size={16} color="#5A5A5E" />
             </TouchableOpacity>
           )}
         </View>
@@ -341,7 +341,7 @@ export default function AdminPanelScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#654875" style={{ marginTop: 48 }} />
+        <ActivityIndicator size="large" color="#46424A" style={{ marginTop: 48 }} />
       ) : tab === 'threads' ? (
         <FlatList
           data={threads}
@@ -411,7 +411,7 @@ function ActionButton({
   busy: boolean;
   onPress: () => void;
 }) {
-  const color = destructive ? '#cc7a66' : '#654875';
+  const color = destructive ? '#cc7a66' : '#46424A';
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -467,7 +467,7 @@ function ThreadRow({
             accessibilityRole="button"
             accessibilityLabel={showMessages ? 'Ocultar comentarios' : 'Ver comentarios'}
           >
-            <Ionicons name={showMessages ? 'chevron-up' : 'chatbubbles-outline'} size={16} color="#654875" />
+            <Ionicons name={showMessages ? 'chevron-up' : 'chatbubbles-outline'} size={16} color="#46424A" />
             <Text className="ml-1 text-body font-figtree-semibold text-nanny-blue">
               {showMessages ? 'Ocultar comentarios' : 'Comentarios'}
             </Text>
@@ -531,7 +531,7 @@ function ThreadMessages({ threadId, adminId }: { threadId: number; adminId: numb
   };
 
   if (error) return <Text className="font-figtree mt-3 text-body text-nanny-red">{error}</Text>;
-  if (!messages) return <ActivityIndicator size="small" color="#654875" style={{ marginTop: 12 }} />;
+  if (!messages) return <ActivityIndicator size="small" color="#46424A" style={{ marginTop: 12 }} />;
 
   return (
     <View className="mt-3 border-t border-nanny-card pt-3">

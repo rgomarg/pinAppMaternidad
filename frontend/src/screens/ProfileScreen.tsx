@@ -307,7 +307,7 @@ export default function ProfileScreen() {
                     <Switch
                       value={form[option.key]}
                       onValueChange={(v) => setField(option.key, v)}
-                      trackColor={{ false: '#E7DAEA', true: BLUE }}
+                      trackColor={{ false: '#E6E6E3', true: BLUE }}
                       accessibilityLabel={option.title}
                     />
                   </View>

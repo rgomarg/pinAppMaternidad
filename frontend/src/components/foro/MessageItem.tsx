@@ -94,7 +94,7 @@ export default function MessageItem({ message, depth = 0, availableWidth, userId
 
       {message.replies.length > 0 && (
         <View
-          style={{ marginLeft: INDENT_MARGIN, paddingLeft: INDENT_PADDING, borderLeftWidth: INDENT_BORDER, borderLeftColor: '#D9CCE3' }}
+          style={{ marginLeft: INDENT_MARGIN, paddingLeft: INDENT_PADDING, borderLeftWidth: INDENT_BORDER, borderLeftColor: '#D6D6D2' }}
         >
           {message.replies.map((reply) => (
             <MessageItem

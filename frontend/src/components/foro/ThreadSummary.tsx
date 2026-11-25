@@ -14,13 +14,13 @@ import { forumApi } from "../../api/forum";
 // El botón va en la fila de acciones del hilo y la tarjeta debajo, así que el estado
 // vive en un hook que la pantalla comparte entre los dos componentes.
 
-const BLUE = "#654875";
-const MUTED = "#8F8296";
-const CARD_BG = "#EAE0F2";
-const CARD_BORDER = "#D5C3DD";
-const ACTIVE_BG = "#EAE0F2";
-const PRO_COLOR = "#8a6cc4";
-const PRO_BG = "#efeaf8";
+const BLUE = "#46424A";
+const MUTED = "#9E9EA3";
+const CARD_BG = "#CFE7F9";
+const CARD_BORDER = "#D0D0CC";
+const ACTIVE_BG = "#CFE7F9";
+const PRO_COLOR = "#4A86C5";
+const PRO_BG = "#EAF3FB";
 
 export function useThreadSummary(
   threadId: number,
@@ -90,7 +90,7 @@ type SummaryState = ReturnType<typeof useThreadSummary>;
 export function SummaryButton({ state }: { state: SummaryState }) {
   const { open, isPro, toggle, loading } = state;
   const locked = !isPro;
-  const color = locked ? MUTED : "#6E5D78";
+  const color = locked ? MUTED : "#5A5A5E";
 
   return (
     <TouchableOpacity
