@@ -178,18 +178,18 @@ export default function ActualizarPesoModal({
           className="bg-white rounded-t-[32px] pt-6 pb-8 px-6 max-h-[92%]"
         >
           {/* Cabecera */}
-          <View className="flex-row justify-between items-center pb-4 border-b border-nanny-border mb-4">
+          <View className="flex-row justify-between items-center pb-5 mb-2">
             <TouchableOpacity onPress={onClose} disabled={guardando}>
-              <Text className="text-nanny-muted text-body font-medium">Cancelar</Text>
+              <Text className="font-figtree text-[16px] text-nanny-text">Cancelar</Text>
             </TouchableOpacity>
             
-            <Text className="text-subtitle font-semibold text-nanny-text">Actualizar peso</Text>
+            <Text className="font-figtree-medium text-[22px] text-nanny-text">Actualizar peso</Text>
             
             <TouchableOpacity
               onPress={handleGuardar}
               disabled={guardando || !isValid}
             >
-              <Text className={`text-body font-semibold ${isValid && !guardando ? 'text-nanny-blue' : 'text-nanny-subtle'}`}>
+              <Text className={`font-figtree-medium text-[16px] ${isValid && !guardando ? 'text-nanny-text' : 'text-nanny-subtle'}`}>
                 {guardando ? 'Guardando...' : 'Guardar'}
               </Text>
             </TouchableOpacity>
@@ -197,12 +197,10 @@ export default function ActualizarPesoModal({
 
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {/* Tarjeta de perfil (Niño) */}
-            <View className="flex-row items-center bg-nanny-card p-4 rounded-3xl mb-5" style={SHADOWS.card}>
-              <View className="w-12 h-12 bg-nanny-soft rounded-full mr-4 overflow-hidden items-center justify-center">
-                <Ionicons name="person" size={24} color="#5A5A5E" />
-              </View>
+            <View className="flex-row items-center bg-nanny-card px-5 py-5 rounded-[28px] mb-6" style={SHADOWS.card}>
+              <View className="w-16 h-16 bg-nanny-placeholder rounded-full mr-5" />
               <View>
-                <Text className="font-semibold text-nanny-text text-body">{childName}</Text>
+                <Text className="font-figtree-medium text-[20px] text-nanny-text">{childName}</Text>
                 <Text className="text-nanny-muted text-body mt-0.5">
                   Peso anterior: {pesoAnterior != null ? `${pesoAnterior} kg` : 'Sin registro previo'}
                 </Text>
@@ -211,11 +209,12 @@ export default function ActualizarPesoModal({
 
             {/* Input: Nuevo valor */}
             <View className="mb-5">
-              <Text className="text-nanny-muted text-body mb-2 ml-1">Nuevo valor de peso *</Text>
+              <Text className="mb-3 ml-1 font-figtree-medium text-[17px] text-nanny-text">Nuevo valor de peso *</Text>
               <View 
-                className={`flex-row items-center bg-nanny-card rounded-2xl px-4 py-3 h-14 ${
-                  isInvalid ? 'border border-red-400 bg-red-50/20' : ''
+                className={`flex-row items-center bg-nanny-card rounded-full px-6 py-3 h-14 border ${
+                  isInvalid ? 'border-red-400' : 'border-transparent'
                 }`}
+                style={SHADOWS.field}
               >
                 <TextInput
                   className="flex-1 text-body text-nanny-text font-medium"
@@ -250,11 +249,12 @@ export default function ActualizarPesoModal({
 
             {/* Input: Fecha */}
             <View className="mb-5">
-              <Text className="text-nanny-muted text-body mb-2 ml-1">Fecha de la medición *</Text>
+              <Text className="mb-3 ml-1 font-figtree-medium text-[17px] text-nanny-text">Fecha de la medición *</Text>
               <TouchableOpacity 
                 onPress={() => setShowDatePicker(!showDatePicker)}
                 activeOpacity={0.7}
-                className="flex-row items-center bg-nanny-card rounded-2xl px-4 py-3 h-14"
+                className="flex-row items-center bg-nanny-card rounded-full px-6 py-3 h-14"
+                style={SHADOWS.field}
               >
                 <Text className="flex-1 text-body text-nanny-text font-medium">
                   {formatDate(fecha)}
@@ -314,9 +314,9 @@ export default function ActualizarPesoModal({
             </View>
 
             {/* Mensaje de Info inferior */}
-            <View className="flex-row bg-nanny-soft border border-nanny-border-strong rounded-xl p-4 mt-2 mb-6">
+            <View className="flex-row bg-nanny-soft rounded-[24px] p-4 mt-2 mb-6">
               <Ionicons name="information-circle-outline" size={22} color="#46424A" style={{ marginTop: -1 }} />
-              <Text className="text-nanny-blue text-body ml-3 flex-1 leading-5 font-medium">
+              <Text className="text-nanny-text text-body ml-3 flex-1 leading-5 font-figtree">
                 La nueva medición se añadirá a la curva de crecimiento y actualizará el valor actual de peso.
               </Text>
             </View>

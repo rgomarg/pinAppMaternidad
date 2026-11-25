@@ -142,22 +142,18 @@ async function fetchChildDashboard(childId: number): Promise<Dashboard> {
   };
 }
 
-// whiteTop: la zona de la barra de estado se pinta de blanco para que continúe la cabecera blanca
 // hero: la cabecera crema (HeroHeader) ya ocupa la barra de estado, así que no se añade padding
-function Shell({ children, whiteTop = false, hero = false }: { children: React.ReactNode; whiteTop?: boolean; hero?: boolean }) {
+function Shell({ children, hero = false }: { children: React.ReactNode; hero?: boolean }) {
   const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1, backgroundColor: palette.background, paddingTop: hero ? 0 : insets.top }}>
       <ScreenBackground />
-      {whiteTop && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: COLORS.surface }} />
-      )}
       {children}
     </View>
   );
 }
 
-// Cabecera blanca: "< Volver" a la izquierda, título centrado y una acción a la derecha
+// Cabecera transparente sobre el degradado: "< Volver" a la izquierda, título centrado y una acción a la derecha
 function Header({
   title,
   onBack,
@@ -170,16 +166,16 @@ function Header({
   action?: React.ReactNode;
 }) {
   return (
-    <View className="flex-row items-center justify-between bg-nanny-card px-5 pb-4 pt-3">
+    <View className="flex-row items-center justify-between px-5 pb-3 pt-5">
       <TouchableOpacity onPress={onBack} disabled={!onBack} className="min-w-[96px]" accessibilityRole="button">
         {onBack && (
           <View className="flex-row items-center">
-            <Ionicons name="chevron-back" size={20} color={palette.blue} />
-            <Text style={{ color: palette.blue }} className="ml-1 font-figtree-medium text-[16px]">{backLabel}</Text>
+            <Ionicons name="chevron-back" size={20} color={palette.text} />
+            <Text style={{ color: palette.text }} className="ml-1 font-figtree text-[16px]">{backLabel}</Text>
           </View>
         )}
       </TouchableOpacity>
-      <Text style={{ color: palette.text }} className="flex-1 text-center font-figtree-semibold text-[17px]" numberOfLines={1}>
+      <Text style={{ color: palette.text }} className="flex-1 text-center font-figtree-medium text-[22px]" numberOfLines={1}>
         {title}
       </Text>
       <View className="min-w-[96px] items-end">{action}</View>
@@ -646,7 +642,7 @@ function RowCard({
       activeOpacity={0.7}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={accessibilityLabel}
-      className={`mb-2.5 flex-row rounded-[22px] bg-nanny-card px-4 py-4 ${align === 'center' ? 'items-center' : 'items-start'}`}
+      className={`mb-3 flex-row rounded-[24px] bg-nanny-card px-5 py-4 ${align === 'center' ? 'items-center' : 'items-start'}`}
       style={[SHADOWS.card, { minHeight: 70 }]}
     >
       <View className="flex-1 flex-row items-center">{children}</View>
@@ -680,19 +676,19 @@ function ShareQrScreen() {
   };
 
   return (
-    <Shell whiteTop>
-      <View className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 py-4">
+    <Shell>
+      <View className="flex-row items-center justify-between px-6 pb-3 pt-5">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           className="min-w-[72px]"
           accessibilityRole="button"
           accessibilityLabel="Cerrar"
         >
-          <Text style={{ color: palette.muted }} className="text-body font-figtree-medium">
+          <Text style={{ color: palette.text }} className="font-figtree text-[16px]">
             Cerrar
           </Text>
         </TouchableOpacity>
-        <Text style={{ color: palette.text }} className="text-subtitle font-figtree-semibold">
+        <Text style={{ color: palette.text }} className="font-figtree-medium text-[22px]">
           Compartir acceso
         </Text>
         <View className="min-w-[72px]" />
@@ -868,7 +864,7 @@ function ScanQrScreen() {
   const canSubmit = codeInput.trim().length > 0;
 
   return (
-    <Shell whiteTop>
+    <Shell>
       <Modal
         visible={cameraModalVisible}
         animationType="slide"
@@ -907,18 +903,18 @@ function ScanQrScreen() {
         </View>
       </Modal>
 
-      <View className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 py-4">
+      <View className="flex-row items-center justify-between px-6 pb-3 pt-5">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           className="min-w-[72px]"
           accessibilityRole="button"
           accessibilityLabel="Cancelar"
         >
-          <Text style={{ color: palette.muted }} className="text-body font-figtree-medium">
+          <Text style={{ color: palette.text }} className="font-figtree text-[16px]">
             Cancelar
           </Text>
         </TouchableOpacity>
-        <Text style={{ color: palette.text }} className="text-subtitle font-figtree-semibold">
+        <Text style={{ color: palette.text }} className="font-figtree-medium text-[22px]">
           Añadir mediante QR
         </Text>
         <View className="min-w-[72px]" />
@@ -1118,7 +1114,7 @@ function ChildProfileScreen() {
   ];
 
   return (
-    <Shell whiteTop>
+    <Shell>
       <Header
         title={data.name}
         backLabel="Familia"
@@ -1143,16 +1139,16 @@ function ChildProfileScreen() {
             accessibilityLabel={`Editar a ${fullName}`}
             className="flex-row items-center"
           >
-            <Ionicons name="create-outline" size={19} color={palette.blue} />
-            <Text style={{ color: palette.blue }} className="ml-1.5 font-figtree-medium text-[16px]">Editar</Text>
+            <Ionicons name="create-outline" size={19} color={palette.text} />
+            <Text style={{ color: palette.text }} className="ml-1.5 font-figtree-medium text-[16px]">Editar</Text>
           </TouchableOpacity>
         )}
       />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 48 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 48 }}>
         {/* Tarjeta del menor */}
         <View className="mb-8 flex-row items-center rounded-[28px] bg-nanny-card px-5 py-5" style={SHADOWS.card}>
-          <Avatar child={data} size={72} ringColor="#A3CFF2" />
-          <View className="ml-4 flex-1">
+          <Avatar child={data} size={92} ringColor={null} />
+          <View className="ml-6 flex-1">
             <Text style={{ color: palette.text }} className="font-figtree-medium text-[24px]">{fullName}</Text>
             <Text style={{ color: palette.muted }} className="mt-0.5 font-figtree text-[14px]">
               {getAge(data.birthDate)} años · {formatDayLong(data.birthDate)}

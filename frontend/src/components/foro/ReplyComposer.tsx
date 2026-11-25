@@ -43,13 +43,13 @@ export default function ReplyComposer({ replyingTo, onCancelReply, onSend }: Pro
           placeholder={replyingTo ? 'Escribe tu respuesta...' : 'Escribe una respuesta...'}
           placeholderTextColor={COLORS.subtle}
           multiline
-          style={[{ minHeight: 44, maxHeight: 120 }, SHADOWS.card]}
-          className="flex-1 rounded-2xl bg-[#F7F7F5] px-4 py-2.5 font-figtree text-[16px] text-nanny-text"
+          style={[{ minHeight: 48, maxHeight: 120 }, SHADOWS.field]}
+          className="flex-1 rounded-[24px] bg-white px-5 py-3 font-figtree text-[16px] text-nanny-text"
         />
         <TouchableOpacity
           onPress={send}
           disabled={!canSend}
-          className={`ml-3 h-11 w-11 items-center justify-center rounded-2xl ${canSend ? 'bg-nanny-blue' : 'bg-nanny-disabled/70'}`}
+          className={`ml-3 h-12 w-12 items-center justify-center rounded-2xl ${canSend ? 'bg-nanny-blue' : 'bg-nanny-disabled/70'}`}
           accessibilityRole="button"
           accessibilityLabel="Enviar respuesta"
         >

@@ -74,16 +74,16 @@ export default function NewThreadScreen() {
       className="bg-nanny-bg"
     >
       <ScreenBackground />
-      <View className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 py-3">
+      <View className="flex-row items-center justify-between px-6 pb-3 pt-5">
         <TouchableOpacity onPress={() => navigation.goBack()} accessibilityRole="button">
-          <Text className="font-figtree text-body text-nanny-blue">Cancelar</Text>
+          <Text className="font-figtree text-[16px] text-nanny-text">Cancelar</Text>
         </TouchableOpacity>
-        <Text className="text-subtitle font-figtree-semibold text-nanny-text">Nuevo hilo</Text>
+        <Text className="font-figtree-medium text-[22px] text-nanny-text">Nuevo hilo</Text>
         <TouchableOpacity onPress={publish} disabled={saving} accessibilityRole="button">
           {saving ? (
             <ActivityIndicator color="#46424A" />
           ) : (
-            <Text className={`text-body font-figtree-semibold ${submitted && !isValid ? 'text-nanny-muted' : 'text-nanny-blue'}`}>
+            <Text className={`font-figtree-medium text-[16px] ${submitted && !isValid ? 'text-nanny-subtle' : 'text-nanny-text'}`}>
               Publicar
             </Text>
           )}
@@ -91,14 +91,14 @@ export default function NewThreadScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
-        <Text className="mb-2 text-body font-figtree-semibold text-nanny-muted">Título *</Text>
+        <Text className="mb-3 font-figtree-medium text-[17px] text-nanny-text">Título *</Text>
         <TextInput
           value={title}
           onChangeText={setTitle}
           maxLength={MAX_TITLE}
           placeholder="¿Sobre qué quieres preguntar?"
           placeholderTextColor="#9E9EA3"
-          className="font-figtree mb-1 rounded-2xl bg-white px-4 py-3 text-body text-nanny-text"
+          className="mb-1 rounded-full bg-white px-6 py-4 font-figtree text-[16px] text-nanny-text shadow-sm"
         />
         <View className="mb-5 flex-row">
           <FieldError message={submitted ? errors.title : null} />
@@ -107,7 +107,7 @@ export default function NewThreadScreen() {
           </Text>
         </View>
 
-        <Text className="mb-2 text-body font-figtree-semibold text-nanny-muted">Mensaje *</Text>
+        <Text className="mb-3 font-figtree-medium text-[17px] text-nanny-text">Mensaje *</Text>
         <TextInput
           value={content}
           onChangeText={setContent}
@@ -117,13 +117,13 @@ export default function NewThreadScreen() {
           multiline
           textAlignVertical="top"
           style={{ minHeight: 160 }}
-          className="font-figtree mb-1 rounded-2xl bg-white px-4 py-3 text-body text-nanny-text"
+          className="mb-1 rounded-[24px] bg-white px-5 py-4 font-figtree text-[16px] text-nanny-text shadow-sm"
         />
         <View className="mb-5 flex-row">
           <FieldError message={submitted ? errors.content : null} />
         </View>
 
-        <Text className="mb-2 text-body font-figtree-semibold text-nanny-muted">Etiquetas *</Text>
+        <Text className="mb-3 font-figtree-medium text-[17px] text-nanny-text">Etiquetas *</Text>
         <TagChips tags={tags} selected={tagIds} onToggle={toggleTag} />
         <View className="mt-1 flex-row">
           <FieldError message={submitted ? errors.tags : null} />

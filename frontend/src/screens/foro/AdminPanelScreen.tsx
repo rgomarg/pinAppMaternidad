@@ -26,7 +26,7 @@ import {
 import { useFamilySelection } from '../../context/FamilySelectionContext';
 import { timeAgo } from '../../components/foro/AuthorAvatar';
 import ScreenBackground from '../../components/ScreenBackground';
-import { SHADOWS } from '../../theme';
+import { COLORS, SHADOWS } from '../../theme';
 
 type Tab = 'threads' | 'users' | 'reports';
 
@@ -260,22 +260,22 @@ export default function AdminPanelScreen() {
         : 'No hay usuarios con estos filtros.');
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-nanny-bg">
+    <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: COLORS.background }}>
       <ScreenBackground />
-      <View className="px-6 pb-3 pt-2">
+      <View className="px-6 pb-3 pt-5">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           className="mb-2 flex-row items-center"
           accessibilityRole="button"
           accessibilityLabel="Volver al foro"
         >
-          <Ionicons name="chevron-back" size={18} color="#46424A" />
-          <Text className="font-figtree ml-1 text-body text-nanny-blue">Foro</Text>
+          <Ionicons name="chevron-back" size={20} color={COLORS.text} />
+          <Text className="font-figtree ml-1 text-[16px] text-nanny-text">Foro</Text>
         </TouchableOpacity>
-        <Text className="mb-1 text-body font-figtree-medium text-nanny-muted">Administración</Text>
-        <Text className="mb-4 text-title font-figtree-bold text-nanny-text">Moderación</Text>
+        <Text className="mt-2 font-figtree-medium text-[34px] leading-[40px] text-nanny-text">Moderación</Text>
+        <Text className="mb-5 mt-1 font-figtree text-[15px] text-nanny-muted">Administración del foro</Text>
 
-        <View className="mb-3 flex-row rounded-full bg-nanny-card p-1">
+        <View className="mb-4 flex-row rounded-full bg-white p-1" style={SHADOWS.field}>
           {(
             [
               { value: 'threads', label: 'Hilos' },
@@ -286,18 +286,18 @@ export default function AdminPanelScreen() {
             <TouchableOpacity
               key={option.value}
               onPress={() => changeTab(option.value)}
-              className={`flex-1 items-center rounded-full py-2 ${tab === option.value ? 'bg-white' : ''}`}
+              className={`flex-1 items-center rounded-full py-2.5 ${tab === option.value ? 'bg-nanny-blue' : ''}`}
               accessibilityRole="tab"
               accessibilityState={{ selected: tab === option.value }}
             >
-              <Text className={`text-body font-figtree-semibold ${tab === option.value ? 'text-nanny-text' : 'text-nanny-muted'}`}>
+              <Text className={`font-figtree text-[16px] ${tab === option.value ? 'text-white' : 'text-nanny-text'}`}>
                 {option.label}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <View className="mb-3 flex-row items-center rounded-2xl bg-white px-4">
+        <View className="mb-3 flex-row items-center rounded-full bg-white px-5" style={SHADOWS.field}>
           <Ionicons name="search" size={16} color="#5A5A5E" />
           <TextInput
             value={search}

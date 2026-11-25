@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, Modal, FlatList, ActivityIndicator, TextInput, KeyboardAvoidingView, type ScrollViewInstance, Linking } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons'; 
 import { API_URL } from '../api/config';
 import { setNotificationPreferences } from '../services/notificationService';
@@ -19,6 +18,8 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import ScreenBackground from '../components/ScreenBackground';
+import HeroHeader from '../components/HeroHeader';
+import Penguin from '../components/Penguin';
 import { COLORS, SHADOWS } from '../theme';
 
 
@@ -189,7 +190,7 @@ function SegmentedTabs<T extends string>({ options, value, onChange, activeClass
   activeClassName?: string;
 }) {
   return (
-    <View className="mb-3 flex-row rounded-full bg-white/60 p-1">
+    <View className="mb-3 flex-row rounded-full bg-white p-1" style={SHADOWS.field}>
       {options.map((option) => {
         const active = option.key === value;
         return (
@@ -540,7 +541,6 @@ export default function HomeScreen() {
     }
   };
 
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
 
@@ -681,50 +681,41 @@ export default function HomeScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: COLORS.background, paddingTop: insets.top }}
+      style={{ flex: 1, backgroundColor: COLORS.background }}
     >
       <ScreenBackground />
+      <HeroHeader
+        title={
+          isAdmin
+            ? activeUser?.name ?? 'Administración'
+            : activeChild
+              ? `Salud de ${activeChild.name}`
+              : 'Selecciona un usuario'
+        }
+        subtitle={isAdmin ? 'Panel de administración' : formatToday(new Date())}
+        illustration={<View style={{ marginBottom: -4 }}><Penguin variant="peek" width={110} /></View>}
+        actions={
+          <TouchableOpacity
+            onPress={() => { fetchUsers(); setIsUserModalVisible(true); }}
+            accessibilityRole="button"
+            accessibilityLabel="Cambiar de usuario o editar mi perfil"
+            className="h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-nanny-placeholder"
+          >
+            {activeUser?.avatarUrl ? (
+              <Image source={{ uri: activeUser.avatarUrl }} className="h-full w-full" />
+            ) : (
+              <Ionicons name="person" size={18} color="white" />
+            )}
+          </TouchableOpacity>
+        }
+      />
       <ScrollView
         ref={scrollViewRef}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 260 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 24, paddingBottom: 260 }}
         style={{ flex: 1 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       >
-
-        {/* Header */}
-        <View className="mb-4 flex-row items-start justify-between">
-          <View className="flex-1 pr-3">
-            <Text className="mb-1 font-figtree-medium text-[14px] text-nanny-muted">
-              {isAdmin ? 'Panel de administración' : formatToday(new Date())}
-            </Text>
-            <Text className="font-figtree-medium text-display text-nanny-text">
-              {isAdmin
-                ? activeUser?.name ?? 'Administración'
-                : activeChild
-                  ? `Salud de ${activeChild.name}`
-                  : 'Selecciona un usuario'}
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            onPress={() => { fetchUsers(); setIsUserModalVisible(true); }}
-            className="relative"
-          >
-            <View className="h-11 w-11 rounded-full border-2 border-nanny-blue p-0.5">
-              <View className="flex-1 items-center justify-center overflow-hidden rounded-full bg-nanny-blue">
-                {activeUser?.avatarUrl ? (
-                  <Image source={{ uri: activeUser.avatarUrl }} className="h-full w-full" />
-                ) : (
-                  <Text className="font-figtree-semibold text-body text-white">{activeUserId ? activeUserId.toString() : '?'}</Text>
-                )}
-              </View>
-            </View>
-            <View className="absolute -bottom-0.5 -right-0.5 h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-white bg-nanny-blue">
-              <Ionicons name="person" size={8} color="white" />
-            </View>
-          </TouchableOpacity>
-        </View>
 
         {/* El administrador no tiene hijos: ve el resumen de moderación en su lugar */}
         {isAdmin && activeUserId ? (
@@ -743,7 +734,7 @@ export default function HomeScreen() {
                       <TouchableOpacity
                         key={child.id}
                         onPress={() => setActiveChildId(child.id)}
-                        className={`flex-row items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4 ${active ? 'bg-nanny-blue' : 'bg-white/70'}`}
+                        className={`flex-row items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4 ${active ? 'bg-nanny-blue' : 'bg-white'}`}
                       >
                         {/* Foto del menor (Child.avatarUrl); sin foto se muestra un icono neutro */}
                         <View className="h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-nanny-soft">
@@ -835,8 +826,8 @@ export default function HomeScreen() {
                 onChangeText={setNewTaskTitle}
                 placeholder="Añadir una tarea..."
                 placeholderTextColor={COLORS.subtle}
-                className="min-w-0 flex-1 rounded-2xl bg-nanny-card px-4 font-figtree text-body text-nanny-text"
-                style={{ height: 48 }}
+                className="min-w-0 flex-1 rounded-full bg-nanny-card px-6 font-figtree text-[16px] text-nanny-text"
+                style={[{ height: 52 }, SHADOWS.field]}
                 onSubmitEditing={addChecklistItem}
                 onFocus={focusChecklistInput}
                 returnKeyType="done"
@@ -844,15 +835,16 @@ export default function HomeScreen() {
               <TouchableOpacity
                 onPress={addChecklistItem}
                 disabled={!newTaskTitle.trim() || !activeChildId}
-                className={`h-12 w-12 items-center justify-center rounded-2xl ${
-                  newTaskTitle.trim() && activeChildId ? 'bg-nanny-blue' : 'bg-nanny-disabled'
-                }`}
+                className="h-[52px] w-[52px] items-center justify-center rounded-2xl bg-nanny-card"
+                style={[SHADOWS.field, { opacity: newTaskTitle.trim() && activeChildId ? 1 : 0.5 }]}
+                accessibilityRole="button"
+                accessibilityLabel="Añadir tarea"
               >
-                <Ionicons name="add" size={24} color="white" />
+                <Ionicons name="add" size={24} color={COLORS.text} />
               </TouchableOpacity>
             </View>
             {visibleChecklist.map((item) => (
-              <View key={item.id} className="mb-2.5 flex-row items-center rounded-2xl bg-nanny-card px-4 py-4" style={SHADOWS.card}>
+              <View key={item.id} className="mb-3 flex-row items-center rounded-[24px] bg-nanny-card px-5 py-4" style={SHADOWS.card}>
                 <TouchableOpacity
                   onPress={() => toggleChecklistItem(item)}
                   className={`mr-3.5 h-6 w-6 items-center justify-center rounded-md ${

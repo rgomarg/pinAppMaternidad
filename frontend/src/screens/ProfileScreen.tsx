@@ -19,7 +19,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getUser, updateUser, type ProfileUpdate, type ProfileUser } from '../api/user';
 import { applyNotificationPreferences } from '../services/notificationService';
-import { COLORS, TYPOGRAPHY, SHADOWS } from '../theme';
+import { COLORS, SHADOWS } from '../theme';
 import ScreenBackground from '../components/ScreenBackground';
 
 const BLUE = COLORS.primary;
@@ -200,16 +200,15 @@ export default function ProfileScreen() {
       <ScreenBackground />
       {/* Cabecera */}
       <View
-        style={{ paddingTop: insets.top + 12 }}
-        className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 pb-4"
+        style={{ paddingTop: insets.top + 20 }}
+        className="flex-row items-center justify-between px-6 pb-3"
       >
-        <Pressable onPress={cancel} className="w-20 flex-row items-center" accessibilityRole="button" accessibilityLabel="Volver sin guardar">
-          <Ionicons name="chevron-back" size={20} color={BLUE} />
-          <Text className="ml-1 text-body text-nanny-blue">Volver</Text>
+        <Pressable onPress={cancel} className="w-20" accessibilityRole="button" accessibilityLabel="Volver sin guardar">
+          <Text className="font-figtree text-[16px] text-nanny-text">Cancelar</Text>
         </Pressable>
-        <Text className="text-subtitle font-semibold text-nanny-text">Mi perfil</Text>
+        <Text className="font-figtree-medium text-[22px] text-nanny-text">Mi perfil</Text>
         <Pressable onPress={save} disabled={saving || !form} className="w-20 items-end" accessibilityRole="button">
-          {saving ? <ActivityIndicator size="small" color="#65a882" /> : <Text className="text-body font-semibold text-nanny-green">Guardar</Text>}
+          {saving ? <ActivityIndicator size="small" color={BLUE} /> : <Text className="font-figtree-medium text-[16px] text-nanny-text">Guardar</Text>}
         </Pressable>
       </View>
 
@@ -267,12 +266,12 @@ export default function ProfileScreen() {
                   <Pressable
                     key={value}
                     onPress={() => setField('profileRole', value)}
-                    style={{ borderColor: BORDER }}
-                    className={`flex-1 items-center rounded-2xl border py-3 ${selected ? 'bg-nanny-blue' : 'bg-nanny-card'}`}
+                    style={SHADOWS.field}
+                    className={`flex-1 items-center rounded-full py-4 ${selected ? 'bg-nanny-blue' : 'bg-nanny-card'}`}
                     accessibilityRole="radio"
                     accessibilityState={{ selected }}
                   >
-                    <Text className={`text-body font-semibold ${selected ? 'text-white' : 'text-nanny-blue'}`}>{label}</Text>
+                    <Text className={`font-figtree text-[16px] ${selected ? 'text-white' : 'text-nanny-text'}`}>{label}</Text>
                   </Pressable>
                 );
               })}
@@ -319,11 +318,11 @@ export default function ProfileScreen() {
 
         <Pressable
           onPress={cancel}
-          style={{ borderColor: BORDER }}
-          className="mt-8 items-center rounded-2xl border bg-nanny-card py-4"
+          style={SHADOWS.field}
+          className="mt-8 items-center rounded-full bg-nanny-card py-4"
           accessibilityRole="button"
         >
-          <Text style={{ color: MUTED }} className="text-body font-medium">Cancelar cambios</Text>
+          <Text className="font-figtree text-[16px] text-nanny-text">Cancelar cambios</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -334,8 +333,8 @@ export default function ProfileScreen() {
 function SectionLabel({ children, spaced = false }: { children: string; spaced?: boolean }) {
   return (
     <Text
-      style={{ color: MUTED, fontSize: TYPOGRAPHY.caption.fontSize, fontWeight: '600', letterSpacing: 0.8 }}
-      className={`mb-2 uppercase ${spaced ? 'mt-6' : 'mt-2'}`}
+      style={{ color: COLORS.text }}
+      className={`mb-3 font-figtree-medium text-[17px] ${spaced ? 'mt-7' : 'mt-2'}`}
     >
       {children}
     </Text>
@@ -344,8 +343,8 @@ function SectionLabel({ children, spaced = false }: { children: string; spaced?:
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <View style={SHADOWS.card} className="rounded-3xl bg-nanny-card">
-      <View style={{ borderColor: BORDER }} className="overflow-hidden rounded-3xl border bg-nanny-card">
+    <View style={SHADOWS.card} className="rounded-[28px] bg-nanny-card">
+      <View className="overflow-hidden rounded-[28px] bg-nanny-card">
       {children}
     </View>
     </View>
@@ -363,8 +362,8 @@ function TextField({ label, value, onChangeText, error }: { label: string; value
       <TextInput
         value={value}
         onChangeText={onChangeText}
-        style={{ borderColor: error ? RED : BORDER }}
-        className="rounded-2xl border bg-nanny-card px-4 py-3 text-body text-nanny-text"
+        style={[{ borderColor: error ? RED : 'transparent' }, SHADOWS.field]}
+        className="rounded-full border bg-nanny-card px-6 py-4 font-figtree text-[16px] text-nanny-text"
         accessibilityLabel={label}
       />
       {error && <Text className="mt-1 text-caption text-nanny-red">{error}</Text>}

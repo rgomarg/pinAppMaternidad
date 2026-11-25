@@ -500,23 +500,23 @@ export default function CrearEventoScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }}>
       <ScreenBackground />
       {/* Cabecera superior idéntica al diseño */}
-      <View className="flex-row items-center justify-between border-b border-nanny-border bg-nanny-card px-6 py-4">
-        <TouchableOpacity onPress={() => navigation.goBack()} disabled={saving}>
-          <Text className="text-body font-medium text-nanny-muted">Cancelar</Text>
+      <View className="flex-row items-center justify-between px-6 pb-3 pt-5">
+        <TouchableOpacity onPress={() => navigation.goBack()} disabled={saving} accessibilityRole="button">
+          <Text className="font-figtree text-[16px] text-nanny-text">Cancelar</Text>
         </TouchableOpacity>
-        <Text className="text-subtitle font-semibold text-nanny-text">Añadir evento</Text>
+        <Text className="font-figtree-medium text-[22px] text-nanny-text">Añadir evento</Text>
         <TouchableOpacity onPress={handleSave} disabled={saving}>
           {saving ? (
             <ActivityIndicator size="small" color="#46424A" />
           ) : (
-            <Text className="text-body font-semibold text-nanny-blue">Guardar</Text>
+            <Text className="font-figtree-medium text-[16px] text-nanny-text">Guardar</Text>
           )}
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         {/* Tarjeta de selección de hijo */}
-        <View className="mb-6 rounded-3xl border border-nanny-border bg-nanny-card p-4" style={SHADOWS.card}>
+        <View className="mb-6 rounded-[28px] bg-nanny-card p-4" style={SHADOWS.card}>
           <View className="flex-row items-center">
             <View className="mr-3.5 h-12 w-12 items-center justify-center rounded-full bg-nanny-blue/20">
               <Text className="text-subtitle font-semibold text-nanny-blue">
@@ -558,7 +558,7 @@ export default function CrearEventoScreen() {
         </View>
 
         {/* Tipo de evento (Cuadrícula 2x2 como en la imagen) */}
-        <Text className="mb-2.5 text-body font-semibold text-nanny-muted">Tipo de evento *</Text>
+        <Text className="mb-3 font-figtree-medium text-[17px] text-nanny-text">Tipo de evento *</Text>
         <View className="mb-6 flex-row flex-wrap justify-between gap-y-3">
           {EVENT_TYPES.map((t) => {
             const isSelected = eventType === t.id;
@@ -566,16 +566,16 @@ export default function CrearEventoScreen() {
               <TouchableOpacity
                 key={t.id}
                 onPress={() => handleSelectEventType(t.id)}
-                className={`w-[48%] flex-row items-center rounded-2xl border p-4 ${
-                  isSelected
-                    ? 'border-[#cc7a66] bg-[#faece7]'
-                    : 'border-nanny-border bg-nanny-card'
+                className={`w-[48%] flex-row items-center rounded-full border-2 bg-nanny-card px-5 py-3.5 shadow-sm ${
+                  isSelected ? 'border-nanny-blue' : 'border-transparent'
                 }`}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected }}
               >
                 <Text className="mr-2.5 text-body">{t.emoji}</Text>
                 <Text
                   className={`text-body ${
-                    isSelected ? 'font-semibold text-[#cc7a66]' : ' text-nanny-muted'
+                    isSelected ? 'font-figtree-semibold text-nanny-text' : 'font-figtree text-nanny-text'
                   }`}
                 >
                   {t.label}
@@ -588,14 +588,14 @@ export default function CrearEventoScreen() {
         {/* Selector Desplegable de Síntomas (Solo cuando es CONDITION) */}
         {eventType === 'CONDITION' && (
           <View className="mb-6">
-            <Text className="mb-2 text-body font-semibold text-nanny-muted">
+            <Text className="mb-3 font-figtree-medium text-[17px] text-nanny-text">
               Síntomas del niño/a *
             </Text>
 
             {/* Botón que despliega la lista */}
             <TouchableOpacity
               onPress={() => setIsSymptomsDropdownOpen((prev) => !prev)}
-              className="flex-row items-center justify-between rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5"
+              className="flex-row items-center justify-between rounded-full bg-nanny-card px-6 py-4 shadow-sm"
             >
               <View className="flex-row items-center flex-1 pr-2">
                 <Text className="text-body mr-2.5">🤒</Text>
@@ -734,7 +734,7 @@ export default function CrearEventoScreen() {
         {/* Campo Título / Nombre (No necesario en Síntoma porque se eligen de la lista) */}
         {eventType !== 'CONDITION' && (
           <>
-            <Text className="mb-2 text-body font-semibold text-nanny-muted">
+            <Text className="mb-3 font-figtree-medium text-[17px] text-nanny-text">
               {eventType === 'MEDICINE'
                 ? 'Nombre del medicamento *'
                 : eventType === 'VACCINE'
@@ -754,7 +754,7 @@ export default function CrearEventoScreen() {
                   : 'Ej. Resfriado común'
               }
               placeholderTextColor="#9E9EA3"
-              className="mb-6 rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5 text-body text-nanny-text"
+              className="mb-6 rounded-full bg-nanny-card px-6 py-4 shadow-sm text-body text-nanny-text"
             />
           </>
         )}
@@ -762,7 +762,7 @@ export default function CrearEventoScreen() {
         {/* Campos adicionales para VACUNA */}
         {eventType === 'VACCINE' && (
           <View className="mb-6">
-            <Text className="mb-2 text-body font-semibold text-nanny-muted">Estado de la vacuna *</Text>
+            <Text className="mb-3 font-figtree-medium text-[17px] text-nanny-text">Estado de la vacuna *</Text>
             <View className="flex-row gap-3">
               {[false, true].map((applied) => {
                 const selected = vaccineApplied === applied;
@@ -778,15 +778,13 @@ export default function CrearEventoScreen() {
                         }
                       }
                     }}
-                    className={`flex-1 items-center rounded-2xl border py-3 ${
-                      selected
-                        ? 'border-nanny-blue bg-nanny-soft'
-                        : 'border-nanny-border bg-nanny-card'
+                    className={`flex-1 items-center rounded-full py-4 shadow-sm ${
+                      selected ? 'bg-nanny-blue' : 'bg-nanny-card'
                     }`}
                   >
                     <Text
-                      className={`text-body font-semibold ${
-                        selected ? 'text-nanny-blue' : 'text-nanny-muted'
+                      className={`font-figtree text-[16px] ${
+                        selected ? 'text-white' : 'text-nanny-text'
                       }`}
                     >
                       {applied ? 'Ya aplicada' : 'Pendiente'}
@@ -821,7 +819,7 @@ export default function CrearEventoScreen() {
                   }}
                   placeholder="Ej. 2.5 ml"
                   placeholderTextColor="#9E9EA3"
-                  className="rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5 text-body text-nanny-text"
+                  className="rounded-full bg-nanny-card px-6 py-4 shadow-sm text-body text-nanny-text"
                 />
                 {showDoseTip && (
                   <View className="mt-2 rounded-xl bg-nanny-text px-3 py-2">
@@ -832,14 +830,14 @@ export default function CrearEventoScreen() {
                 )}
               </View>
               <View className="flex-1">
-                <Text className="mb-2 text-body font-semibold text-nanny-muted">Intervalo (horas)</Text>
+                <Text className="mb-3 font-figtree-medium text-[17px] text-nanny-text">Intervalo (horas)</Text>
                 <TextInput
                   value={intervalHours}
                   onChangeText={setIntervalHours}
                   keyboardType="numeric"
                   placeholder="Ej. 8"
                   placeholderTextColor="#9E9EA3"
-                  className="rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5 text-body text-nanny-text"
+                  className="rounded-full bg-nanny-card px-6 py-4 shadow-sm text-body text-nanny-text"
                 />
               </View>
             </View>
@@ -849,7 +847,7 @@ export default function CrearEventoScreen() {
         {/* Fila Fecha y Hora (igual a la imagen) */}
         <View className="mb-6 flex-row gap-3">
           <View className="flex-1">
-            <Text className="mb-2 text-body font-semibold text-nanny-muted">
+            <Text className="mb-3 font-figtree-medium text-[17px] text-nanny-text">
               {eventType === 'MEDICINE'
                 ? 'Fecha de inicio *'
                 : eventType === 'VACCINE'
@@ -868,7 +866,7 @@ export default function CrearEventoScreen() {
                     : undefined;
                 openDateModal(date, 'date', handleDateChange, setShowDatePicker, maxDate);
               }}
-              className="flex-row items-center justify-between rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5"
+              className="flex-row items-center justify-between rounded-full bg-nanny-card px-6 py-4 shadow-sm"
             >
               <Text className="text-body text-nanny-text">{formatDateStr(date)}</Text>
               <Ionicons name="calendar-outline" size={20} color="#1C1C1E" />
@@ -876,13 +874,13 @@ export default function CrearEventoScreen() {
           </View>
 
           <View className="flex-1">
-            <Text className="mb-2 text-body font-semibold text-nanny-muted">Hora</Text>
+            <Text className="mb-3 font-figtree-medium text-[17px] text-nanny-text">Hora</Text>
             <TouchableOpacity
               onPress={() => {
                 const maxDate = eventType === 'VACCINE' && vaccineApplied ? new Date() : undefined;
                 openDateModal(date, 'time', handleTimeChange, setShowTimePicker, maxDate);
               }}
-              className="flex-row items-center justify-between rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5"
+              className="flex-row items-center justify-between rounded-full bg-nanny-card px-6 py-4 shadow-sm"
             >
               <Text className="text-body text-nanny-text">{formatTimeStr(date)}</Text>
               <Ionicons name="time-outline" size={20} color="#1C1C1E" />
@@ -941,7 +939,7 @@ export default function CrearEventoScreen() {
                       setShowEndDatePicker,
                     )
                   }
-                  className="flex-row items-center justify-between rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5"
+                  className="flex-row items-center justify-between rounded-full bg-nanny-card px-6 py-4 shadow-sm"
                 >
                   <Text
                     className={`text-body ${
@@ -968,7 +966,7 @@ export default function CrearEventoScreen() {
                       setShowEndTimePicker,
                     )
                   }
-                  className="flex-row items-center justify-between rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3.5"
+                  className="flex-row items-center justify-between rounded-full bg-nanny-card px-6 py-4 shadow-sm"
                 >
                   <Text
                     className={`text-body ${
@@ -1018,7 +1016,7 @@ export default function CrearEventoScreen() {
         {/* Notas para Evento / Instrucciones para Medicamento / Notas para Síntoma */}
         {eventType === 'MEDICINE' ? (
           <View className="mb-6">
-            <Text className="mb-2 text-body font-semibold text-nanny-muted">Instrucciones</Text>
+            <Text className="mb-3 font-figtree-medium text-[17px] text-nanny-text">Instrucciones</Text>
             <TextInput
               value={instructions}
               onChangeText={setInstructions}
@@ -1027,12 +1025,12 @@ export default function CrearEventoScreen() {
               multiline
               numberOfLines={3}
               style={{ minHeight: 80, textAlignVertical: 'top' }}
-              className="rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3 text-body text-nanny-text"
+              className="rounded-[24px] bg-nanny-card px-5 py-4 font-figtree text-[16px] text-nanny-text shadow-sm"
             />
           </View>
         ) : eventType === 'CONDITION' ? (
           <View className="mb-6">
-            <Text className="mb-2 text-body font-semibold text-nanny-muted">Notas sobre los síntomas</Text>
+            <Text className="mb-3 font-figtree-medium text-[17px] text-nanny-text">Notas sobre los síntomas</Text>
             <TextInput
               value={notes}
               onChangeText={setNotes}
@@ -1041,12 +1039,12 @@ export default function CrearEventoScreen() {
               multiline
               numberOfLines={4}
               style={{ minHeight: 100, textAlignVertical: 'top' }}
-              className="rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3 text-body text-nanny-text"
+              className="rounded-[24px] bg-nanny-card px-5 py-4 font-figtree text-[16px] text-nanny-text shadow-sm"
             />
           </View>
         ) : eventType !== 'VACCINE' ? (
           <View className="mb-6">
-            <Text className="mb-2 text-body font-semibold text-nanny-muted">Notas</Text>
+            <Text className="mb-3 font-figtree-medium text-[17px] text-nanny-text">Notas</Text>
             <TextInput
               value={notes}
               onChangeText={setNotes}
@@ -1055,14 +1053,14 @@ export default function CrearEventoScreen() {
               multiline
               numberOfLines={4}
               style={{ minHeight: 100, textAlignVertical: 'top' }}
-              className="rounded-2xl border border-nanny-border bg-nanny-card px-4 py-3 text-body text-nanny-text"
+              className="rounded-[24px] bg-nanny-card px-5 py-4 font-figtree text-[16px] text-nanny-text shadow-sm"
             />
           </View>
         ) : null}
 
         {/* Control de Notificaciones (No disponible para Síntomas) */}
         {eventType !== 'CONDITION' && (
-          <View className="mb-8 rounded-3xl border border-nanny-border bg-nanny-card p-5" style={SHADOWS.card}>
+          <View className="mb-8 rounded-[28px] bg-nanny-card p-5" style={SHADOWS.card}>
             <View className="flex-row items-center justify-between">
               <View className="flex-1 pr-3">
                 <Text className="text-body font-semibold text-nanny-text">Recordatorio</Text>

@@ -179,19 +179,18 @@ export default function ThreadDetailScreen() {
       style={{ flex: 1, paddingTop: insets.top, backgroundColor: COLORS.background }}
     >
       <ScreenBackground />
-      {/* La zona de la barra de estado continúa la cabecera blanca */}
-      <View style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top, backgroundColor: COLORS.surface }} />
-      <View className="flex-row items-center justify-between bg-nanny-card px-5 pb-4 pt-3">
+      {/* Cabecera transparente sobre el degradado, como el resto de pantallas */}
+      <View className="flex-row items-center justify-between px-5 pb-3 pt-5">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           className="min-w-[96px] flex-row items-center"
           accessibilityRole="button"
           accessibilityLabel="Volver al foro"
         >
-          <Ionicons name="chevron-back" size={20} color={COLORS.primary} />
-          <Text className="ml-1 font-figtree-medium text-[16px] text-nanny-blue">Foro</Text>
+          <Ionicons name="chevron-back" size={20} color={COLORS.text} />
+          <Text className="ml-1 font-figtree text-[16px] text-nanny-text">Foro</Text>
         </TouchableOpacity>
-        <Text className="font-figtree-semibold text-[17px] text-nanny-text">Conversación</Text>
+        <Text className="font-figtree-medium text-[22px] text-nanny-text">Conversación</Text>
         <View className="min-w-[96px] items-end">
           {thread && thread.owner.id === selectedUserId ? (
             <TouchableOpacity

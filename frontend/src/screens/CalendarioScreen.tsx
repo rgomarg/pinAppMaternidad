@@ -12,7 +12,6 @@ import {
   View,
 } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL } from '../api/config';
 import {
   checkNotificationPermissions,
@@ -23,6 +22,8 @@ import {
   NOTIFICATION_PERMISSION_REQUIRED_MESSAGE,
 } from '../services/notificationService';
 import ScreenBackground from '../components/ScreenBackground';
+import HeroHeader from '../components/HeroHeader';
+import Penguin from '../components/Penguin';
 import { COLORS, SHADOWS, TYPOGRAPHY } from '../theme';
 
 
@@ -502,29 +503,30 @@ export default function CalendarioScreen() {
 
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <ScreenBackground />
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }} style={{ flex: 1 }}>
+      <HeroHeader
+        title="Calendario"
+        subtitle={guardianName ? `Calendario de salud de ${guardianName}` : userId ? 'Tu calendario de salud' : 'Selecciona un usuario'}
+        illustration={<Penguin variant="family" width={100} />}
+      />
+      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 20, paddingBottom: 48 }} style={{ flex: 1 }}>
 
         <View className="flex-row justify-between items-start mb-6">
           <View>
-            <Text className="text-body font-medium text-nanny-muted mb-1">Calendario de salud</Text>
-            <Text className="text-title font-bold text-nanny-text">
-              {guardianName || (userId ? 'Tu calendario' : 'Selecciona un usuario')}
-            </Text>
             {/* Lista de hijos */}
 
             {loadingChildren ? (
             <ActivityIndicator
-              className="mt-7 self-start"
+              className="mt-2 self-start"
               color="#46424A"
             />
           ) : childrenError ? (
-            <Text className="mt-5 text-body text-[#C0705A]">
+            <Text className="text-body text-[#C0705A]">
               {childrenError}
             </Text>
           ) : children.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-7">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
 
               <View className="flex-row">
                 {[{ id: null, name: 'Todos' }, ...children].map((child) => {
@@ -568,16 +570,16 @@ export default function CalendarioScreen() {
               </View>
             </ScrollView>
               ) : userId ? (
-                <Text className="mt-3 text-body text-nanny-muted">Este usuario no tiene hijos registrados.</Text>
+                <Text className="text-body text-nanny-muted">Este usuario no tiene hijos registrados.</Text>
               ) : (
-                <Text className="mt-3 text-body text-nanny-muted">Elige un usuario para cargar sus hijos y eventos.</Text>
+                <Text className="text-body text-nanny-muted">Elige un usuario para cargar sus hijos y eventos.</Text>
               )}
           </View>
           
         </View>
 
         {/* Calendario dentro de una tarjeta blanca, con la leyenda al pie */}
-        <View className="rounded-3xl bg-nanny-card px-3 pb-4 pt-2" style={SHADOWS.card}>
+        <View className="rounded-[28px] bg-nanny-card px-3 pb-4 pt-2" style={SHADOWS.card}>
           <Calendar
             firstDay={1}
             markingType="multi-dot"
@@ -744,6 +746,6 @@ export default function CalendarioScreen() {
       >
         <Ionicons name="add" size={32} color="#ffffff" />
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }
