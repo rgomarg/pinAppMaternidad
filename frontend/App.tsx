@@ -1,7 +1,7 @@
 import './global.css';
 import React, { useEffect } from 'react';
 import { Platform, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -54,36 +54,36 @@ function MainTabs() {
 
             // Iconos de línea también cuando la pestaña está activa (como en el prototipo)
             if (route.name === 'Datos') {
-              iconName = 'pulse-outline';
+              iconName = 'analytics-outline';
             } else if (route.name === 'Calendario') {
-              iconName = 'calendar-clear-outline';
+              iconName = 'calendar-outline';
             } else if (route.name === 'Familia') {
               iconName = 'people-outline';
             } else if (route.name === 'Foro') {
-              iconName = 'chatbox-outline';
+              iconName = 'chatbubbles-outline';
             }
 
             return <TabIcon name={iconName as any} focused={focused} size={size} color={color} />;
           },
           tabBarActiveTintColor: COLORS.primary,
           tabBarInactiveTintColor: COLORS.tabInactive,
+          // Como en el mockup: solo iconos, barra blanca sin sombra
+          tabBarShowLabel: false,
           tabBarStyle: {
             backgroundColor: COLORS.surface,
             borderTopWidth: 0,
-            height: 76,
-            paddingBottom: 14,
-            paddingTop: 12,
-            shadowColor: COLORS.primary,
-            shadowOffset: { width: 0, height: -6 },
-            shadowOpacity: 0.06,
-            shadowRadius: 12,
-            elevation: 12,
+            height: 84,
+            paddingTop: 14,
+            elevation: 0,
+            shadowOpacity: 0,
           },
-          tabBarLabelStyle: {
-            fontSize: 11,
-            fontFamily: FONTS.semibold,
-            marginTop: 2,
-          }
+          // El contenido de cada pestaña termina en esquinas redondeadas sobre la barra blanca
+          sceneStyle: {
+            backgroundColor: COLORS.background,
+            borderBottomLeftRadius: 44,
+            borderBottomRightRadius: 44,
+            overflow: 'hidden',
+          },
         })}
         >
           <Tab.Screen
@@ -102,19 +102,13 @@ const adminHomeIcon = ({ focused, color, size }: { focused: boolean; color: stri
   <TabIcon name="shield-checkmark-outline" focused={focused} size={size} color={color} />
 );
 
-// Icono de pestaña con una pequeña barra encima cuando está activa (solo estético)
-function TabIcon({ name, focused, size, color }: { name: React.ComponentProps<typeof Ionicons>['name']; focused: boolean; size: number; color: string }) {
-  return (
-    <View style={{ alignItems: 'center' }}>
-      {focused && (
-        <View
-          style={{ position: 'absolute', top: -12, width: 28, height: 3, borderRadius: 2, backgroundColor: COLORS.primary }}
-        />
-      )}
-      <Ionicons name={name} size={22} color={color} />
-    </View>
-  );
+// Icono de pestaña: oscuro cuando está activa y gris cuando no (solo estético)
+function TabIcon({ name, color }: { name: React.ComponentProps<typeof Ionicons>['name']; focused: boolean; size: number; color: string }) {
+  return <Ionicons name={name} size={28} color={color} />;
 }
+
+// Fondo blanco detrás de las esquinas redondeadas del contenido
+const NAV_THEME = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: COLORS.surface } };
 
 export default function App() {
   const [fontsLoaded] = useFonts({ Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold });
@@ -149,7 +143,7 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={NAV_THEME}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {/* Pestañas principales */}
         <Stack.Screen name="MainTabs" component={TabNavigator} />

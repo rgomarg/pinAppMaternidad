@@ -12,6 +12,8 @@ module.exports = {
       colors: {
         'nanny-bg': '#F4F4F2',          // campos y chips dentro de tarjetas (el fondo de pantalla es un degradado)
         'nanny-card': '#FFFFFF',        // tarjetas y superficies
+        'nanny-hero': '#F8F4DC',        // tarjeta crema de la cabecera
+        'nanny-placeholder': '#C4C4C4', // avatar vacío y etiquetas grises
         'nanny-surface': '#F4F4F2',     // campos, chips y paneles dentro de una tarjeta
         'nanny-text': '#1C1C1E',        // texto principal
         'nanny-muted': '#5A5A5E',       // texto secundario

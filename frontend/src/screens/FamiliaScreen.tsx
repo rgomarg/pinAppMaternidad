@@ -47,6 +47,8 @@ import {
 import HealthHistory, { HealthHistoryLocked } from '../components/HealthHistory';
 import { COLORS, SHADOWS } from '../theme';
 import ScreenBackground from '../components/ScreenBackground';
+import HeroHeader from '../components/HeroHeader';
+import Penguin from '../components/Penguin';
 
 type Child = {
   id: number;
@@ -141,10 +143,11 @@ async function fetchChildDashboard(childId: number): Promise<Dashboard> {
 }
 
 // whiteTop: la zona de la barra de estado se pinta de blanco para que continúe la cabecera blanca
-function Shell({ children, whiteTop = false }: { children: React.ReactNode; whiteTop?: boolean }) {
+// hero: la cabecera crema (HeroHeader) ya ocupa la barra de estado, así que no se añade padding
+function Shell({ children, whiteTop = false, hero = false }: { children: React.ReactNode; whiteTop?: boolean; hero?: boolean }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ flex: 1, backgroundColor: palette.background, paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: palette.background, paddingTop: hero ? 0 : insets.top }}>
       <ScreenBackground />
       {whiteTop && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: COLORS.surface }} />
@@ -185,19 +188,17 @@ function Header({
 }
 
 // Foto del menor (Child.avatarUrl) con anillo de color; sin foto, la inicial
-function Avatar({ child, size = 72, ringColor = COLORS.primarySoft }: { child: Child; size?: number; ringColor?: string }) {
+// ringColor: null para el círculo gris liso del mockup (sin anillo)
+function Avatar({ child, size = 72, ringColor = COLORS.primarySoft }: { child: Child; size?: number; ringColor?: string | null }) {
   return (
     <View
-      style={{ width: size, height: size, borderRadius: size / 2, borderColor: ringColor, borderWidth: 3 }}
-      className="items-center justify-center overflow-hidden bg-nanny-soft"
+      style={{ width: size, height: size, borderRadius: size / 2, borderColor: ringColor ?? undefined, borderWidth: ringColor ? 3 : 0 }}
+      className="items-center justify-center overflow-hidden bg-nanny-placeholder"
+      accessibilityLabel={child.avatarUrl ? undefined : `Sin foto de ${child.name}`}
     >
       {child.avatarUrl ? (
         <Image source={{ uri: child.avatarUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-      ) : (
-        <Text style={{ color: palette.blue, fontSize: size * 0.35 }} className="font-figtree-semibold">
-          {child.name?.charAt(0) || '?'}
-        </Text>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -375,6 +376,8 @@ function ChildCard({
       return;
     }
     Alert.alert(fullName, undefined, [
+      { text: 'Compartir QR', onPress: onShareQr },
+      { text: 'Guardar PDF', onPress: () => exportData(child.id) },
       { text: 'Editar hijo', onPress: onEdit },
       { text: 'Eliminar hijo', style: 'destructive', onPress: () => confirmDeleteChild(child, onDeleted) },
       { text: 'Cancelar', style: 'cancel' },
@@ -382,22 +385,28 @@ function ChildCard({
   };
 
   return (
-    <View className="mb-4 rounded-[28px] bg-nanny-card" style={SHADOWS.card}>
+    <View className="mb-6 rounded-[28px] bg-nanny-card" style={SHADOWS.card}>
       <View className="overflow-hidden rounded-[28px]">
+        {/* Icono de compartir arriba a la derecha (mockup): abre QR, PDF, editar y eliminar */}
         <TouchableOpacity
           onPress={openMenu}
+          disabled={exporting}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityRole="button"
-          accessibilityLabel={`Más opciones de ${fullName}`}
-          className="absolute right-4 top-4 z-10 h-8 w-8 items-center justify-center rounded-full bg-nanny-soft"
+          accessibilityLabel={`Compartir y más opciones de ${fullName}`}
+          className="absolute right-5 top-5 z-10 h-9 w-9 items-center justify-center"
         >
-          <Ionicons name="ellipsis-horizontal" size={18} color={palette.text} />
+          {exporting ? (
+            <ActivityIndicator size="small" color={palette.text} />
+          ) : (
+            <Ionicons name="share-social-outline" size={26} color={palette.text} />
+          )}
         </TouchableOpacity>
-        <TouchableOpacity onPress={onPress} activeOpacity={0.8} className="flex-row items-center px-5 pb-2 pt-5">
-          <Avatar child={child} size={72} />
-          <View className="ml-4 flex-1 pr-8">
-            <Text style={{ color: palette.text }} className="font-figtree-medium text-[19px]">{fullName}</Text>
-            <Text style={{ color: palette.muted }} className="mt-0.5 font-figtree text-[14px]">
+        <TouchableOpacity onPress={onPress} activeOpacity={0.8} className="flex-row items-center px-6 pb-2 pt-6">
+          <Avatar child={child} size={92} ringColor={null} />
+          <View className="ml-6 flex-1 pr-8">
+            <Text style={{ color: palette.text }} className="font-figtree-medium text-[20px]">{fullName}</Text>
+            <Text style={{ color: palette.text }} className="mt-1 font-figtree text-[15px]">
               {getAge(child.birthDate)} años · Sangre {child.bloodGroup || '—'}
             </Text>
             {child.isShared && remainingMinutes !== null && (
@@ -419,43 +428,17 @@ function ChildCard({
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={onPress} activeOpacity={0.8} className="flex-row py-3">
+        <TouchableOpacity onPress={onPress} activeOpacity={0.8} className="flex-row pb-5 pt-3">
           <PreviewStat value={child.conditions.length + child.diseases.length} label="Condiciones" />
-          <PreviewStat value={activeMedicines} label="Medicación" divider />
-          <PreviewStat value={pendingVaccines} label="Vacunas pend." divider />
+          <PreviewStat value={activeMedicines} label="Medicación" />
+          <PreviewStat value={pendingVaccines} label="Vacunas pend." />
         </TouchableOpacity>
 
-        {child.isShared ? (
-          <View className="border-t border-nanny-border px-5 py-3">
+        {child.isShared && (
+          <View className="border-t border-nanny-border px-6 py-3">
             <Text style={{ color: palette.muted }} className="font-figtree text-caption">
               Ficha compartida mediante QR (solo lectura)
             </Text>
-          </View>
-        ) : (
-          <View className="flex-row border-t border-nanny-border">
-            <TouchableOpacity
-              onPress={onShareQr}
-              className="flex-1 flex-row items-center justify-center border-r border-nanny-border py-4"
-              accessibilityRole="button"
-              accessibilityLabel={`Compartir QR de ${fullName}`}
-            >
-              <Ionicons name="qr-code-outline" size={17} color={COLORS.primaryDark} />
-              <Text style={{ color: COLORS.primaryDark }} className="ml-2.5 font-figtree text-[16px]">Compartir QR</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => exportData(child.id)}
-              disabled={exporting}
-              className="flex-1 flex-row items-center justify-center py-4"
-              accessibilityRole="button"
-              accessibilityLabel={`Guardar PDF de ${fullName}`}
-            >
-              {exporting ? (
-                <ActivityIndicator size="small" color={COLORS.primaryDark} />
-              ) : (
-                <Ionicons name="download-outline" size={17} color={COLORS.primaryDark} />
-              )}
-              <Text style={{ color: COLORS.primaryDark }} className="ml-2.5 font-figtree text-[16px]">Guardar PDF</Text>
-            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -463,11 +446,11 @@ function ChildCard({
   );
 }
 
-function PreviewStat({ value, label, divider = false }: { value: number; label: string; divider?: boolean }) {
+function PreviewStat({ value, label }: { value: number; label: string }) {
   return (
-    <View className={`flex-1 items-center py-2 ${divider ? 'border-l border-nanny-border' : ''}`}>
-      <Text style={{ color: palette.text }} className="font-figtree-medium text-[18px]">{value}</Text>
-      <Text style={{ color: palette.muted }} className="mt-1 font-figtree text-[11px]">{label}</Text>
+    <View className="flex-1 items-center py-2">
+      <Text style={{ color: palette.text }} className="font-figtree-medium text-[24px]">{value}</Text>
+      <Text style={{ color: palette.text }} className="mt-1 font-figtree text-[15px]">{label}</Text>
     </View>
   );
 }
@@ -539,50 +522,39 @@ function ChildPickerScreen() {
   };
 
   return (
-    <Shell>
-      <View className="flex-row items-center justify-between px-5 pb-2 pt-4">
-        <View className="flex-1 pr-3">
-          <Text style={{ color: palette.text }} className="font-figtree-medium text-display">
-            Libro de familia
-          </Text>
-          <Text style={{ color: palette.muted }} className="mt-1 font-figtree text-[14px]">
-            Pulsa para ver su información médica
-          </Text>
-        </View>
-        <View className="flex-row items-center gap-3">
-          <TouchableOpacity
-            onPress={handleOpenScanQr}
-            accessibilityRole="button"
-            accessibilityLabel="Leer QR"
-            className="h-11 w-11 items-center justify-center rounded-full bg-nanny-card"
-            style={SHADOWS.card}
-          >
-            <Ionicons name="scan-outline" size={20} color={palette.blue} />
-          </TouchableOpacity>
-          {/* Igual que en Inicio: abre el selector de usuarios (con "Editar mi perfil") */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Datos', { openUserPicker: Date.now() })}
-            accessibilityRole="button"
-            accessibilityLabel="Cambiar de usuario o editar mi perfil"
-            className="relative"
-          >
-            <View className="h-11 w-11 rounded-full border-2 border-nanny-blue p-0.5">
-              <View className="flex-1 items-center justify-center overflow-hidden rounded-full bg-nanny-blue">
-                {userAvatarUrl ? (
-                  <Image source={{ uri: userAvatarUrl }} style={{ width: '100%', height: '100%' }} />
-                ) : (
-                  <Text className="font-figtree-semibold text-body text-white">{userId ? String(userId) : '?'}</Text>
-                )}
-              </View>
-            </View>
-            <View className="absolute -bottom-0.5 -right-0.5 h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-white bg-nanny-blue">
-              <Ionicons name="person" size={8} color="#ffffff" />
-            </View>
-          </TouchableOpacity>
-        </View>
-      </View>
+    <Shell hero>
+      <HeroHeader
+        title="Libro de Familia"
+        subtitle="Pulsa para ver su información médica"
+        illustration={<Penguin variant="family" width={120} />}
+        actions={
+          <>
+            <TouchableOpacity
+              onPress={handleOpenScanQr}
+              accessibilityRole="button"
+              accessibilityLabel="Leer QR"
+              className="h-10 w-10 items-center justify-center rounded-full bg-white/80"
+            >
+              <Ionicons name="scan-outline" size={19} color={palette.blue} />
+            </TouchableOpacity>
+            {/* Igual que en Inicio: abre el selector de usuarios (con "Editar mi perfil") */}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Datos', { openUserPicker: Date.now() })}
+              accessibilityRole="button"
+              accessibilityLabel="Cambiar de usuario o editar mi perfil"
+              className="h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-nanny-placeholder"
+            >
+              {userAvatarUrl ? (
+                <Image source={{ uri: userAvatarUrl }} style={{ width: '100%', height: '100%' }} />
+              ) : (
+                <Ionicons name="person" size={18} color="#ffffff" />
+              )}
+            </TouchableOpacity>
+          </>
+        }
+      />
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 48 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 28, paddingBottom: 48 }}>
         {userId === null && combinedChildren.length === 0 && (
           <View className="mb-6 px-1">
             <Text style={{ color: palette.text }} className="font-figtree-semibold text-subtitle">
@@ -605,14 +577,15 @@ function ChildPickerScreen() {
           />
         ))}
         {userId !== null && (
+          // Botón "+" blanco centrado, como en el mockup
           <TouchableOpacity
             onPress={() => navigation.navigate('RegistroHijo', { userId })}
-            className="flex-row items-center justify-center rounded-full border-[1.5px] border-dashed border-[#B5B5B0] bg-white/30 py-4"
+            className="mt-6 h-14 w-14 items-center justify-center self-center rounded-2xl bg-nanny-card"
+            style={SHADOWS.field}
             accessibilityRole="button"
             accessibilityLabel="Añadir niño o niña"
           >
-            <Ionicons name="add-circle-outline" size={20} color={COLORS.primaryDark} />
-            <Text style={{ color: COLORS.primaryDark }} className="ml-2 font-figtree-medium text-[16px]">Añadir niño/a</Text>
+            <Ionicons name="add" size={26} color={palette.text} />
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -1365,11 +1338,11 @@ function ChildProfileScreen() {
 
 function ChildBanner({ child }: { child: Child }) {
   return (
-    <View className="mx-6 mb-7 flex-row items-center rounded-3xl bg-nanny-card p-6" style={SHADOWS.card}>
-      <Avatar child={child} size={66} />
-      <View className="ml-5 flex-1">
-        <Text style={{ color: palette.text }} className="text-title font-figtree-bold">{child.name}</Text>
-        <Text style={{ color: palette.muted }} className="font-figtree mt-1 text-body">Esta información se añadirá a su perfil médico.</Text>
+    <View className="mx-6 mb-8 flex-row items-center rounded-[28px] bg-nanny-card px-6 py-6" style={SHADOWS.card}>
+      <Avatar child={child} size={92} ringColor={null} />
+      <View className="ml-7 flex-1">
+        <Text style={{ color: palette.text }} className="font-figtree-medium text-[20px]">{child.name}</Text>
+        <Text style={{ color: palette.muted }} className="mt-1 font-figtree-medium text-[15px] leading-[22px]">Esta información se añadirá a su perfil médico</Text>
       </View>
     </View>
   );
@@ -1399,8 +1372,8 @@ function Field({
   const [showTip, setShowTip] = useState(false);
   return (
     <View className="mb-6">
-      <View className="mb-2 flex-row items-center">
-        <Text style={{ color: palette.muted }} className="font-figtree text-body">{label}</Text>
+      <View className="mb-3 flex-row items-center">
+        <Text style={{ color: palette.text }} className="font-figtree-medium text-[17px]">{label}</Text>
         {tooltip && (
           <TouchableOpacity
             onPress={() => setShowTip((v) => !v)}
@@ -1426,8 +1399,8 @@ function Field({
             setTimeout(() => scrollToInput(inputRef.current!), 300);
           }
         }}
-        style={{ color: palette.text, minHeight: multiline ? 140 : undefined, textAlignVertical: multiline ? 'top' : 'center' }}
-        className="rounded-3xl border border-nanny-border bg-nanny-card px-6 py-4 text-body"
+        style={[{ color: palette.text, minHeight: multiline ? 130 : undefined, textAlignVertical: multiline ? 'top' : 'center' }, SHADOWS.field]}
+        className={`${multiline ? 'rounded-[28px] pt-5' : 'rounded-full'} bg-nanny-card px-6 py-4 font-figtree text-[16px]`}
       />
       {tooltip && showTip && (
         <View className="mt-2 rounded-xl bg-nanny-text px-3 py-2">
@@ -1452,8 +1425,8 @@ function DateField({
   const [open, setOpen] = useState(false);
   return (
     <View className="mb-6">
-      <Text style={{ color: palette.muted }} className="font-figtree mb-2 text-body">{label}</Text>
-      <TouchableOpacity onPress={() => setOpen(true)} className="flex-row items-center justify-between rounded-3xl border border-nanny-border bg-nanny-card px-6 py-4">
+      <Text style={{ color: palette.text }} className="mb-3 font-figtree-medium text-[17px]">{label}</Text>
+      <TouchableOpacity onPress={() => setOpen(true)} style={SHADOWS.field} className="flex-row items-center justify-between rounded-full bg-nanny-card px-6 py-4">
         <Text style={{ color: value ? palette.text : '#9E9EA3' }} className="font-figtree text-body">{value ? value.toLocaleDateString('es-ES') : 'dd/mm/aaaa'}</Text>
         <Ionicons name="calendar-outline" size={22} color={palette.text} />
       </TouchableOpacity>
@@ -1480,6 +1453,23 @@ function DateField({
   );
 }
 
+// Cabecera de los formularios (mockup): "Cancelar" · título · "Guardar" sobre el degradado
+function FormHeader({ title, onCancel, onSave, saving }: { title: string; onCancel: () => void; onSave: () => void; saving: boolean }) {
+  return (
+    <View className="flex-row items-center justify-between px-6 pb-3 pt-5">
+      <TouchableOpacity onPress={onCancel} className="min-w-[80px]" accessibilityRole="button">
+        <Text style={{ color: palette.text }} className="font-figtree text-[16px]">Cancelar</Text>
+      </TouchableOpacity>
+      <Text style={{ color: palette.text }} className="flex-1 text-center font-figtree-medium text-[22px]" numberOfLines={1}>
+        {title}
+      </Text>
+      <TouchableOpacity onPress={onSave} disabled={saving} className="min-w-[80px] items-end" accessibilityRole="button">
+        <Text style={{ color: saving ? COLORS.subtle : palette.text }} className="font-figtree-medium text-[16px]">Guardar</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 function FormLayout({
   title,
   child,
@@ -1496,12 +1486,8 @@ function FormLayout({
   const navigation = useNavigation<any>();
   const scrollViewRef = useRef<ScrollViewInstance | null>(null);
   return (
-    <Shell whiteTop>
-      <Header
-        title={title}
-        onBack={() => navigation.goBack()}
-        action={<TouchableOpacity onPress={onSave} disabled={saving}><Text style={{ color: saving ? '#D0D0CC' : palette.blue }} className="font-figtree-semibold text-[16px]">Guardar</Text></TouchableOpacity>}
-      />
+    <Shell>
+      <FormHeader title={title} onCancel={() => navigation.goBack()} onSave={onSave} saving={saving} />
       <KeyboardAvoidingView
         behavior="height"
         keyboardVerticalOffset={0}
@@ -1512,7 +1498,7 @@ function FormLayout({
         }}>
           <ScrollView
             ref={scrollViewRef}
-            contentContainerStyle={{ paddingTop: 38, paddingBottom: 260 }}
+            contentContainerStyle={{ paddingTop: 28, paddingBottom: 260 }}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           >
@@ -1579,16 +1565,18 @@ function AddVaccineScreen() {
   return (
     <FormLayout title={item ? 'Editar vacuna' : 'Nueva vacuna'} child={child} onSave={save} saving={saving}>
       <Field label="Nombre *" placeholder="Ej. Triple vírica" value={name} onChangeText={setName} />
-      <Text style={{ color: palette.muted }} className="font-figtree mb-2 text-body">Estado *</Text>
-      <View className="mb-6 flex-row gap-3">
+      <Text style={{ color: palette.text }} className="mb-3 font-figtree-medium text-[17px]">Estado *</Text>
+      <View className="mb-6 flex-row gap-4">
         {[true, false].map((value) => (
           <TouchableOpacity
             key={String(value)}
             onPress={() => handleSetApplied(value)}
-            style={{ borderColor: applied === value ? palette.blue : '#E6E6E3', backgroundColor: applied === value ? '#CFE7F9' : palette.card }}
-            className="flex-1 items-center rounded-3xl border p-4"
+            accessibilityRole="radio"
+            accessibilityState={{ selected: applied === value }}
+            style={[{ backgroundColor: applied === value ? palette.blue : palette.card }, SHADOWS.field]}
+            className="flex-1 items-center rounded-full py-4"
           >
-            <Text style={{ color: applied === value ? palette.blue : palette.muted }} className="text-body font-figtree-semibold">{value ? 'Aplicada' : 'Pendiente'}</Text>
+            <Text style={{ color: applied === value ? '#FFFFFF' : palette.text }} className="font-figtree text-[16px]">{value ? 'Aplicada' : 'Pendiente'}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -1648,8 +1636,8 @@ function AddAllergyScreen() {
   return (
     <FormLayout title={item ? 'Editar alergia' : 'Nueva alergia'} child={child} onSave={save} saving={saving}>
       <Field label="Nombre *" placeholder="Ej. Frutos secos" value={name} onChangeText={setName} />
-      <Text style={{ color: palette.muted }} className="font-figtree mb-2 text-body">Gravedad *</Text>
-      <View className="mb-6 flex-row gap-2">
+      <Text style={{ color: palette.text }} className="mb-3 font-figtree-medium text-[17px]">Gravedad *</Text>
+      <View className="mb-6 flex-row gap-3">
         {(['leve', 'moderada', 'severa'] as AllergySeverity[]).map((option) => {
           const selected = severity === option;
           const optionColor = option === 'severa' ? '#a33327' : option === 'moderada' ? '#a3651d' : '#3f805c';
@@ -1659,10 +1647,10 @@ function AddAllergyScreen() {
               onPress={() => setSeverity(option)}
               accessibilityRole="radio"
               accessibilityState={{ selected }}
-              style={{ borderColor: selected ? optionColor : '#E6E6E3', backgroundColor: selected ? '#fff7ed' : palette.card }}
-              className="flex-1 items-center rounded-3xl border p-4"
+              style={[{ borderColor: selected ? optionColor : 'transparent', backgroundColor: palette.card }, SHADOWS.field]}
+              className="flex-1 items-center rounded-full border-2 py-3.5"
             >
-              <Text style={{ color: selected ? optionColor : palette.muted }} className="text-body font-figtree-semibold">
+              <Text style={{ color: selected ? optionColor : palette.text }} className={`text-[16px] ${selected ? 'font-figtree-semibold' : 'font-figtree'}`}>
                 {option.charAt(0).toUpperCase() + option.slice(1)}
               </Text>
             </TouchableOpacity>

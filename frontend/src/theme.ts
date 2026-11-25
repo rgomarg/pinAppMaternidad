@@ -18,6 +18,12 @@ export const COLORS = {
   gradientEnd: '#A3CFF2',
   /** Campos y chips dentro de las tarjetas blancas */
   field: '#F4F4F2',
+  /** Tarjeta crema de la cabecera de las pantallas principales (mockup) */
+  hero: '#F8F4DC',
+  /** Avatar vacío y etiquetas grises de los hilos (mockup) */
+  placeholder: '#C4C4C4',
+  /** Botón flotante "+" del foro */
+  fab: '#CFE7F9',
   /** Tarjetas y superficies principales */
   surface: '#FFFFFF',
   /** Campos, chips y paneles dentro de una tarjeta */
@@ -86,6 +92,14 @@ export const SHADOWS = {
     shadowOpacity: 0.06,
     shadowRadius: 14,
     elevation: 3,
+  },
+  /** Campos y botones blancos de los formularios: sombra muy suave */
+  field: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
   },
   floating: {
     shadowColor: '#000000',

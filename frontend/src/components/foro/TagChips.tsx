@@ -25,7 +25,7 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
   return (
     <TouchableOpacity
       onPress={onPress}
-      className={`rounded-full px-4 py-2 ${active ? 'bg-nanny-blue' : 'bg-white/70'}`}
+      className={`rounded-full px-5 py-2 ${active ? 'bg-nanny-blue' : 'bg-white'}`}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
     >
