@@ -31,7 +31,7 @@ export class NotificationSchedulerService {
     this.logger.log(`Procesando ${pending.length} notificaciones pendientes...`);
 
     const messages: ExpoPushMessage[] = [];
-    const notificationIdsSent: number[] = [];
+    const sentNotifs: typeof pending = [];
 
     for (const notif of pending) {
       const token = notif.user?.pushToken;
@@ -46,7 +46,7 @@ export class NotificationSchedulerService {
           data: notif.data as any,
           priority: 'high',
         });
-        notificationIdsSent.push(notif.id);
+        sentNotifs.push(notif);
       } else {
         // Si no tiene token o es inválido, marcamos como fallida
         await this.prisma.notification.update({
@@ -56,22 +56,42 @@ export class NotificationSchedulerService {
       }
     }
 
-    // 2. Enviar en lotes (chunks) recomendados por Expo
+    // 2. Enviar en lotes (chunks) recomendados por Expo (o simular si MOCK_EXPO=true)
     if (messages.length > 0) {
       const chunks = this.expo.chunkPushNotifications(messages);
-      for (const chunk of chunks) {
-        try {
-          await this.expo.sendPushNotificationsAsync(chunk);
-        } catch (error) {
-          this.logger.error('Error enviando chunk de notificaciones a Expo', error);
+      if (process.env.MOCK_EXPO === 'true') {
+        this.logger.log(
+          `[MOCK_EXPO] Simulados ${messages.length} envíos en ${chunks.length} lote(s).`,
+        );
+      } else {
+        for (const chunk of chunks) {
+          try {
+            await this.expo.sendPushNotificationsAsync(chunk);
+          } catch (error) {
+            this.logger.error('Error enviando chunk de notificaciones a Expo', error);
+          }
         }
       }
 
-      // 3. Marcar las notificaciones como enviadas (SENT)
+      // 3. Marcar las notificaciones como enviadas (SENT) e instrumentar latencia (3.2.1.2)
+      const sentAt = new Date();
+      const notificationIdsSent = sentNotifs.map((n) => n.id);
       await this.prisma.notification.updateMany({
         where: { id: { in: notificationIdsSent } },
-        data: { status: 'SENT', sentAt: new Date() },
+        data: { status: 'SENT', sentAt },
       });
+
+      for (const notif of sentNotifs) {
+        const latencyMs = sentAt.getTime() - notif.scheduledAt.getTime();
+        this.logger.log(
+          JSON.stringify({
+            notificationId: notif.id,
+            scheduledAt: notif.scheduledAt.toISOString(),
+            sentAt: sentAt.toISOString(),
+            latencyMs,
+          }),
+        );
+      }
     }
   }
 }
