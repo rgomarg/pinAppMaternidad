@@ -11,7 +11,7 @@ export class NotificationSchedulerService {
   constructor(private readonly prisma: PrismaService) {}
 
   // Se ejecuta automáticamente cada minuto (o cada 30 segundos si usas '*/30 * * * * *')
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron('* * * * * *')
   async checkAndSendPendingNotifications() {
     const now = new Date();
 
